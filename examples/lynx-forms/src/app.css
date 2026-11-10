@@ -1,0 +1,75 @@
+/* `height: 100%` (not `flex: 1`) on the root — see examples/list/app.css for
+ * why: on web the Lynx page root is a plain `display:block` element, so a
+ * child's `flex:1` has no flex parent to grow into and collapses to content
+ * height, leaving the rest of the screen unfilled. Found on device here too:
+ * the sign-up form only covered its own content height, not the full
+ * screen. */
+.app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  /* At the bottom of the screen, where the keyboard opens over it: this is what
+   * shows whether the focused field stays visible, and the layout recovers. */
+  justify-content: flex-end;
+  /* Static top buffer for the status bar / Dynamic Island — see hello-world's
+   * app.css for why this isn't a measured safe-area-inset value. */
+  padding: 56px 24px 24px;
+  background-color: #0b1021;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.25s;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ffffff;
+  margin-bottom: 20px;
+}
+
+.field {
+  height: 48px;
+  padding: 0 14px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  background-color: #1f2a44;
+  color: #ffffff;
+  font-size: 16px;
+}
+
+/* Same unreadable default placeholder color found in ng-forms — see that
+ * example's app.css for the same rule. */
+.field::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.greeting {
+  font-size: 16px;
+  color: #4fc3f7;
+  margin: 8px 0 20px;
+}
+
+.submit {
+  align-items: center;
+  padding: 14px;
+  border-radius: 10px;
+  background-color: #dd0031;
+}
+
+.submit.disabled {
+  background-color: #4a4f63;
+}
+
+.submit-label {
+  font-size: 16px;
+  color: #ffffff;
+}
+
+.status {
+  margin-top: 16px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+}

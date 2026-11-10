@@ -1,0 +1,50 @@
+# Gesture types beyond pan, a relation, and ctx.gesture.fail() / end(). Each box logs
+# the phases its detectors fire. fail() and end() threw "not a function" on iOS
+# (Explorer 4.2) until they went through the state manager's __SetGestureState.
+appId: ${APP_ID}
+---
+- runFlow:
+    file: shared/open.yaml
+    env:
+      BUNDLE: main
+      READY: 'Count: 0'
+- scrollUntilVisible:
+    element: Open gesture lab
+    direction: DOWN
+    timeout: 10000
+- tapOn: Open gesture lab
+- extendedWaitUntil:
+    visible: 'tap: -'
+    timeout: 5000
+- tapOn: tap box
+- extendedWaitUntil:
+    visible: 'tap: begin,start,end'
+    timeout: 5000
+- longPressOn: longpress box
+- extendedWaitUntil:
+    visible: 'longpress: begin,start,end'
+    timeout: 5000
+# The tap waits for the long press to fail: a quick tap is a tap, a hold is only a long press.
+- tapOn: race box
+- extendedWaitUntil:
+    visible: 'race: tap-start'
+    timeout: 5000
+- longPressOn: race box
+- extendedWaitUntil:
+    visible: 'race: tap-start,hold-start'
+    timeout: 5000
+# fail() in onStart: no onUpdate gets through. (On iOS the pan starts again on the next move.)
+- swipe:
+    from: fail box
+    direction: RIGHT
+- extendedWaitUntil:
+    visible: 'fail: start,end(,start,end)*'
+    timeout: 5000
+# end() in the first onUpdate: one update, then onEnd, for the rest of the touch.
+- swipe:
+    from: end box
+    direction: RIGHT
+- extendedWaitUntil:
+    visible: 'end: start,update,end'
+    timeout: 5000
+- takeScreenshot: gesture-lab

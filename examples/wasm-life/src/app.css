@@ -1,0 +1,105 @@
+/*
+ * Styling for the WebAssembly Game of Life example.
+ *
+ * Lynx applies these via class selectors (same model as ReactLynx / vue-lynx).
+ * Each cell's position is a fixed inline `transform` set once at grid
+ * creation; only `background-color` changes per generation.
+ */
+.app {
+  flex: 1;
+  /* Fill the whole card — see examples/threejs-water's app.css for why this
+   * needs an explicit height (the Lynx page root sizes to content). */
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 56px 16px 24px;
+  background-color: #05080f;
+}
+
+.header {
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: bold;
+  color: #ffffff;
+  text-align: center;
+}
+
+/* Single live readout: the load formula while animating, "idle" when paused. */
+.load {
+  margin-top: 6px;
+  height: 16px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #3ddc84;
+  text-align: center;
+}
+
+.load.idle {
+  color: rgba(255, 255, 255, 0.35);
+  font-weight: normal;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: rgba(174, 240, 255, 0.65);
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* The grid stage: a fixed 256x256 box (16x16 cells x 16px). */
+.stage {
+  position: relative;
+  width: 256px;
+  height: 256px;
+  border-radius: 12px;
+  background-color: #081427;
+  overflow: hidden;
+}
+
+/* Each cell. Fixed size (no per-frame layout) — only `background-color`
+ * actually changes per generation; `transform` is set once and never
+ * rewritten, so Angular's own binding diff skips it for free.
+ * 16px must match CELL in app.component.ts. */
+.cell {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 15px;
+  height: 15px;
+  border-radius: 2px;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  width: 256px;
+  margin-top: 16px;
+}
+
+.btn {
+  align-items: center;
+  justify-content: center;
+  margin-top: 12px;
+  padding: 14px 0;
+  border-radius: 12px;
+  background-color: #15243d;
+}
+
+.btn-label {
+  font-size: 14px;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.hint {
+  margin-top: 12px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+  text-align: center;
+}

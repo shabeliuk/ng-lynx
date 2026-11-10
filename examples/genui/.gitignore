@@ -1,0 +1,10 @@
+# Sparkling CLI scratch (generated configs, parked Android assets)
+.sparkling/
+# CocoaPods gems installed per project (ios/.bundle/config)
+ios/vendor/
+# Bundles `sparkling build --copy` puts into the app (rebuilt on every run)
+ios/LynxResources/*.bundle
+# Xcode build output for the physical-device script
+ios/build-device/
+# Your signing team (ios/Signing.xcconfig includes it; `npm run ios:device` writes it)
+ios/Signing.local.xcconfig

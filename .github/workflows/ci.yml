@@ -1,0 +1,179 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# The jobs only read the repo, so the token gets no write access.
+permissions:
+  contents: read
+
+# Cancel superseded runs on the same ref.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# `@openuidev/lang-core` — a transitive dependency of `@lynx-js/genui` since
+# genui 0.4.0 widened its range to `^0.2.11` — runs a `postinstall` that reports
+# pseudonymous install telemetry to PostHog (salted project id, tool/OS
+# metadata, the IP PostHog observes). `DO_NOT_TRACK` is the cross-vendor opt-out
+# it honours; its own `OPENUI_TELEMETRY_DISABLED=1` works too. Set at workflow
+# level so every job's `pnpm install` inherits it, including the
+# `angular-compat` job's step-level `env` (step env merges with workflow env
+# rather than replacing it). See docs/39-lynx-4-1.md.
+env:
+  DO_NOT_TRACK: '1'
+
+jobs:
+  # Build + typecheck + the full headless verify suite, on the pinned Angular
+  # (21). The verify harnesses compile components with Angular's JIT compiler,
+  # so this leg is the JIT half of the AOT/JIT matrix; the `examples` job
+  # below is the AOT half (rspeedy/ngtools).
+  #
+  # Node 22 only — found empirically, not assumed: `verify:i18n`,
+  # `verify:lazy-chunks`, and `verify:schematics` each run a real Rspack
+  # build for the `web` target, and Rspack's toolchain needs a WASM feature
+  # (WasmGC / heap types) that Node 20's V8 doesn't support at all, even on
+  # its newest LTS patch (20.20.2) — confirmed by reproducing locally on
+  # both; the failure (`WebAssembly.Module(): … Unknown heap type -14`) is
+  # identical on `main`, so it predates this package's own code and isn't a
+  # regression to chase. `engines.node` in the root `package.json` was
+  # bumped to `>=22` to match. See docs/36-ci.md.
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build angular-lynx
+        run: pnpm --filter angular-lynx build
+
+      - name: Typecheck
+        run: pnpm --filter angular-lynx typecheck
+
+      - name: Verify (all harnesses)
+        run: pnpm --filter angular-lynx verify:all
+
+  # Real AOT builds of representative examples — a compile + package smoke test
+  # (catches template/AOT/config regressions the mock harnesses can't). Covers
+  # Sass (styling), Tailwind (tailwind), the themed control kit
+  # (control-theme), and @media with a raised engineVersion (responsive).
+  # router / i18n / lazy-chunks are already built by the verify
+  # suite. The ES2019 parse gate on real build output is `verify:lazy-chunks`
+  # (in the `verify` job) — it acorn-parses the async chunk a build emits as
+  # plain JS; the packaged `.bundle` container can't be acorn-parsed directly,
+  # so there's no per-example gate step here (see docs/36-ci.md).
+  examples:
+    name: example builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build angular-lynx (examples link to its dist)
+        run: pnpm --filter angular-lynx build
+
+      - name: Build examples
+        run: |
+          set -euo pipefail
+          for ex in hello-world ng-forms worklet product-detail styling tailwind control-theme responsive; do
+            echo "::group::build examples/$ex"
+            pnpm --filter "angular-lynx-$ex" build
+            echo "::endgroup::"
+          done
+
+      # The retirement planner's deterministic core: the calculator, the
+      # form-answer contract, the system prompt (every example and offline
+      # screen must parse), and the LLM proxy against a fake upstream. No API
+      # key needed — nothing here calls a real model.
+      - name: GenUI planner — build + unit tests
+        run: |
+          set -euo pipefail
+          pnpm --filter angular-lynx-genui-example build
+          pnpm --filter angular-lynx-genui-example test
+
+  # Cross-Angular-version leg: proves angular-lynx's partial-Ivy / linker
+  # version-independence by running the suite against the other end of the peer
+  # range. See docs/36-ci.md.
+  angular-compat:
+    name: Angular ${{ matrix.angular }} compat
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        angular: [22]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Pin Angular ${{ matrix.angular }}
+        run: node scripts/set-angular-version.mjs ${{ matrix.angular }}
+
+      - run: pnpm install --no-frozen-lockfile
+
+      - name: Build angular-lynx
+        run: pnpm --filter angular-lynx build
+
+      - name: Typecheck
+        run: pnpm --filter angular-lynx typecheck
+
+      - name: Verify (all harnesses)
+        run: pnpm --filter angular-lynx verify:all
+
+  # What a user gets: pack the tarball, scaffold every create-angular-lynx
+  # template outside the workspace, npm install, build, and run the documented
+  # Vitest quick start. Nothing else covers the published package's layout.
+  consumer:
+    name: consumer flow (Angular ${{ matrix.angular }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        angular: [21, 22]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Pack, scaffold, install, build, test
+        run: node scripts/verify-consumer.mjs ${{ matrix.angular }}

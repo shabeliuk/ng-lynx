@@ -1,0 +1,90 @@
+/*
+ * Global CSS for the hello-world app.
+ *
+ * Lynx applies these via its CSS engine using class selectors (the same model
+ * as ReactLynx / vue-lynx). Component-scoped `styles: [...]` are not projected
+ * yet — keep styles in a CSS file like this one and import it from index.ts.
+ *
+ * Lynx uses flexbox by default and requires explicit units on dimensions.
+ */
+.app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  /* Static top buffer for the status bar / Dynamic Island: Lynx has no
+   * env(safe-area-inset-top) or SystemInfo field for this today (open issue:
+   * https://github.com/lynx-family/lynx/issues/299), so this is a fixed
+   * value, not a measured one — generous enough to clear it on every current
+   * device, revisit if Lynx ships real inset data. */
+  padding: 56px 24px 24px;
+  background-color: #0b1021;
+}
+
+.banner {
+  margin-bottom: 32px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 4px;
+}
+
+.counter {
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  border-radius: 16px;
+  background-color: #dd0031; /* Angular red */
+}
+
+.count {
+  font-size: 48px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.hint {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 8px;
+}
+
+.parity {
+  margin-top: 16px;
+  font-size: 16px;
+  color: #ffce54;
+}
+
+.parity.even {
+  color: #4fc3f7;
+}
+
+.list {
+  margin-top: 24px;
+}
+
+.item {
+  font-size: 16px;
+  color: #e0e0e0;
+  margin-top: 6px;
+}
+
+.add {
+  margin-top: 24px;
+  align-items: center;
+  padding: 14px;
+  border-radius: 12px;
+  background-color: #1f2a44;
+}
+
+.add-label {
+  font-size: 16px;
+  color: #ffffff;
+}

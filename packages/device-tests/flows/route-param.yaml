@@ -1,0 +1,18 @@
+# Router navigation with a route param. On Angular 22, Lynx's partial URL global made
+# every route serialize to `/`, so the router skipped the navigation without an error.
+appId: ${APP_ID}
+---
+- runFlow:
+    file: shared/open.yaml
+    env:
+      BUNDLE: main
+      READY: 'Count: 0'
+- tapOn: Open user 7
+- extendedWaitUntil:
+    visible: User 7
+    timeout: 5000
+- takeScreenshot: route-param
+- tapOn: Go back
+- extendedWaitUntil:
+    visible: 'Count: 0'
+    timeout: 5000

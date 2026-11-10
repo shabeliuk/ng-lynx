@@ -1,0 +1,139 @@
+name: Device tests
+
+# Runs packages/device-tests' Maestro flows on a real Lynx engine, in the pinned Lynx
+# Explorer, on the Android emulator and the iOS simulator. Every bug the device runs
+# found had passed all the headless checks. See docs/36-ci.md.
+#
+# Not on pull requests: a run takes minutes of emulator time and can fail for reasons
+# outside the change. A schedule only ever runs from the default branch.
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+# Same telemetry opt-out as ci.yml. See docs/39-lynx-4-1.md.
+env:
+  DO_NOT_TRACK: '1'
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    name: Android, Angular ${{ matrix.angular }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        angular: [21, 22]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # Maestro runs on the JVM.
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Pin Angular ${{ matrix.angular }}
+        run: node scripts/set-angular-version.mjs ${{ matrix.angular }}
+
+      - run: pnpm install --no-frozen-lockfile
+
+      - name: Build angular-lynx
+        run: pnpm --filter angular-lynx build
+
+      - name: Cache Maestro and Lynx Explorer
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/angular-lynx-e2e
+          key: device-tests-android-${{ hashFiles('packages/device-tests/tools.json') }}
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run the flows
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: node packages/device-tests/run.mjs --platform android
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: device-tests-android-angular-${{ matrix.angular }}
+          path: packages/device-tests/artifacts/android
+          if-no-files-found: ignore
+
+  ios:
+    name: iOS, Angular ${{ matrix.angular }}
+    # macOS minutes count ten times on a private repository, so while this one is
+    # private the iOS job only runs when started by hand. Public repositories don't
+    # pay for them.
+    if: github.event_name == 'workflow_dispatch' || !github.event.repository.private
+    # Apple silicon, which the pinned simulator build of Explorer targets.
+    runs-on: macos-15
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        angular: [21, 22]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # Maestro runs on the JVM.
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Pin Angular ${{ matrix.angular }}
+        run: node scripts/set-angular-version.mjs ${{ matrix.angular }}
+
+      - run: pnpm install --no-frozen-lockfile
+
+      - name: Build angular-lynx
+        run: pnpm --filter angular-lynx build
+
+      - name: Cache Maestro and Lynx Explorer
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/angular-lynx-e2e
+          key: device-tests-ios-${{ hashFiles('packages/device-tests/tools.json') }}
+
+      - name: Run the flows
+        run: node packages/device-tests/run.mjs --platform ios
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: device-tests-ios-angular-${{ matrix.angular }}
+          path: packages/device-tests/artifacts/ios
+          if-no-files-found: ignore

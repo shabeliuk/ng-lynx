@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <path fill="#d9a066" d="M38 96 L56 22 L98 70 Z"/>
+  <path fill="#d9a066" d="M 162,96 L 144,22 L 102,70 Z"/>
+  <path fill="#f3c9a8" d="M50 84 L60 42 L86 70 Z"/>
+  <path fill="#f3c9a8" d="M 150,84 L 140,42 L 114,70 Z"/>
+  <path fill="#3b2a1e" d="M56 22 L50 2 L64 20 Z"/>
+  <path fill="#3b2a1e" d="M 144,22 L 150,2 L 136,20 Z"/>
+  <path fill="#d9a066" d="M100 48 C150 48 170 82 170 116 C170 132 186 150 176 168 C160 160 150 176 132 176 C120 186 80 186 68 176 C50 176 40 160 24 168 C14 150 30 132 30 116 C30 82 50 48 100 48 Z"/>
+  <path fill="#8a5a2b" d="M90 60 L100 82 L110 60 Z"/>
+  <path fill="#8a5a2b" d="M64 70 L74 86 L80 68 Z"/>
+  <path fill="#8a5a2b" d="M136 70 L126 86 L120 68 Z"/>
+  <circle fill="#f6e3c8" cx="82" cy="146" r="24"/>
+  <circle fill="#f6e3c8" cx="118" cy="146" r="24"/>
+  <circle fill="#f4e471" cx="74" cy="108" r="13"/>
+  <circle fill="#f4e471" cx="126" cy="108" r="13"/>
+  <path fill="#2b1d14" d="M74 97 C79 104 79 112 74 119 C69 112 69 104 74 97 Z"/>
+  <path fill="#2b1d14" d="M126 97 C131 104 131 112 126 119 C121 112 121 104 126 97 Z"/>
+  <path fill="#b67e6d" d="M90 128 L110 128 L100 140 Z"/>
+</svg>

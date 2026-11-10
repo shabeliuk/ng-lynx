@@ -1,0 +1,20 @@
+packages:
+  - packages/*
+  - examples/*
+
+# Pins Angular 21 for the workspace's own builds and tests. CI's Angular 22 lane replaces them.
+overrides:
+  '@angular/core': 21.2.26
+  '@angular/compiler': 21.2.26
+  '@angular/common': 21.2.26
+  '@angular/router': 21.2.26
+  '@angular/localize': 21.2.26
+  '@angular/platform-browser': 21.2.26
+  '@angular/forms': 21.2.26
+
+# Install scripts that may run. esbuild's checks its native binary; the others only
+# print a donation message (core-js) or send install telemetry (@openuidev/lang-core).
+allowBuilds:
+  esbuild: true
+  core-js: false
+  '@openuidev/lang-core': false

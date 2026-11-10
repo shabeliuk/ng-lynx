@@ -1,0 +1,38 @@
+{
+  "name": "angular-lynx-genui-example",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "rspeedy dev",
+    "build": "rspeedy build",
+    "preview": "rspeedy preview",
+    "test": "node --experimental-strip-types --no-warnings --import ./test/register.mjs --test test/*.test.ts",
+    "ios": "sparkling-app-cli run:ios --copy",
+    "ios:dev": "sparkling-app-cli dev",
+    "ios:bundle": "sparkling-app-cli build --copy",
+    "ios:doctor": "sparkling-app-cli doctor --platform ios",
+    "ios:device": "node scripts/ios-device.mjs"
+  },
+  "dependencies": {
+    "@angular/compiler": ">=21.0.0",
+    "@angular/core": ">=21.0.0",
+    "@lynx-js/genui": "^0.7.2",
+    "@openuidev/lang-core": "^0.3.2",
+    "angular-lynx": "workspace:*",
+    "sparkling-method": "~2.1.0-rc.36",
+    "sparkling-navigation": "~2.1.0-rc.36",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@lynx-js/config-rsbuild-plugin": "^0.2.5",
+    "@lynx-js/qrcode-rsbuild-plugin": "^0.7.3",
+    "@lynx-js/react": "^0.129.1",
+    "@lynx-js/rspeedy": "^0.18.4",
+    "sparkling-app-cli": "~2.1.0-rc.36",
+    "typescript": "~5.9.0"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

@@ -1,0 +1,23 @@
+# Scrolls the native list far enough to recycle cells, both ways. run.mjs fails the
+# run if the engine logs `FiberElement re-insert node`.
+appId: ${APP_ID}
+---
+- runFlow:
+    file: shared/open.yaml
+    env:
+      BUNDLE: main
+      READY: 'Count: 0'
+- tapOn: Open list
+- extendedWaitUntil:
+    visible: 'Rows: 120'
+    timeout: 5000
+- assertVisible: Row 0
+- scrollUntilVisible:
+    element: Row 60
+    direction: DOWN
+    timeout: 60000
+- takeScreenshot: list
+- scrollUntilVisible:
+    element: Row 0
+    direction: UP
+    timeout: 60000

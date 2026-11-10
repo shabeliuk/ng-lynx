@@ -1,0 +1,17 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "lib": ["ES2020", "DOM"],
+    "experimentalDecorators": false,
+    "paths": {
+      "angular-lynx/internal/ops": ["../internal/dist/ops"]
+    }
+  },
+  "angularCompilerOptions": {
+    "compilationMode": "partial",
+    "typeCheckHostBindings": false
+  },
+  "include": ["src"]
+}

@@ -1,0 +1,112 @@
+.app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  /* Static top buffer for the status bar / Dynamic Island — see hello-world's
+   * app.css for why this isn't a measured safe-area-inset value. With 16px the
+   * title ran under the clock on an iPhone in full screen. */
+  padding: 56px 24px 24px;
+  background-color: #0b1021;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: bold;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.description {
+  font-size: 13px;
+  line-height: 18px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 24px;
+}
+
+.card {
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+  border-radius: 16px;
+  background-color: #dd0031;
+}
+
+.card-label {
+  font-size: 16px;
+  color: #ffffff;
+}
+
+.reset {
+  align-items: center;
+  padding: 12px;
+  margin-top: 14px;
+  border-radius: 12px;
+  background-color: #1f2a44;
+}
+
+.reset-label {
+  font-size: 14px;
+  color: #ffffff;
+}
+
+.fade {
+  align-items: center;
+  padding: 12px;
+  margin-top: 14px;
+  border-radius: 12px;
+  background-color: #2a1f44;
+}
+
+.fade-label {
+  font-size: 14px;
+  color: #ffffff;
+}
+
+.count {
+  margin-top: 20px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.chip {
+  align-items: center;
+  justify-content: center;
+  height: 64px;
+  margin-top: 16px;
+  border-radius: 16px;
+  background-color: #3d5a80;
+}
+
+.chip-label {
+  font-size: 15px;
+  color: #ffffff;
+}
+
+.gesture-log {
+  margin-top: 8px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.api-box {
+  margin-top: 16px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background-color: #1f2a44;
+}
+
+.api-label {
+  font-size: 14px;
+  color: #ffffff;
+}
+
+.api-scroll {
+  height: 44px;
+  margin-top: 6px;
+}
+
+.api-item {
+  font-size: 13px;
+  line-height: 22px;
+  color: rgba(255, 255, 255, 0.7);
+}

@@ -1,0 +1,767 @@
+/*
+ * GenUI example styles. Catalog components ship with the upstream class
+ * names (`text-*`, `button*` for A2UI; `OpenUI*` for OpenUI), so the app
+ * themes generated UI here — the same restyling story as upstream's
+ * theme.css, expressed in Lynx CSS.
+ */
+/* `height: 100%`, not `flex: 1`: the planner's <scroll-view> needs a definite
+ * height to scroll, and on web the page root is a plain block element — see
+ * examples/list/src/app.css. */
+.app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 56px 16px 0;
+  background-color: #0b1021;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ffffff;
+  margin-bottom: 12px;
+}
+
+.tabs {
+  display: flex;
+  flex-direction: row;
+  margin-bottom: 12px;
+}
+
+.tab {
+  padding: 7px 14px;
+  border-radius: 18px;
+  margin-right: 8px;
+  background-color: #1a2140;
+}
+
+.tab-active {
+  background-color: #4c6ef5;
+}
+
+.tab-label {
+  color: #ffffff;
+  font-size: 14px;
+}
+
+.demo {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.event-log {
+  margin-top: 14px;
+  font-size: 12px;
+  color: #8b95c9;
+}
+
+/* ── A2UI catalog theming ── */
+.surface-root {
+  display: flex;
+  flex-direction: column;
+}
+
+.text-headline {
+  font-size: 20px;
+  font-weight: bold;
+  color: #ffffff;
+  margin-bottom: 10px;
+}
+
+.text-body {
+  font-size: 15px;
+  color: #d7dcf5;
+}
+
+.card {
+  background-color: #141a36;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+  border: 1px solid #262f5c;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+}
+
+.button {
+  background-color: #4c6ef5;
+  border-radius: 10px;
+  padding: 10px 18px;
+  align-self: flex-start;
+  margin-top: 6px;
+}
+
+.button-fallback,
+.button .text-body {
+  color: #ffffff;
+}
+
+.slider {
+  margin: 6px 0;
+}
+
+.slider-value {
+  color: #ffffff;
+  font-size: 16px;
+  min-width: 24px;
+  text-align: center;
+}
+
+.slider-decrement,
+.slider-increment {
+  background-color: #1a2140;
+  border-radius: 8px;
+  margin: 0 6px;
+}
+
+.slider-decrement text,
+.slider-increment text {
+  color: #ffffff;
+}
+
+.slider-label {
+  color: #d7dcf5;
+}
+
+/* ── OpenUI library theming ── */
+.OpenUIText-h2 {
+  font-size: 20px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.OpenUIText-body,
+.OpenUIText {
+  font-size: 15px;
+  color: #d7dcf5;
+}
+
+.OpenUICard {
+  background-color: #141a36;
+  border: 1px solid #262f5c;
+}
+
+.OpenUICardHeaderTitle {
+  font-size: 17px;
+  color: #ffffff;
+}
+
+.OpenUICardHeaderSubtitle {
+  font-size: 13px;
+  color: #8b95c9;
+}
+
+.OpenUITag {
+  background-color: #1a2140;
+}
+
+.OpenUITagText {
+  color: #9db1ff;
+}
+
+.OpenUIButton {
+  background-color: #4c6ef5;
+}
+
+.OpenUIButtonText {
+  color: #ffffff;
+}
+
+.OpenUITextFieldLabel {
+  color: #d7dcf5;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.OpenUITextFieldControl {
+  background-color: #1a2140;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #ffffff;
+  height: 40px;
+}
+
+.textfield-label {
+  color: #d7dcf5;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.textfield-control {
+  background-color: #1a2140;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #ffffff;
+  height: 40px;
+}
+
+.OpenUITextContent {
+  color: #d7dcf5;
+}
+
+.OpenUITextContentSmall {
+  font-size: 13px;
+  color: #8b95c9;
+}
+
+.OpenUITextContentLarge,
+.OpenUITextContentLargeHeavy {
+  font-size: 17px;
+}
+
+.OpenUITextContentLargeHeavy,
+.OpenUITextContentSmallHeavy {
+  font-weight: bold;
+}
+
+.OpenUIText-h3 {
+  font-size: 17px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.OpenUIText-caption {
+  font-size: 12px;
+  color: #8b95c9;
+}
+
+.OpenUIButtonSecondary {
+  background-color: #1a2140;
+  border: 1px solid #3a4680;
+}
+
+.OpenUIButtonGhost {
+  background-color: transparent;
+}
+
+.OpenUIButtonGhost .OpenUIButtonText {
+  color: #9db1ff;
+}
+
+.OpenUICard-sunk {
+  background-color: #0f1530;
+}
+
+.OpenUITextField-invalid .OpenUITextFieldControl {
+  border: 1px solid #e07a5f;
+}
+
+.OpenUITextFieldError {
+  color: #e07a5f;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.OpenUITextFieldControl::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Slider (the port's tap-segment + stepper control — see basic-library.ts) */
+.OpenUISliderLabel {
+  color: #d7dcf5;
+  font-size: 13px;
+}
+
+.OpenUISliderValue {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: bold;
+}
+
+.OpenUISliderTrack {
+  background-color: #262f5c;
+}
+
+.OpenUISliderIndicator {
+  background-color: #4c6ef5;
+  border-radius: 3px;
+}
+
+.OpenUISliderStep {
+  width: 32px;
+  height: 32px;
+  border-radius: 16px;
+  background-color: #1a2140;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.OpenUISliderStepText {
+  color: #ffffff;
+  font-size: 18px;
+}
+
+/* RadioGroup */
+.OpenUIRadioGroupContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.OpenUIRadioGroup-row .OpenUIRadioGroupContainer {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.OpenUIRadioOption {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background-color: #1a2140;
+}
+
+.OpenUIRadioIndicator {
+  width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  border: 2px solid #4c6ef5;
+  margin-right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.OpenUIRadioIndicatorDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  background-color: #4c6ef5;
+}
+
+.OpenUIRadioLabel {
+  color: #ffffff;
+  font-size: 14px;
+}
+
+/* ── Planner ── */
+.planner-host {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.planner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.planner-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.agent-badge {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.agent-llm {
+  color: #0b1021;
+  background-color: #7ee2c5;
+}
+
+.agent-offline {
+  color: #d7dcf5;
+  background-color: #262f5c;
+}
+
+.planner-reset {
+  padding: 4px 10px;
+}
+
+.planner-reset-text {
+  color: #9db1ff;
+  font-size: 13px;
+}
+
+.planner-scroll {
+  flex: 1;
+}
+
+.facts {
+  margin-bottom: 12px;
+}
+
+.facts-title {
+  color: #8b95c9;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.facts-chips {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.fact {
+  padding: 3px 9px;
+  border-radius: 10px;
+  background-color: #1a2140;
+}
+
+.fact-text {
+  color: #d7dcf5;
+  font-size: 12px;
+}
+
+.welcome {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 14px;
+  background-color: #141a36;
+  border: 1px solid #262f5c;
+}
+
+.welcome-title {
+  color: #ffffff;
+  font-size: 19px;
+  font-weight: bold;
+}
+
+.welcome-body {
+  color: #d7dcf5;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.welcome-note {
+  color: #8b95c9;
+  font-size: 12px;
+}
+
+.suggestion {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background-color: #1a2140;
+  border: 1px solid #3a4680;
+}
+
+.suggestion-text {
+  color: #9db1ff;
+  font-size: 14px;
+}
+
+.bubble {
+  align-self: flex-end;
+  max-width: 85%;
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background-color: #4c6ef5;
+}
+
+.bubble-text {
+  color: #ffffff;
+  font-size: 14px;
+}
+
+.bubble-detail {
+  color: #dfe5ff;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.thinking {
+  padding: 12px 0;
+}
+
+.thinking-text {
+  color: #8b95c9;
+  font-size: 14px;
+}
+
+.assistant-screen {
+  margin-top: 4px;
+  margin-bottom: 16px;
+}
+
+.planner-error {
+  padding: 12px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  background-color: #3a1d24;
+  border: 1px solid #e07a5f;
+}
+
+.planner-error-text {
+  color: #ffd9cf;
+  font-size: 14px;
+}
+
+.planner-error-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.planner-error-button {
+  padding: 6px 12px;
+  border-radius: 8px;
+  background-color: #1a2140;
+}
+
+.planner-error-button-text {
+  color: #ffffff;
+  font-size: 13px;
+}
+
+.composer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0 28px;
+  border-top: 1px solid #1a2140;
+}
+
+.composer-input {
+  flex: 1;
+  height: 42px;
+  padding: 0 12px;
+  border-radius: 21px;
+  background-color: #1a2140;
+  color: #ffffff;
+}
+
+.composer-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.composer-send {
+  height: 42px;
+  padding: 0 16px;
+  border-radius: 21px;
+  background-color: #4c6ef5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.composer-send-disabled {
+  opacity: 0.4;
+}
+
+.composer-send-text {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+/* Plan components (src/planner/components.ts) */
+.PlanSummary,
+.ScenarioTable,
+.PlanAssumptions,
+.ProjectionChart {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 12px;
+  background-color: #141a36;
+  border: 1px solid #262f5c;
+}
+
+.PlanEyebrow {
+  color: #8b95c9;
+  font-size: 12px;
+}
+
+.PlanStats {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+}
+
+.PlanStat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.PlanStatLabel {
+  color: #8b95c9;
+  font-size: 12px;
+}
+
+.PlanStatValue {
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.PlanBadge {
+  align-self: flex-start;
+  padding: 4px 10px;
+  border-radius: 10px;
+}
+
+.PlanBadgeGood {
+  background-color: #1d4a40;
+}
+
+.PlanBadgeGap {
+  background-color: #4a2a22;
+}
+
+.PlanBadgeText {
+  color: #ffffff;
+  font-size: 13px;
+}
+
+.PlanNote,
+.PlanPending {
+  color: #d7dcf5;
+  font-size: 13px;
+}
+
+.ScenarioRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background-color: #0f1530;
+}
+
+.ScenarioRowBase {
+  border: 1px solid #4c6ef5;
+}
+
+.ScenarioHead {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.ScenarioName {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.ScenarioReturn {
+  color: #8b95c9;
+  font-size: 12px;
+}
+
+.ScenarioCells {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+}
+
+.ScenarioCell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.ScenarioCellLabel {
+  color: #8b95c9;
+  font-size: 11px;
+}
+
+.ScenarioCellValue {
+  color: #ffffff;
+  font-size: 14px;
+}
+
+.ScenarioGood {
+  color: #7ee2c5;
+}
+
+.ScenarioGap {
+  color: #f2a58e;
+}
+
+.ChartHeader,
+.ChartAxis,
+.ChartLegend {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.ChartTitle {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.ChartMax,
+.ChartAxisLabel {
+  color: #8b95c9;
+  font-size: 11px;
+}
+
+.ChartLegend {
+  justify-content: flex-start;
+  gap: 14px;
+}
+
+.ChartKey {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.ChartSwatch {
+  width: 14px;
+  height: 3px;
+}
+
+.ChartSwatchRecommended {
+  background-color: #2a9d8f;
+}
+
+.ChartSwatchCurrent {
+  background-color: #e07a5f;
+}
+
+.ChartKeyText {
+  color: #d7dcf5;
+  font-size: 12px;
+}
+
+.AssumptionRow {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+}
+
+.AssumptionBullet {
+  color: #4c6ef5;
+  font-size: 14px;
+}
+
+.AssumptionText {
+  flex: 1;
+  color: #d7dcf5;
+  font-size: 13px;
+  line-height: 19px;
+}

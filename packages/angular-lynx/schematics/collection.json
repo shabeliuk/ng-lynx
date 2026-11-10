@@ -1,0 +1,15 @@
+{
+  "schematics": {
+    "ng-add": {
+      "description": "Add a Lynx build target to an Angular CLI workspace.",
+      "factory": "./dist/ng-add/index#ngAdd",
+      "schema": "./src/ng-add/schema.json"
+    },
+    "lynx-component": {
+      "aliases": ["component", "c"],
+      "description": "Generate a standalone Angular component using typed Lynx elements.",
+      "factory": "./dist/lynx-component/index#lynxComponent",
+      "schema": "./src/lynx-component/schema.json"
+    }
+  }
+}

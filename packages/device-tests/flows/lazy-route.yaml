@@ -1,0 +1,18 @@
+# A lazy route's chunk loads over the network, and Location.back() returns. run.mjs
+# also checks the server saw the chunk.
+appId: ${APP_ID}
+---
+- runFlow:
+    file: shared/open.yaml
+    env:
+      BUNDLE: main
+      READY: 'Count: 0'
+- tapOn: Open lazy page
+- extendedWaitUntil:
+    visible: Lazy page loaded
+    timeout: 15000
+- takeScreenshot: lazy-route
+- tapOn: Go back
+- extendedWaitUntil:
+    visible: 'Count: 0'
+    timeout: 5000

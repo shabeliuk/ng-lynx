@@ -1,0 +1,26 @@
+{
+  "name": "angular-lynx-threejs-rpg-skeleton",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "rspeedy dev",
+    "build": "rspeedy build",
+    "preview": "rspeedy preview"
+  },
+  "dependencies": {
+    "@angular/core": ">=21.0.0",
+    "@angular/compiler": ">=21.0.0",
+    "angular-lynx": "workspace:*",
+    "three": "^0.184.0"
+  },
+  "devDependencies": {
+    "@lynx-js/qrcode-rsbuild-plugin": "^0.7.3",
+    "@lynx-js/rspeedy": "^0.18.4",
+    "@types/three": "^0.184.0",
+    "typescript": "~5.9.0"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

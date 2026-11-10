@@ -1,0 +1,134 @@
+/*
+ * Styling for the 3D skeleton-viewer example.
+ *
+ * Lynx applies these via class selectors (same model as ReactLynx / vue-lynx).
+ * Each joint dot's position comes from an inline `style="..."` the component
+ * sets every frame; this file styles the shell and the fixed bits.
+ */
+.app {
+  flex: 1;
+  /* Fill the whole card — see examples/threejs-water's app.css for why this
+   * needs an explicit height (the Lynx page root sizes to content). */
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 56px 16px 24px;
+  background-color: #05080f;
+}
+
+.header {
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: bold;
+  color: #ffffff;
+  text-align: center;
+}
+
+/* Single live readout: the load formula while animating, "idle" when paused. */
+.load {
+  margin-top: 6px;
+  height: 16px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #3ddc84;
+  text-align: center;
+}
+
+.load.idle {
+  color: rgba(255, 255, 255, 0.35);
+  font-weight: normal;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: rgba(174, 240, 255, 0.65);
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* Portrait projection stage — taller than wide, to suit a standing figure. */
+.stage {
+  position: relative;
+  width: 260px;
+  height: 360px;
+  border-radius: 16px;
+  background-color: #081427;
+  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+}
+
+.status {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+  padding: 0 20px;
+}
+
+.status.error {
+  color: #ff6b6b;
+}
+
+/* Each projected bone joint. Fixed size (no per-frame layout) — only
+ * `transform` is animated via the inline style the component sets each frame.
+ * 8px must match DOT in app.component.ts. */
+.joint {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #6fc8ff;
+  z-index: 2;
+}
+
+/* A bone-to-parent connector — width/height/position/rotation are ALL set
+ * per frame via the inline style (a segment's length changes as the figure
+ * moves, unlike the fixed-size joint dots), using the classic "div line"
+ * technique: translate() to the segment's midpoint, then rotate() in place.
+ * `transform: rotate()` isn't in Lynx's documented supported-CSS list — drawn
+ * additively alongside the dots so a rendering failure here doesn't hide the
+ * joints too. */
+.bone-line {
+  position: absolute;
+  left: 0;
+  top: 0;
+  background-color: rgba(111, 200, 255, 0.55);
+  border-radius: 2px;
+  z-index: 1;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  width: 260px;
+  margin-top: 16px;
+}
+
+.btn {
+  align-items: center;
+  justify-content: center;
+  padding: 14px 0;
+  border-radius: 12px;
+  background-color: #15243d;
+}
+
+.btn-label {
+  font-size: 14px;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.hint {
+  margin-top: 12px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+  text-align: center;
+}

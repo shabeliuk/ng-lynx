@@ -1,0 +1,24 @@
+{
+  "name": "angular-lynx-dynamic-component",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npm run build:producer && rspeedy dev",
+    "build": "npm run build:producer && rspeedy build",
+    "build:producer": "rspeedy build --config lynx.config.producer.ts"
+  },
+  "dependencies": {
+    "@angular/core": ">=21.0.0",
+    "@angular/compiler": ">=21.0.0",
+    "angular-lynx": "workspace:*"
+  },
+  "devDependencies": {
+    "@lynx-js/qrcode-rsbuild-plugin": "^0.7.3",
+    "@lynx-js/rspeedy": "^0.18.4",
+    "typescript": "~5.9.0"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

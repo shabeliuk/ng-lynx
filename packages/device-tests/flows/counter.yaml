@@ -1,0 +1,20 @@
+# The boot test: the app renders on the engine, a tap reaches Angular, and the
+# update comes back across the threads.
+appId: ${APP_ID}
+---
+- runFlow:
+    file: shared/open.yaml
+    env:
+      BUNDLE: main
+      READY: 'Count: 0'
+- assertVisible: Even
+- tapOn: Increment
+- extendedWaitUntil:
+    visible: 'Count: 1'
+    timeout: 5000
+- assertVisible: Odd
+- tapOn: Increment
+- extendedWaitUntil:
+    visible: 'Count: 2'
+    timeout: 5000
+- takeScreenshot: counter

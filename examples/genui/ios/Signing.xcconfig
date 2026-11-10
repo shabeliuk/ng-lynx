@@ -1,0 +1,20 @@
+// Code signing for device builds, kept out of project.pbxproj.
+//
+// The project's Debug and Release configurations are based on this file.
+// Your signing team, and the bundle ID suffix that goes with it, live in
+// Signing.local.xcconfig next to it, which is gitignored.
+// `npm run ios:device` writes that file for you. To write it by hand:
+//
+//   DEVELOPMENT_TEAM = AB12CD34EF
+//   PLANNER_BUNDLE_ID_SUFFIX[sdk=iphoneos*] = .ab12cd34ef
+//
+// Then Xcode's own Run button signs with your team too. The suffix gives
+// each team its own bundle ID (see scripts/ios-device.mjs); it's for device
+// builds only, so simulator builds keep plain dev.angularlynx.planner, which
+// is the ID `npm run ios` launches.
+//
+// Don't pick the team in Xcode's Signing & Capabilities tab: Xcode writes
+// that choice into project.pbxproj, which is committed. If you do, the next
+// `npm run ios:device` moves it into Signing.local.xcconfig.
+
+#include? "Signing.local.xcconfig"

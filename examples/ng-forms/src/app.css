@@ -1,0 +1,656 @@
+/*
+ * `height: 100%` (not just `flex: 1`): the form scrolls now that it has more
+ * fields than fit one screen, and a <scroll-view> needs a definite height to
+ * scroll — `flex: 1` alone collapses to content height on web (see
+ * examples/list/src/app.css for the full explanation).
+ */
+.app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  /* Static top buffer for the status bar / Dynamic Island — see hello-world's
+   * app.css for why this isn't a measured safe-area-inset value. */
+  padding: 56px 24px 24px;
+  background-color: #0b1021;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ffffff;
+  margin-bottom: 20px;
+}
+
+.field {
+  height: 48px;
+  padding: 0 14px;
+  margin-bottom: 6px;
+  border-radius: 10px;
+  background-color: #1f2a44;
+  color: #ffffff;
+  font-size: 16px;
+  /* 2px transparent border so `.field-focused` (below) only changes the
+   * border *color*, not the box's size/layout. */
+  border: 2px solid transparent;
+}
+
+/* The default placeholder colour is unreadable against this dark input
+ * background — this is what device testing flagged. Lynx supports
+ * `::placeholder` on `<input>`/`<textarea>` the same as web CSS. */
+.field::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/*
+ * There is no confirmed `:focus` pseudo-class on Lynx's native CSS engine, so
+ * this is driven by real `(focus)`/`(blur)` events on the element instead
+ * (see app.component.ts's `focusedField`) — the same event-driven state-class
+ * pattern the toggle/checkbox/radio/etc controls already use, rather than
+ * relying on pseudo-class CSS the native engine may not evaluate. A caret
+ * blink is not a substitute for knowing which field is active.
+ */
+.field-focused {
+  border-color: #4fc3f7;
+  background-color: #263252;
+}
+
+.hint {
+  font-size: 13px;
+  margin-bottom: 10px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.hint.error {
+  color: #ff6b6b;
+}
+
+.greeting {
+  font-size: 16px;
+  color: #4fc3f7;
+  margin: 8px 0 20px;
+}
+
+.submit {
+  align-items: center;
+  padding: 14px;
+  border-radius: 10px;
+  background-color: #dd0031;
+}
+
+.submit.disabled {
+  background-color: #4a4f63;
+}
+
+.form-actions {
+  display: flex;
+  flex-direction: row;
+  margin-top: 16px;
+}
+
+.action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-grow: 1;
+  padding: 12px;
+  margin-right: 8px;
+  border-radius: 10px;
+  background-color: #1f2a44;
+}
+
+.submit-label {
+  font-size: 16px;
+  color: #ffffff;
+}
+
+.status {
+  margin-top: 16px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/*
+ * angular-lynx/forms's LynxSelect / LynxDatePicker / LynxTimePicker /
+ * LynxAutocomplete ship unstyled (the same headless model lynx-ui uses) — this
+ * app provides the actual look. See docs/09-forms.md.
+ */
+
+.label {
+  margin-top: 6px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* Lands on each control's host anchor (the tag name itself isn't a known Lynx
+ * element, so the renderer falls back to a plain view there) — just spacing.
+ * 16px (was 6px): device testing flagged the toggle/checkbox rows in
+ * particular as cramped — they have no `.label` above them, so this margin is
+ * the *only* vertical space around them, and 6px read as a layout bug. */
+.control {
+  margin-bottom: 16px;
+}
+
+/* --- LynxSelect ------------------------------------------------------- */
+
+.lynx-select {
+  display: flex;
+  flex-direction: column;
+}
+
+.lynx-select-trigger {
+  height: 48px;
+  padding: 0 14px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  border-radius: 10px;
+  background-color: #1f2a44;
+}
+
+.lynx-select-trigger-open {
+  background-color: #29395f;
+}
+
+.lynx-select-value {
+  font-size: 16px;
+  color: #ffffff;
+}
+
+/*
+ * The backdrop is a plain `position: fixed` view (not Lynx's <overlay> — see
+ * select.ts's doc comment for why), mounted/unmounted via @if rather than a
+ * persistently-toggled `visible` attribute. `top/left` + `width/height: 100%`
+ * sizes it to the full screen — NOT `right/bottom: 0` instead of width/height,
+ * which CSS minifiers merge into an `inset` shorthand that Lynx's CSS encoder
+ * doesn't support and silently drops (confirmed via a real build warning:
+ * "Unsupported property 'inset' was removed during template encode" — the
+ * positioning would have been lost entirely). It centers the dialog box
+ * itself via flex.
+ */
+.lynx-select-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 100;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.55);
+}
+
+.lynx-select-dialog {
+  display: flex;
+  flex-direction: column;
+  width: 80%;
+  border-radius: 12px;
+  background-color: #16203a;
+  overflow: hidden;
+}
+
+.lynx-select-list {
+  display: flex;
+  flex-direction: column;
+  height: 240px;
+}
+
+.lynx-select-option {
+  height: 44px;
+  padding: 0 14px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.lynx-select-option-selected {
+  background-color: #29395f;
+}
+
+/* The option row's label `<text>` — device testing found it unstyled (no
+ * class existed to hang a colour on at all), reading as invisible dark text
+ * against `.lynx-select-dialog`'s dark background. Shared by LynxSelect,
+ * LynxDatePicker, and LynxTimePicker, since all three render their rows
+ * through the same `<lynx-select-column>`. */
+.lynx-select-option-label {
+  font-size: 16px;
+  color: #ffffff;
+}
+
+.lynx-select-done {
+  height: 44px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  background-color: #dd0031;
+}
+
+/* Same gap as `.lynx-select-option-label` above, on the Done button's own
+ * `<text>`. */
+.lynx-select-done-label {
+  font-size: 16px;
+  color: #ffffff;
+}
+
+.lynx-select-disabled {
+  opacity: 0.5;
+}
+
+/*
+ * --- LynxDatePicker / LynxTimePicker --------------------------------------
+ * Both are a single trigger + ONE combined dialog (day/month/year, or
+ * hour/minute, side by side) — not three/two separate LynxSelects each with
+ * their own dialog. The trigger/backdrop/dialog shapes mirror LynxSelect's;
+ * `.lynx-select-list` / `.lynx-select-option` / `.lynx-select-done` above
+ * apply inside the columns and the shared Done row too.
+ */
+
+.lynx-date-picker-trigger,
+.lynx-time-picker-trigger {
+  height: 48px;
+  padding: 0 14px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  border-radius: 10px;
+  background-color: #1f2a44;
+}
+
+.lynx-date-picker-value,
+.lynx-time-picker-value {
+  font-size: 16px;
+  color: #ffffff;
+}
+
+.lynx-date-picker-trigger-open,
+.lynx-time-picker-trigger-open {
+  background-color: #29395f;
+}
+
+.lynx-date-picker-backdrop,
+.lynx-time-picker-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 100;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.55);
+}
+
+.lynx-date-picker-dialog,
+.lynx-time-picker-dialog {
+  display: flex;
+  flex-direction: column;
+  width: 85%;
+  border-radius: 12px;
+  background-color: #16203a;
+  overflow: hidden;
+}
+
+.lynx-date-picker-columns,
+.lynx-time-picker-columns {
+  display: flex;
+  flex-direction: row;
+}
+
+.lynx-date-picker-day,
+.lynx-date-picker-month,
+.lynx-date-picker-year,
+.lynx-time-picker-hour,
+.lynx-time-picker-minute {
+  flex: 1;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.lynx-date-picker-year,
+.lynx-time-picker-minute {
+  border-right: none;
+}
+
+.lynx-date-picker-disabled,
+.lynx-time-picker-disabled {
+  opacity: 0.5;
+}
+
+/*
+ * --- LynxAutocomplete ------------------------------------------------------
+ * A search dialog: trigger/backdrop/dialog mirror LynxSelect's (see above);
+ * `.lynx-select-list` / `.lynx-select-option` (rendered by the shared
+ * LynxSelectColumn inside the dialog) apply here too.
+ */
+
+.lynx-autocomplete-trigger {
+  height: 48px;
+  padding: 0 14px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  border-radius: 10px;
+  background-color: #1f2a44;
+}
+
+.lynx-autocomplete-value {
+  font-size: 16px;
+  color: #ffffff;
+}
+
+.lynx-autocomplete-trigger-open {
+  background-color: #29395f;
+}
+
+.lynx-autocomplete-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 100;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.55);
+}
+
+.lynx-autocomplete-dialog {
+  display: flex;
+  flex-direction: column;
+  width: 85%;
+  border-radius: 12px;
+  background-color: #16203a;
+  overflow: hidden;
+}
+
+.lynx-autocomplete-search {
+  height: 48px;
+  padding: 0 14px;
+  background-color: #0b1021;
+  color: #ffffff;
+  font-size: 16px;
+}
+
+/* Same unreadable-placeholder gap as `.field` in ng-forms — see that rule's
+ * comment. */
+.lynx-autocomplete-search::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/*
+ * Shown instead of `<lynx-select-column>` when the search matches nothing —
+ * a `<view>` flex container centering a child `<text>`, same split as
+ * `.lynx-select-done` / `.lynx-select-done-label` elsewhere in this file:
+ * `<text>` is a leaf element, and centering *its own* raw content by putting
+ * `display:flex`/`align-items` directly on the `<text>` didn't actually
+ * center it vertically (it rendered near the top of the box instead) —
+ * putting the flex centering on a wrapping `<view>` around the `<text>` did.
+ *
+ * `height: 240px` matches `.lynx-select-list` (below) on purpose: the dialog
+ * has no height of its own — it hugs whichever of the two is present — so
+ * without matching heights the whole dialog visibly resized every time a
+ * search went from some-results to no-results.
+ */
+.lynx-autocomplete-empty {
+  display: flex;
+  height: 240px;
+  align-items: center;
+  justify-content: center;
+}
+
+.lynx-autocomplete-empty-label {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.35);
+  text-align: center;
+}
+
+.lynx-autocomplete-disabled {
+  opacity: 0.5;
+}
+
+/* --- LynxCheckbox ---------------------------------------------------------
+ * No dialog, no backdrop — just an inline tap-to-toggle row. The label is
+ * projected content (`<ng-content>`), not a plain-string @Input — style
+ * whatever you project yourself; `.checkbox-label` here is this app's own
+ * class on the projected <text>, not part of LynxCheckbox's own class list.
+ */
+
+.lynx-checkbox {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.lynx-checkbox-box {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  background-color: #1f2a44;
+  margin-right: 12px;
+}
+
+.lynx-checkbox-box-checked {
+  background-color: #dd0031;
+}
+
+.lynx-checkbox-mark {
+  font-size: 17px;
+  color: #ffffff;
+}
+
+.lynx-checkbox-disabled {
+  opacity: 0.5;
+}
+
+.checkbox-label {
+  font-size: 16px;
+  color: #ffffff;
+}
+
+/* --- LynxRadioGroup ---------------------------------------------------------
+ * All options rendered inline, always — no trigger, no dialog. The dot's
+ * "ring" is a filled circle (background-color), matching this app's existing
+ * filled-box style for unselected controls, rather than an outlined ring.
+ */
+
+.lynx-radio-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.lynx-radio-option {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 40px;
+}
+
+.lynx-radio-dot-outer {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  border-radius: 13px;
+  background-color: #1f2a44;
+  margin-right: 12px;
+}
+
+.lynx-radio-dot-inner {
+  width: 13px;
+  height: 13px;
+  border-radius: 7px;
+  background-color: #dd0031;
+}
+
+.lynx-radio-label {
+  font-size: 16px;
+  color: #ffffff;
+}
+
+.lynx-radio-group-disabled {
+  opacity: 0.5;
+}
+
+/* --- LynxToggle -------------------------------------------------------------
+ * The thumb slides via the track's `justify-content` (flex-start ↔ flex-end),
+ * not `transform`/`left`/`right` — see toggle.ts's doc comment for why.
+ */
+
+.lynx-toggle {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.lynx-toggle-track {
+  width: 51px;
+  height: 31px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 2px;
+  border-radius: 15.5px;
+  background-color: #1f2a44;
+  margin-right: 12px;
+}
+
+.lynx-toggle-track-on {
+  justify-content: flex-end;
+  background-color: #dd0031;
+}
+
+.lynx-toggle-thumb {
+  width: 27px;
+  height: 27px;
+  border-radius: 13.5px;
+  background-color: #ffffff;
+}
+
+.lynx-toggle-disabled {
+  opacity: 0.5;
+}
+
+.toggle-label {
+  font-size: 16px;
+  color: #ffffff;
+}
+
+/* --- LynxSegmentedControl --------------------------------------------------- */
+
+.lynx-segmented-control {
+  display: flex;
+  flex-direction: row;
+  border-radius: 10px;
+  background-color: #1f2a44;
+  padding: 3px;
+}
+
+.lynx-segment {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  border-radius: 8px;
+}
+
+.lynx-segment-selected {
+  background-color: #dd0031;
+}
+
+.lynx-segment-label {
+  font-size: 15px;
+  color: #ffffff;
+}
+
+.lynx-segmented-control-disabled {
+  opacity: 0.5;
+}
+
+/* --- LynxSlider ------------------------------------------------------------- */
+
+.lynx-slider {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 32px;
+}
+
+.lynx-slider-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background-color: #1f2a44;
+  /* The thumb is positioned by `left: N%` and pulled back half its own width
+   * so its centre tracks the value; the track is the positioning context. */
+  position: relative;
+}
+
+.lynx-slider-fill {
+  height: 6px;
+  border-radius: 3px;
+  background-color: #dd0031;
+}
+
+.lynx-slider-thumb {
+  position: absolute;
+  top: -7px;
+  width: 20px;
+  height: 20px;
+  margin-left: -10px;
+  border-radius: 10px;
+  background-color: #ffffff;
+}
+
+.lynx-slider-disabled {
+  opacity: 0.5;
+}
+
+/* --- LynxStepper ------------------------------------------------------------ */
+
+.lynx-stepper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.lynx-stepper-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background-color: #1f2a44;
+}
+
+.lynx-stepper-btn-label {
+  font-size: 22px;
+  color: #ffffff;
+}
+
+.lynx-stepper-value {
+  min-width: 48px;
+  font-size: 18px;
+  color: #ffffff;
+  text-align: center;
+}
+
+.lynx-stepper-disabled {
+  opacity: 0.5;
+}

@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "lib": ["ES2020"],
+    "types": ["node"],
+    "paths": {
+      "angular-lynx": ["../runtime/dist/index.d.ts"],
+      "angular-lynx/internal/ops": ["../internal/src/ops.ts"]
+    }
+  },
+  "references": [{ "path": "../internal" }],
+  "include": ["src"]
+}

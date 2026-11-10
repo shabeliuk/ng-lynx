@@ -1,0 +1,81 @@
+/*
+ * The root view must fill the page for the flex:1 <list> below to get height.
+ * Use `height: 100%` (not just `flex: 1`): on web the Lynx page root is a plain
+ * `display:block` element, so a child's `flex:1` has no flex parent to grow into
+ * and collapses to content height — taking the <list> to 0px. `height: 100%`
+ * resolves against the page's definite height on every platform (the device
+ * screen natively, 100% of `lynx-view` on web).
+ */
+.app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #0b1021;
+  /* Static top buffer for the status bar / Dynamic Island — see
+   * hello-world's app.css for why this isn't a measured safe-area-inset
+   * value. */
+  padding-top: 56px;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: bold;
+  color: #ffffff;
+  padding: 20px 20px 0;
+}
+
+.status {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 4px 20px 16px;
+}
+
+/* The <list> needs an explicit size to scroll. */
+.list {
+  flex: 1;
+}
+
+.row {
+  flex-direction: column;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.name {
+  font-size: 17px;
+  color: #ffffff;
+}
+
+.role {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+  margin-top: 2px;
+}
+
+.bar {
+  flex-direction: row;
+}
+
+.btn {
+  flex: 1;
+  align-items: center;
+  padding: 16px;
+  background-color: #dd0031;
+}
+
+.btn-remove {
+  background-color: #1f2a44;
+}
+
+.btn-reverse {
+  background-color: #3a3f58;
+}
+
+.btn-top {
+  background-color: #1f2a44;
+}
+
+.btn-label {
+  font-size: 14px;
+  color: #ffffff;
+}

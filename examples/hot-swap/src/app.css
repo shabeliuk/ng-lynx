@@ -1,0 +1,102 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  /* Static top buffer for the status bar / Dynamic Island — see hello-world's
+   * app.css for why this isn't a measured safe-area-inset value. */
+  padding: 56px 16px 24px;
+  background-color: #0f1220;
+  min-height: 100vh;
+}
+
+.title {
+  color: #ffffff;
+  font-size: 26px;
+  font-weight: bold;
+}
+
+.subtitle {
+  color: #8b90a8;
+  font-size: 13px;
+  margin-top: 4px;
+  margin-bottom: 16px;
+}
+
+.card {
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.card.v1 {
+  background-color: #1c2135;
+  border: 1px solid #2c3450;
+}
+
+.card.v2 {
+  background-color: #0e2a22;
+  border: 1px solid #1d6b4f;
+}
+
+.card-tag {
+  color: #8b90a8;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+.v2 .card-tag {
+  color: #4cd7a2;
+}
+
+.counter {
+  background-color: #262e4a;
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.counter-v2 {
+  background-color: #124233;
+}
+
+.count {
+  color: #ffffff;
+  font-size: 34px;
+  font-weight: bold;
+}
+
+.count-v2 {
+  color: #4cd7a2;
+  font-size: 22px;
+}
+
+.hint {
+  color: #8b90a8;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.btn-row {
+  display: flex;
+  flex-direction: row;
+  margin-top: 4px;
+}
+
+.btn {
+  background-color: #3b5bdb;
+  border-radius: 10px;
+  padding: 10px 16px;
+  margin-right: 10px;
+}
+
+.btn-muted {
+  background-color: #2c3450;
+}
+
+.btn-label {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: bold;
+}

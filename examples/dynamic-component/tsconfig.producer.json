@@ -1,0 +1,6 @@
+{
+  // The dynamic component's own compilation, for lynx.config.producer.ts.
+  "extends": "./tsconfig.json",
+  "include": ["src/remote-entry.ts", "src/rspeedy-env.d.ts"],
+  "exclude": []
+}

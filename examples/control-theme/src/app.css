@@ -1,0 +1,40 @@
+/*
+ * Re-theme the whole control kit by overriding a few tokens from
+ * angular-lynx/forms/theme.css — no per-control CSS needed. Here: a warmer
+ * accent and a rounder radius. Everything else falls back to the theme's
+ * defaults.
+ */
+:root {
+  --primary: #e5484d;
+  --lynx-radius: 14px;
+  --page-bg: #0f1420;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  /* Static top buffer for the status bar / Dynamic Island — see hello-world's
+   * app.css for why this isn't a measured safe-area-inset value. */
+  padding: 56px 24px 24px;
+  height: 100%;
+  background-color: var(--page-bg);
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #f4f6fb;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #8b93a7;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #8b93a7;
+  margin-top: 6px;
+}

@@ -1,0 +1,43 @@
+# The platform APIs with no element of their own: lynxSelectRoot (grayscale the
+# page), lynxSelectUniqueID (paint the tapped box), lynxEventSource (three events
+# from run.mjs's /sse, which stays open), and LynxObject.reload (the app starts
+# over with the new init data, and still responds).
+appId: ${APP_ID}
+---
+- runFlow:
+    file: shared/open.yaml
+    env:
+      BUNDLE: main
+      READY: 'Count: 0'
+- scrollUntilVisible:
+    element: Open platform
+    direction: DOWN
+    timeout: 10000
+- tapOn: Open platform
+- extendedWaitUntil:
+    visible: Platform APIs
+    timeout: 5000
+- tapOn: Toggle grayscale
+- extendedWaitUntil:
+    visible: Colour page
+    timeout: 5000
+- takeScreenshot: platform-grayscale
+- tapOn: Toggle grayscale
+- tapOn: Box 2
+- extendedWaitUntil:
+    visible: 'Painted uid: \d+'
+    timeout: 5000
+- tapOn: Connect SSE
+- extendedWaitUntil:
+    visible: 'SSE: 3 events, last tick: tick 2'
+    timeout: 10000
+- takeScreenshot: platform
+- tapOn: Reload with data
+- extendedWaitUntil:
+    visible: 'Init data: Reloaded'
+    timeout: 15000
+- tapOn: Increment
+- extendedWaitUntil:
+    visible: 'Count: 1'
+    timeout: 5000
+- takeScreenshot: platform-reloaded

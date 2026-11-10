@@ -1,0 +1,121 @@
+/*
+ * Styling for the Three.js Water example.
+ *
+ * Lynx applies these via class selectors (same model as ReactLynx / vue-lynx).
+ * The per-vertex dots get their transform / size / colour from an inline
+ * `style="..."` set every frame by the component; this file styles the shell
+ * and the fixed bits (the dots are absolutely positioned circles).
+ */
+.app {
+  flex: 1;
+  /* Fill the whole card. The Lynx page root sizes to content by default, so
+   * `flex: 1` alone doesn't stretch this view — an explicit 100% height makes
+   * the dark background cover the screen instead of leaving the page's white
+   * showing at the bottom. */
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Static top buffer for the status bar / Dynamic Island (Lynx has no
+   * env(safe-area-inset-top) today). */
+  padding: 56px 16px 24px;
+  background-color: #05080f;
+}
+
+.header {
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+/* Single live readout: the load formula while animating, "idle" when paused.
+ * Fixed height + one line so swapping between them never shifts the layout. */
+.load {
+  margin-top: 6px;
+  height: 16px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #3ddc84;
+  text-align: center;
+}
+
+.load.idle {
+  color: rgba(255, 255, 255, 0.35);
+  font-weight: normal;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: rgba(174, 240, 255, 0.65);
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* The projection target: a fixed square box. NDC maps into these 320×320 px. */
+.stage {
+  position: relative;
+  width: 320px;
+  height: 320px;
+  border-radius: 16px;
+  background-color: #081427;
+  overflow: hidden;
+}
+
+/* Each projected vertex. Size is fixed here (so it never triggers per-frame
+ * layout); only `transform` + `background-color` are animated via the inline
+ * style the component sets each frame. 9px must match DOT in app.component.ts. */
+.dot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.controls {
+  /* Stacked, not side-by-side: Drop / Rain / Calm each on their own row, with
+   * a visible vertical gap between them (margin-top on .btn, below). Lynx's
+   * CSS engine doesn't support the `+` adjacent-sibling selector (only class /
+   * compound-class / descendant are — see docs/13-styling.md), so every .btn
+   * gets the same margin-top, including the first; this just makes the gap
+   * above the whole stack slightly larger, which reads fine. */
+  display: flex;
+  flex-direction: column;
+  /* Fixed width (matches the stage) so every button is the same size. */
+  width: 320px;
+  /* Vertical breathing room above the button stack. */
+  margin-top: 16px;
+}
+
+.btn {
+  align-items: center;
+  justify-content: center;
+  margin-top: 12px;
+  padding: 14px 0;
+  border-radius: 12px;
+  background-color: #15243d;
+}
+
+.btn.on {
+  background-color: #0a84ff;
+}
+
+.btn-label {
+  font-size: 14px;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.hint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+  text-align: center;
+}

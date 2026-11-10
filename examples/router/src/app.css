@@ -1,0 +1,104 @@
+.app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #0b1021;
+}
+
+.nav {
+  /* Both, always: Lynx doesn't default to flex (docs/13-styling.md). */
+  display: flex;
+  flex-direction: row;
+  background-color: #1f2a44;
+  /* Static top buffer for the status bar / Dynamic Island, on the nav bar
+   * itself (not .app) so its background extends through the safe area
+   * instead of leaving a page-background-colored gap above it. See
+   * hello-world's app.css for why this isn't a measured safe-area-inset
+   * value. */
+  padding-top: 56px;
+}
+
+.nav-btn {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  align-items: center;
+  padding: 16px;
+}
+
+.nav-label {
+  font-size: 14px;
+  color: #ffffff;
+}
+
+.content {
+  flex: 1;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: bold;
+  color: #ffffff;
+  margin-bottom: 12px;
+}
+
+.body {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.row {
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  background-color: #161b33;
+}
+
+.row-label {
+  font-size: 16px;
+  color: #ffffff;
+}
+
+.status {
+  font-size: 14px;
+  color: #ffce54;
+  margin-top: 8px;
+}
+
+.banner {
+  align-items: center;
+  padding: 40px;
+  border-radius: 12px;
+  background-color: #dd0031;
+}
+
+.banner-text {
+  font-size: 18px;
+  color: #ffffff;
+}
+
+/* Home scrolls, so the @defer (on viewport) block can start below the fold.
+ * A scroll-view needs a definite height (see list/app.css), and so does the
+ * component host it sits in. */
+.home-host,
+.home-scroll {
+  height: 100%;
+}
+
+.home-spacer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 900px;
+}
+
+.banner-waiting {
+  background-color: #39405a;
+}

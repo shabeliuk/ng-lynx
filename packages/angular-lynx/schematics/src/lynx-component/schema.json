@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "AngularLynxComponent",
+  "title": "Generate a standalone Angular component using typed Lynx elements",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Component name, e.g. product-card or ProductCard.",
+      "$default": {
+        "$source": "argv",
+        "index": 0
+      }
+    },
+    "path": {
+      "type": "string",
+      "description": "Directory to create the component in.",
+      "default": "src"
+    },
+    "flat": {
+      "type": "boolean",
+      "description": "Create the component file directly in --path instead of its own subfolder.",
+      "default": true
+    },
+    "skipCss": {
+      "type": "boolean",
+      "description": "Do not generate a companion .css file.",
+      "default": false
+    }
+  },
+  "required": ["name"]
+}

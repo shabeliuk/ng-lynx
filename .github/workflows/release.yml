@@ -1,0 +1,82 @@
+name: Release
+
+# Publish angular-lynx and create-angular-lynx to npm when a GitHub Release is
+# published. The release's tag must match the version in both package.json files.
+on:
+  release:
+    types: [published]
+  # Allow a manual dry run (packs the tarball, does not publish).
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Pack only, do not publish'
+        type: boolean
+        default: true
+
+# `id-token: write` is required for npm provenance (a signed, verifiable link
+# from the published package back to this workflow run + commit).
+permissions:
+  contents: read
+  id-token: write
+
+# Opt out of the install-time telemetry `@openuidev/lang-core` reports from its
+# `postinstall` (a transitive dependency of `@lynx-js/genui`). Same setting as
+# ci.yml — see its comment and docs/39-lynx-4-1.md.
+env:
+  DO_NOT_TRACK: '1'
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build angular-lynx
+        run: pnpm --filter angular-lynx build
+
+      - name: Typecheck and verify
+        run: |
+          pnpm --filter angular-lynx typecheck
+          pnpm --filter angular-lynx verify:all
+
+      # Guard: the published versions must match the release tag (e.g. tag
+      # `v0.1.0` ⇒ package version `0.1.0`). Skipped for manual dispatch.
+      - name: Check versions match tag
+        if: github.event_name == 'release'
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME#v}"
+          for pkg in angular-lynx create-angular-lynx; do
+            PKG_VERSION="$(node -p "require('./packages/$pkg/package.json').version")"
+            if [ "$PKG_VERSION" != "$TAG" ]; then
+              echo "::error::$pkg version ($PKG_VERSION) != release tag ($TAG)"
+              exit 1
+            fi
+          done
+
+      - name: Publish (with provenance)
+        if: github.event_name == 'release' || inputs.dry-run == false
+        run: |
+          (cd packages/angular-lynx && npm publish --provenance --access public)
+          (cd packages/create-angular-lynx && npm publish --provenance --access public)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Dry run (pack only)
+        if: github.event_name == 'workflow_dispatch' && inputs.dry-run == true
+        run: |
+          (cd packages/angular-lynx && npm pack --dry-run)
+          (cd packages/create-angular-lynx && npm pack --dry-run)

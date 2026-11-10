@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <defs>
+    <style>
+      .fur { fill: #d9a066; }
+      .fur-dark { fill: #8a5a2b; }
+      .tuft { fill: #3b2a1e; }
+      .inner { fill: #f3c9a8; }
+      .muzzle { fill: #f6e3c8; }
+      .eye { fill: #f4e471; }
+      .pupil { fill: #2b1d14; }
+      .nose { fill: #b67e6d; }
+    </style>
+  </defs>
+  <path class="fur" d="M38 96 L56 22 L98 70 Z"/>
+  <path class="fur" d="M 162,96 L 144,22 L 102,70 Z"/>
+  <path class="inner" d="M50 84 L60 42 L86 70 Z"/>
+  <path class="inner" d="M 150,84 L 140,42 L 114,70 Z"/>
+  <path class="tuft" d="M56 22 L50 2 L64 20 Z"/>
+  <path class="tuft" d="M 144,22 L 150,2 L 136,20 Z"/>
+  <path class="fur" d="M100 48 C150 48 170 82 170 116 C170 132 186 150 176 168 C160 160 150 176 132 176 C120 186 80 186 68 176 C50 176 40 160 24 168 C14 150 30 132 30 116 C30 82 50 48 100 48 Z"/>
+  <path class="fur-dark" d="M90 60 L100 82 L110 60 Z"/>
+  <path class="fur-dark" d="M64 70 L74 86 L80 68 Z"/>
+  <path class="fur-dark" d="M136 70 L126 86 L120 68 Z"/>
+  <circle class="muzzle" cx="82" cy="146" r="24"/>
+  <circle class="muzzle" cx="118" cy="146" r="24"/>
+  <circle class="eye" cx="74" cy="108" r="13"/>
+  <circle class="eye" cx="126" cy="108" r="13"/>
+  <path class="pupil" d="M74 97 C79 104 79 112 74 119 C69 112 69 104 74 97 Z"/>
+  <path class="pupil" d="M126 97 C131 104 131 112 126 119 C121 112 121 104 126 97 Z"/>
+  <path class="nose" d="M90 128 L110 128 L100 140 Z"/>
+</svg>

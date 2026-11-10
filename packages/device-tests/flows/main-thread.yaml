@@ -1,0 +1,26 @@
+# A worklet bound to a tap reports back with runOnBackground, and runOnMainThread
+# returns a value across the threads.
+appId: ${APP_ID}
+---
+- runFlow:
+    file: shared/open.yaml
+    env:
+      BUNDLE: main
+      READY: 'Count: 0'
+- tapOn: Open main thread
+- extendedWaitUntil:
+    visible: 'Main taps: 0'
+    timeout: 5000
+- tapOn: Tap on main thread
+- extendedWaitUntil:
+    visible: 'Main taps: 1'
+    timeout: 5000
+- tapOn: Tap on main thread
+- extendedWaitUntil:
+    visible: 'Main taps: 2'
+    timeout: 5000
+- tapOn: Call main thread
+- extendedWaitUntil:
+    visible: 'Result: 42'
+    timeout: 5000
+- takeScreenshot: main-thread

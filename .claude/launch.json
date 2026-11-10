@@ -1,0 +1,257 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "hello-world",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "examples/hello-world",
+      "port": 3000
+    },
+    {
+      "name": "worklet",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "examples/worklet",
+      "port": 3005
+    },
+    {
+      "name": "ng-forms",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "examples/ng-forms",
+      "port": 3006
+    },
+    {
+      "name": "threejs-water",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "examples/threejs-water",
+      "port": 3001
+    },
+    {
+      "name": "threejs-rpg-skeleton",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "examples/threejs-rpg-skeleton",
+      "port": 3002
+    },
+    {
+      "name": "wasm-life",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "examples/wasm-life",
+      "port": 3003
+    },
+    {
+      "name": "router",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "examples/router",
+      "port": 3000
+    },
+    {
+      "name": "genui",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "examples/genui",
+      "port": 3000
+    },
+    {
+      "name": "genui-ios-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "ios:dev"
+      ],
+      "cwd": "examples/genui",
+      "port": 5969
+    },
+    {
+      "name": "primitives",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "examples/primitives",
+      "port": 3008
+    },
+    {
+      "name": "virtual-list",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "examples/virtual-list",
+      "port": 3009
+    },
+    {
+      "name": "hot-swap",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "examples/hot-swap",
+      "port": 3010
+    },
+    {
+      "name": "accessibility",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "examples/accessibility",
+      "port": 3011
+    },
+    {
+      "name": "i18n",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "examples/i18n",
+      "port": 3012
+    },
+    {
+      "name": "i18n-uk",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "rspeedy",
+        "dev",
+        "--config",
+        "lynx.config.uk.ts"
+      ],
+      "cwd": "examples/i18n",
+      "port": 3013
+    },
+    {
+      "name": "styling",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "examples/styling",
+      "port": 3014
+    },
+    {
+      "name": "tailwind",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "examples/tailwind",
+      "port": 3015
+    },
+    {
+      "name": "control-theme",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "examples/control-theme",
+      "port": 3016
+    },
+    {
+      "name": "ui-gallery",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "examples/ui-gallery",
+      "port": 3017
+    },
+    {
+      "name": "dynamic-component",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "examples/dynamic-component",
+      "port": 3018
+    },
+    {
+      "name": "list",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "examples/list",
+      "port": 3004
+    },
+    {
+      "name": "lynx-forms",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "examples/lynx-forms",
+      "port": 3019
+    },
+    {
+      "name": "projection",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "examples/projection",
+      "port": 3020
+    },
+    {
+      "name": "media",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "examples/media",
+      "port": 3021
+    },
+    {
+      "name": "responsive",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "examples/responsive",
+      "port": 3000
+    }
+  ]
+}

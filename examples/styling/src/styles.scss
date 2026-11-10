@@ -1,0 +1,114 @@
+// Sass features exercised here — each compiles away to plain CSS *before* the
+// Lynx stylesheet compiler ever sees it, so all of them work regardless of
+// what Lynx's CSS engine itself supports (see docs/13-styling.md#sass):
+//
+//  - variables ($bg, $accent, …)
+//  - nesting (.card { .card-title { … } })
+//  - a mixin with @include
+//  - a built-in color function (color.adjust)
+//  - arithmetic ($space * 2)
+
+@use 'sass:color';
+
+$bg: #0f1420;
+$card-bg: #1b2233;
+$accent: #e5484d;
+$text: #f4f6fb;
+$muted: #8b93a7;
+$space: 8px;
+$radius: 14px;
+
+// The card's colours are computed from these at build time, so the output CSS
+// holds plain hex values. Light blue from a mid blue, and the body's green
+// from a light green, darkened just enough to read on the light blue.
+$blue: #3b82f6;
+$light-green: #4ade80;
+$card-light: color.scale($blue, $lightness: 75%);
+
+// A mixin proving @include expands inline. Lynx needs BOTH display:flex and an
+// explicit flex-direction (docs/13-styling.md) — a mixin is the natural way to
+// stop repeating that pair.
+@mixin col($gap: $space) {
+  display: flex;
+  flex-direction: column;
+  // Lynx supports `gap` on flex containers.
+  gap: $gap;
+}
+
+.app {
+  @include col($space * 2);
+  // Top: the status-bar buffer the other examples use (hello-world's app.css).
+  padding: $space * 7 $space * 3 $space * 3;
+  background-color: $bg;
+  height: 100%;
+}
+
+.card {
+  @include col;
+  padding: $space * 2;
+  background-color: $card-light;
+  border-radius: $radius;
+
+  // Nesting: compiles to `.card .card-title`.
+  .card-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: color.scale($blue, $lightness: -60%);
+  }
+
+  .card-body {
+    font-size: 15px;
+    font-weight: 600;
+    // Computed at build time → a literal hex in the output, no runtime colour math.
+    color: color.adjust($light-green, $lightness: -22%);
+  }
+}
+
+.pill {
+  @include col;
+  align-items: center;
+  padding: $space $space * 2;
+  background-color: $accent;
+  border-radius: 999px;
+
+  .pill-label {
+    font-size: 15px;
+    font-weight: 600;
+    color: $text;
+  }
+}
+
+// A parent-state rule (docs/13-styling.md): the class lands on `.switch`, and
+// these style its children. Nesting compiles them to `.switch-on .switch-knob`
+// and `.switch-on .switch-label`, after the base rules so they win.
+.switch {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: $space * 1.5;
+  padding: $space * 1.5 $space * 2;
+  background-color: $card-bg;
+  border-radius: $radius;
+
+  .switch-knob {
+    width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    background-color: $muted;
+  }
+
+  .switch-label {
+    font-size: 15px;
+    color: $muted;
+  }
+}
+
+.switch-on {
+  .switch-knob {
+    background-color: $accent;
+  }
+
+  .switch-label {
+    color: $text;
+  }
+}

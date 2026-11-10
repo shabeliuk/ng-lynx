@@ -1,0 +1,20 @@
+{
+  "maestro": {
+    "version": "2.11.0",
+    "asset": "maestro.zip",
+    "sha256": "5384593cb4e7a106489e75a821d157dd43f4e438df6bc308b72e82c685e1283a"
+  },
+  "explorer": {
+    "version": "4.2.0",
+    "ios": {
+      "asset": "LynxExplorer-arm64.app.tar.gz",
+      "sha256": "02c8e4fabc77ff80827f52fb0637e194ad516dd0a1c10786cadb5bdecc7073f2",
+      "appId": "com.lynx.LynxExplorer"
+    },
+    "android": {
+      "asset": "LynxExplorer-noasan-release.apk",
+      "sha256": "5525a2c64316145bc597f263e67d446751be60396f2395b9c375185ac9d3fa93",
+      "appId": "com.lynx.explorer"
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM"],
+    "strict": true,
+    "experimentalDecorators": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "useDefineForClassFields": false
+  },
+  "angularCompilerOptions": {
+    "strictTemplates": true
+  },
+  "include": ["src"],
+  // The host never imports the dynamic component: it's a separate bundle, with
+  // its own tsconfig.producer.json. Left in, every host build warns they're unused.
+  "exclude": ["src/remote-entry.ts", "src/remote-card.component.ts"]
+}

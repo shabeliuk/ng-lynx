@@ -1,0 +1,223 @@
+/*
+ * Base styles first: they're what an engine without @media shows (the web
+ * preview), so they make a complete light-theme, single-column page on their
+ * own. The @media blocks below only override.
+ *
+ * The @media rules put one class on the element they style, which works with
+ * any build. The host theme at the end keys on the page's class instead, so
+ * it relies on enableCSSInvalidation (pluginAngularLynx's default).
+ */
+
+.page {
+  height: 100%;
+  background-color: #f4f6fb;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  /* Static top buffer for the status bar / Dynamic Island — see hello-world's
+   * app.css for why this isn't a measured safe-area-inset value. */
+  padding: 56px 20px 48px 20px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.fallback-text {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 14px;
+  background-color: #ffffff;
+}
+
+.card-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.card-body {
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+}
+
+.chip {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background-color: #e5e7eb;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.tiles {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  height: 56px;
+  margin-bottom: 10px;
+  padding-left: 14px;
+  border-radius: 10px;
+  background-color: #dbeafe;
+}
+
+/* Columns come from the measured size (app.component.ts), not @media, so they
+ * follow an iOS rotation too. */
+.tile-half {
+  width: 49%;
+}
+
+.tile-third {
+  width: 32%;
+}
+
+.tile-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e3a8a;
+}
+
+/*
+ * `all` always matches: if @media works at all, the note goes away. Collapsed
+ * rather than `display: none`: on engine 4.1 (Lynx Explorer, iOS simulator) a
+ * hidden <text>, or a <text> inside a hidden <view>, still had its text painted
+ * at the parent's top-left corner. A zero-height clipping wrapper leaves the
+ * text laid out normally and simply cut off.
+ */
+@media all {
+  .fallback {
+    height: 0;
+    overflow: hidden;
+  }
+}
+
+@media (orientation: portrait) {
+  .chip-portrait {
+    background-color: #2563eb;
+    color: #ffffff;
+  }
+}
+
+@media (orientation: landscape) {
+  .chip-landscape {
+    background-color: #2563eb;
+    color: #ffffff;
+  }
+}
+
+@media (max-width: 599px) {
+  .chip-narrow {
+    background-color: #2563eb;
+    color: #ffffff;
+  }
+}
+
+@media (min-width: 600px) {
+  .chip-wide {
+    background-color: #2563eb;
+    color: #ffffff;
+  }
+}
+
+@media (max-resolution: 2.99dppx) {
+  .chip-2x {
+    background-color: #2563eb;
+    color: #ffffff;
+  }
+}
+
+@media (min-resolution: 3dppx) {
+  .chip-3x {
+    background-color: #2563eb;
+    color: #ffffff;
+  }
+}
+
+/*
+ * The engine's colour scheme is `light` until the host app reports the
+ * system's (Lynx's UpdateColorScheme), so whether this ever matches depends
+ * on the host.
+ */
+@media (prefers-color-scheme: light) {
+  .chip-light {
+    background-color: #2563eb;
+    color: #ffffff;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .chip-dark {
+    background-color: #2563eb;
+    color: #ffffff;
+  }
+
+  .page {
+    background-color: #0f1420;
+  }
+
+  .card {
+    background-color: #1b2233;
+  }
+
+  .title,
+  .card-title {
+    color: #f4f6fb;
+  }
+
+  .card-body {
+    color: #9aa3b8;
+  }
+}
+
+/*
+ * The host theme (app.component.ts). The dark palette is the same as the
+ * prefers-color-scheme block above, keyed on a class the page gets from the
+ * host's global props. The class lands after the cards exist, and Lynx
+ * re-matches these descendant rules because enableCSSInvalidation is on.
+ */
+.chip-on {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
+.theme-dark {
+  background-color: #0f1420;
+}
+
+.theme-dark .card {
+  background-color: #1b2233;
+}
+
+.theme-dark .title,
+.theme-dark .card-title {
+  color: #f4f6fb;
+}
+
+.theme-dark .card-body {
+  color: #9aa3b8;
+}

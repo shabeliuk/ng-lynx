@@ -1,0 +1,102 @@
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { bindWorklet, LynxGesture, type LynxGestures } from 'angular-lynx';
+import { LYNX_ELEMENTS } from 'angular-lynx/elements';
+
+import { BackButtonComponent } from './back-button.component.js';
+import { endOnUpdate, failOnStart, recordPhase } from './worklets.js';
+
+/** `onBegin` etc. for each phase, each reporting `<box>:<prefix><phase>`. */
+const phases = (label: string, names: string[], prefix = '') =>
+  Object.fromEntries(
+    names.map((phase) => [
+      `on${phase[0]!.toUpperCase()}${phase.slice(1)}`,
+      bindWorklet(recordPhase, { label, phase: prefix + phase }),
+    ]),
+  );
+
+/**
+ * Gesture types beyond pan, a relation, and `ctx.gesture.fail()` / `end()`. Each box
+ * logs the phases its detectors fire, with repeats collapsed (`update×5`), so a flow
+ * can check the order.
+ */
+@Component({
+  selector: 'app-gesture-lab',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [BackButtonComponent, LYNX_ELEMENTS, LynxGesture],
+  template: `
+    <view class="page">
+      <app-back-button></app-back-button>
+      @for (box of boxes; track box.key) {
+        <view
+          class="lab-box"
+          [lynxGesture]="box.gestures"
+          [attr.accessibility-label]="box.key + ' box'"
+          (mainThreadCallback)="record($event)"
+        >
+          <text class="button-label">{{ box.key }}</text>
+        </view>
+        <text class="lab-log" [flatten]="false">{{ box.key }}: {{ logs()[box.key] || '-' }}</text>
+      }
+      <view class="button" accessibility-label="Clear log" (bindtap)="logs.set({})">
+        <text class="button-label">Clear log</text>
+      </view>
+    </view>
+  `,
+})
+export class GestureLabComponent {
+  protected readonly boxes: { key: string; gestures: LynxGestures }[] = [
+    { key: 'tap', gestures: { tap: { type: 'tap', callbacks: phases('tap', ['begin', 'start', 'end']) } } },
+    {
+      key: 'longpress',
+      gestures: { longpress: { type: 'longpress', callbacks: phases('longpress', ['begin', 'start', 'end']) } },
+    },
+    {
+      // A tap that waits for the long press to fail: a quick tap is a tap, a hold only a long press.
+      key: 'race',
+      gestures: {
+        tap: { type: 'tap', callbacks: phases('race', ['start'], 'tap-'), waitFor: ['hold'] },
+        hold: { type: 'longpress', callbacks: phases('race', ['start'], 'hold-') },
+      },
+    },
+    {
+      key: 'fail',
+      gestures: {
+        pan: {
+          type: 'pan',
+          callbacks: {
+            ...phases('fail', ['update', 'end']),
+            onStart: bindWorklet(failOnStart, { label: 'fail', phase: 'start' }),
+          },
+        },
+      },
+    },
+    {
+      key: 'end',
+      gestures: {
+        pan: {
+          type: 'pan',
+          callbacks: {
+            ...phases('end', ['start', 'end']),
+            onUpdate: bindWorklet(endOnUpdate, { label: 'end', phase: 'update' }),
+          },
+        },
+      },
+    },
+  ];
+
+  protected readonly logs = signal<Record<string, string>>({});
+
+  /** `"<box>:<phase>"` from any box's worklets. */
+  protected record(message: unknown): void {
+    const [box, entry] = String(message).split(':') as [string, string];
+    const log = (this.logs()[box] ?? '').split(',').filter(Boolean);
+    const last = log.at(-1);
+    if (last?.replace(/×\d+$/, '') === entry) {
+      log[log.length - 1] = `${entry}×${Number(last.split('×')[1] ?? 1) + 1}`;
+    } else {
+      log.push(entry);
+    }
+    this.logs.set({ ...this.logs(), [box]: log.join(',') });
+  }
+}

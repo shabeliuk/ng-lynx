@@ -1,0 +1,27 @@
+{
+  "name": "angular-lynx-tailwind",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "rspeedy dev",
+    "build": "rspeedy build",
+    "preview": "rspeedy preview"
+  },
+  "dependencies": {
+    "@angular/core": ">=21.0.0",
+    "@angular/compiler": ">=21.0.0",
+    "angular-lynx": "workspace:*"
+  },
+  "devDependencies": {
+    "@lynx-js/qrcode-rsbuild-plugin": "^0.7.3",
+    "@lynx-js/rspeedy": "^0.18.4",
+    "@lynx-js/tailwind-preset": "^0.6.0",
+    "rsbuild-plugin-tailwindcss": "^0.2.4",
+    "tailwindcss": "^3.4.0",
+    "typescript": "~5.9.0"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

@@ -1,0 +1,55 @@
+/*
+ * Lynx applies these via its CSS engine using class selectors. Keep styles in
+ * CSS files imported from index.ts (component `styles: [...]` are not
+ * projected on Lynx). Flexbox is the default layout; dimensions need units.
+ */
+.app {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  /* Static status-bar buffer — Lynx exposes no safe-area inset yet. */
+  padding: 56px 24px 24px;
+  background-color: #0b1021;
+}
+
+.banner {
+  margin-bottom: 32px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 4px;
+}
+
+.counter {
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  border-radius: 16px;
+  background-color: #dd0031;
+}
+
+.count {
+  font-size: 48px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.hint {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 8px;
+}
+
+.parity {
+  margin-top: 16px;
+  font-size: 16px;
+  color: #ffce54;
+}

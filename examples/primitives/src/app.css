@@ -1,0 +1,443 @@
+/*
+ * The root <scroll-view> needs an explicit height to scroll — see list/app.css
+ * for the full explanation of why `height: 100%` (not `flex: 1`) is required
+ * on web.
+ */
+.app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #0b1021;
+  padding: 56px 20px 40px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+
+.section {
+  flex-direction: column;
+  margin-top: 24px;
+  padding: 16px;
+  border-radius: 12px;
+  background-color: #131a33;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.section-note {
+  font-size: 11px;
+  margin-top: 4px;
+}
+.section-note.verified {
+  color: #4fc3f7;
+}
+.section-note.native-only {
+  color: #ffce54;
+}
+.section-note.desktop-only {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.section-body {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 8px;
+}
+
+.status {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+  margin-top: 8px;
+}
+
+/*
+ * Two button containers, one spacing value. `.btn-row` was previously missing
+ * `display: flex`, so `flex-direction: row` was silently a no-op and every
+ * group in this file stacked with its buttons touching — the spacing fix that
+ * originally landed only on the <svg> section is now the shared default here.
+ *
+ * Spacing lives on the container, not on `.btn`, so a button dropped outside
+ * either container (the overlay card's Close) doesn't carry a stray margin.
+ */
+.btn-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-top: 10px;
+}
+.btn-row .btn {
+  margin-right: 10px;
+}
+
+/* Vertical variant, for groups whose labels are too long to sit side by side
+ * at phone width (the <frame> loaders, the svg file pickers). */
+.btn-stack {
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+}
+.btn-stack .btn {
+  margin-bottom: 10px;
+}
+
+.btn {
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background-color: #dd0031;
+}
+.btn-muted {
+  background-color: #3a3f58;
+}
+.btn-label {
+  font-size: 12px;
+  color: #ffffff;
+}
+
+/* --- svg --- */
+.svg-demo {
+  margin-top: 10px;
+  width: 100%;
+  height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Sizing only — used together with `.btn-row`, which supplies the layout and
+ * the shared spacing. These two are deliberately chunkier than the rest. */
+.svg-radius-controls .btn {
+  padding: 14px 22px;
+}
+.svg-radius-controls .btn-label {
+  font-size: 14px;
+}
+
+/* --- video --- */
+.video-demo {
+  margin-top: 10px;
+  width: 100%;
+  height: 120px;
+  background-color: #1f2a44;
+}
+
+/* --- frame --- */
+.frame-demo {
+  margin-top: 10px;
+  width: 100%;
+  height: 140px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* --- overlay --- */
+/*
+ * Lynx's documented shape for <overlay> (lynxjs.org, "<overlay>"): the overlay
+ * itself is `position: fixed`, and its one direct child is a backdrop sized
+ * `width: 100%; height: 100%` with `z-index: 0`, which the dialog sits inside.
+ *
+ * This demo used to do the opposite — the card itself was the fixed child,
+ * never wrapped in a full-screen layer, because a wrapper once froze the app
+ * on device. That freeze came from the stranded child (see the NOTE at the top
+ * of app.component.ts), not the backdrop. And on Android (Explorer 4.1) the
+ * fixed card wasn't part of the overlay's hit-testing at all: every touch
+ * landed on the <overlay> itself, so Close could never be tapped. The
+ * backdrop also gives the user a way out: tapping it closes the overlay.
+ */
+.overlay-demo {
+  position: fixed;
+  overflow: visible;
+}
+.overlay-backdrop {
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+.overlay-card {
+  width: 84%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  border-radius: 12px;
+  background-color: #1f2a44;
+}
+
+/* Wraps the <refresh> box so a touch inside it can disable the page
+ * scroller — see the template comment. `width: 100%` because a flex child
+ * only stretches if nothing else constrains it, and the wrapper otherwise
+ * shrink-wrapped, leaving the demo narrower than its section. */
+.refresh-wrap {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.overlay-card-text {
+  font-size: 13px;
+  color: #ffffff;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+/* --- refresh --- */
+/* `display: flex` + an explicit column direction were both missing, so the
+ * header and the scrolling body weren't laid out as a column at all — on
+ * device the `flex: 1` body swallowed the box and left only its one line of
+ * text visible. */
+.refresh-demo {
+  margin-top: 10px;
+  width: 100%;
+  height: 240px;
+  display: flex;
+  flex-direction: column;
+  /* Real device: `<refresh>` clips its own scrollable body natively. Web
+   * preview: it (and `<refresh-header>`) render as inert boxes with no
+   * built-in clipping — `overflow: hidden` here just keeps the demo tidy. */
+  overflow: hidden;
+}
+/* No `width: 100%` — as a column child it stretches on its own, and forcing
+ * it made the web preview (which lays these out as a row) give the header
+ * half the box. */
+.refresh-header-demo {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background-color: #1f2a44;
+}
+/* Loading state is colour-coded as well as worded, so a glance at the top of
+ * the list tells you a refresh is in flight. */
+.refresh-header-demo.refresh-header-loading {
+  background-color: #dd0031;
+}
+.refresh-header-text {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+.refresh-header-loading .refresh-header-text {
+  color: #ffffff;
+  font-weight: bold;
+}
+/*
+ * Explicit height, NOT `flex: 1`. `flex: 1` only produces a bounded scroller
+ * if the parent hands down a definite height, and `<refresh>` evidently
+ * doesn't: on device the body grew to fit all its rows instead of scrolling
+ * inside a fixed box, so the newest rows pushed the older ones out of reach —
+ * "I can't scroll down to the oldest one". A scroll-view with no bound has
+ * nothing to scroll. See docs/08-lists.md for the same class of gotcha.
+ */
+.refresh-body {
+  width: 100%;
+  /* Explicit, and sized to fill what the header leaves of .refresh-demo's
+   * 240px (header ≈ 40px). NOT `flex: 1` — see the note above. */
+  height: 200px;
+  padding: 12px;
+}
+.refresh-body-text {
+  font-size: 13px;
+  color: #ffffff;
+  padding: 6px 0;
+}
+
+/* --- title-bar-view --- */
+.titlebar-demo {
+  margin-top: 10px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  background-color: #1f2a44;
+  border-radius: 8px;
+}
+.titlebar-text {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* --- viewpager --- */
+.viewpager-demo {
+  margin-top: 10px;
+  height: 80px;
+  /* See .refresh-demo's comment — same inert-in-web-preview clipping gap. */
+  overflow: hidden;
+}
+.vp-item {
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.vp-item-text {
+  font-size: 14px;
+  color: #ffffff;
+}
+
+/* --- scroll-coordinator --- */
+.sc-demo {
+  margin-top: 10px;
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  /* See .refresh-demo's comment — same inert-in-web-preview clipping gap. */
+  overflow: hidden;
+}
+/* Out of flow, as Lynx documents it; the toolbar lies over its top 32px, so
+ * the label goes at the bottom. */
+.sc-header {
+  position: absolute;
+  width: 100%;
+  height: 76px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 10px;
+  background-color: #dd0031;
+}
+.sc-header-text {
+  font-size: 12px;
+  color: #ffffff;
+}
+.sc-slot {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.sc-slot-scroll {
+  flex: 1;
+}
+.sc-row {
+  font-size: 13px;
+  color: #ffffff;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.sc-toolbar {
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  background-color: #1f2a44;
+}
+.sc-toolbar-text {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* --- blur-view --- */
+/* Backdrop text sits at the top, the blur panel below it — they were both
+ * centred and rendered on top of each other, which read as garbled text. */
+.blur-backdrop {
+  position: relative;
+  margin-top: 10px;
+  height: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 14px;
+  border-radius: 8px;
+  background-image: linear-gradient(90deg, #dd0031, #4fc3f7, #ffce54);
+}
+.blur-backdrop-text {
+  font-size: 12px;
+  color: #ffffff;
+}
+/* High-contrast text that runs under the blur panel and out past both its
+ * edges: blurred where the panel covers it, sharp either side. The gradient
+ * alone looks the same blurred or not, so on Android (Explorer 4.1) the demo
+ * couldn't show whether the blur worked. */
+.blur-backdrop-detail {
+  margin-top: 36px;
+  font-size: 15px;
+  font-weight: bold;
+  color: #10131c;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+/*
+ * Overlaps the gradient rather than sitting under it — a blur you can't see
+ * through isn't demonstrating anything. An earlier note here said absolute
+ * positioning was unusable because the 4 longhand insets get minified into
+ * the `inset` shorthand Lynx rejects; setting only `top`/`left` (never all
+ * four) avoids that collapse entirely, so the overlap works.
+ *
+ * The translucent white is deliberate: `<blur-view>` blurs what's *behind*
+ * it, so an opaque surface hides the very thing being blurred. Device
+ * feedback was that the mounted element read as an almost-black block.
+ */
+.blur-demo {
+  position: absolute;
+  top: 62px;
+  left: 15%;
+  width: 70%;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+.blur-demo-text {
+  font-size: 12px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+/* --- webview --- */
+.webview-demo {
+  margin-top: 10px;
+  width: 100%;
+  height: 160px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.footer {
+  align-items: center;
+  padding: 24px 0;
+}
+.footer-text {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+/* The `src`-driven <svg> (a real .svg file from public/media). */
+.svg-file-demo {
+  width: 100%;
+  height: 120px;
+  margin-top: 6px;
+}
+
+.section-sub {
+  font-size: 12px;
+  color: #8aa0c6;
+  margin-top: 10px;
+}
+
+.mono {
+  font-size: 12px;
+  color: #cfe0ff;
+}

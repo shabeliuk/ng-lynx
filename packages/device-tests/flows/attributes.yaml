@@ -1,0 +1,36 @@
+# The typed attributes and events the engine has to accept: `(longpress)` fires,
+# `initial-scroll-index` lands, `default-value` shows, `<markdown>` draws, `<filter-image>`
+# loads, and run.mjs fails the run if any of the others makes the engine log an error.
+appId: ${APP_ID}
+---
+- runFlow:
+    file: shared/open.yaml
+    env:
+      BUNDLE: main
+      READY: 'Count: 0'
+- scrollUntilVisible:
+    element: Open attributes
+    direction: DOWN
+    timeout: 10000
+- tapOn: Open attributes
+- extendedWaitUntil:
+    visible: 'Long presses: 0'
+    timeout: 5000
+- longPressOn: Long press me
+- extendedWaitUntil:
+    visible: 'Long presses: 1'
+    timeout: 5000
+- extendedWaitUntil:
+    visible: 'Markdown drawn: yes'
+    timeout: 5000
+- extendedWaitUntil:
+    visible: 'Filter image loaded: yes'
+    timeout: 5000
+- assertVisible: Preset
+- assertVisible: Row 40
+- assertNotVisible: Row 0
+- takeScreenshot: attributes
+- tapOn: Go back
+- extendedWaitUntil:
+    visible: 'Count: 0'
+    timeout: 5000

@@ -1,0 +1,14 @@
+# In a production build with no lazy chunks, lynxAssetUrl() once left every asset URL
+# relative. The image's own load event reports here; run.mjs also checks the server
+# saw the request.
+appId: ${APP_ID}
+---
+- runFlow:
+    file: shared/open.yaml
+    env:
+      BUNDLE: assets
+      READY: Assets page
+- extendedWaitUntil:
+    visible: Image loaded
+    timeout: 10000
+- takeScreenshot: assets

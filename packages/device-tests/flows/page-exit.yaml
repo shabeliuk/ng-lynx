@@ -1,0 +1,29 @@
+# Leaving the page. This once threw `(null) is not a function`, and no destroy hook
+# ran. run.mjs checks the engine logged no error and, on Android, that the hook ran.
+appId: ${APP_ID}
+---
+- runFlow:
+    file: shared/open.yaml
+    env:
+      BUNDLE: main
+      READY: 'Count: 0'
+- tapOn: Increment
+- extendedWaitUntil:
+    visible: 'Count: 1'
+    timeout: 5000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      # Explorer's back button has no accessibility label.
+      - tapOn:
+          point: 8%,8%
+- extendedWaitUntil:
+    notVisible: 'Count: 1'
+    timeout: 10000
+- takeScreenshot: page-exit

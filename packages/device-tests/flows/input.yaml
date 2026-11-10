@@ -1,0 +1,22 @@
+# Typing on the native keyboard reaches `(input)`, and Return fires `(confirm)`.
+appId: ${APP_ID}
+---
+- runFlow:
+    file: shared/open.yaml
+    env:
+      BUNDLE: main
+      READY: 'Count: 0'
+- tapOn: Open input
+- extendedWaitUntil:
+    visible: 'Typed: '
+    timeout: 5000
+- tapOn: Name field
+- inputText: Ada
+- extendedWaitUntil:
+    visible: 'Typed: Ada'
+    timeout: 5000
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: 'Confirmed: Ada'
+    timeout: 5000
+- takeScreenshot: input

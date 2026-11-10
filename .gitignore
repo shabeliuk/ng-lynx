@@ -1,0 +1,32 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+dist-*/
+.rspeedy/
+*.tsbuildinfo
+
+# verification harness bundle (generated)
+**/verify/out.mjs
+
+# incidental npm lockfile (this workspace uses pnpm)
+package-lock.json
+
+# local secrets (e.g. examples/genui's LLM API key) — never commit
+.env.local
+.env.*.local
+
+# examples/genui's opt-in LLM exchange log (PLANNER_DEBUG_LOG=true)
+.planner-logs/
+
+# logs / OS
+*.log
+.DS_Store
+
+# Source media originals (40 MB of 4K/full-res files). Right-sized copies are
+# committed under examples/*/public/media/ — see docs/13-styling.md.
+/assets/
+
+# Local planning notes, never published
+to-do-list.md

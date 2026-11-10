@@ -1,0 +1,27 @@
+{
+  "name": "__APP_NAME__",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "rspeedy dev",
+    "build": "rspeedy build",
+    "preview": "rspeedy preview"
+  },
+  "dependencies": {
+    "@angular/core": "^22.0.0",
+    "@angular/compiler": "^22.0.0",
+    "@angular/forms": "^22.0.0",
+    "angular-lynx": "^0.0.1"
+  },
+  "devDependencies": {
+    "@angular/compiler-cli": "^22.0.0",
+    "@lynx-js/qrcode-rsbuild-plugin": "^0.7.3",
+    "@lynx-js/rspeedy": "^0.18.4",
+    "@ngtools/webpack": "^22.0.0",
+    "typescript": "~6.0.0"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

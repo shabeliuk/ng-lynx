@@ -1,0 +1,13 @@
+# Init data from the host reaches `lynxInitData()`, through a data processor. Explorer
+# always passes `mockData`. The engine only hands it to `lynx.getApp()._params`, which
+# neither a headless mock nor the web preview can show.
+appId: ${APP_ID}
+---
+- runFlow:
+    file: shared/open.yaml
+    env:
+      BUNDLE: main
+      READY: 'Count: 0'
+- assertVisible: 'Init data: Hello Lynx Explorer'
+- assertVisible: 'Processor: Hello Lynx Explorer processed'
+- takeScreenshot: host-data

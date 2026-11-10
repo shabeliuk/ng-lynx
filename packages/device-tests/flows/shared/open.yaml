@@ -1,0 +1,25 @@
+# Opens a bundle from run.mjs's server in Lynx Explorer. Not a flow of its own:
+# Maestro doesn't descend into this folder. Each flow passes BUNDLE and READY.
+appId: ${APP_ID}
+---
+# Only the camera, for Explorer's QR scanner: by default launchApp grants every
+# permission the app lists, which on Android means copying its 175 MB APK off the
+# emulator on each launch. launchApp also stops the app first, so every flow starts
+# from a fresh process.
+- launchApp:
+    permissions:
+      camera: allow
+# On a freshly booted device, the first deep link after Explorer's first launch
+# can be dropped.
+- retry:
+    maxRetries: 2
+    commands:
+      - openLink: lynx://open?url=${ORIGIN}${BUNDLE}.lynx.bundle
+      # iOS asks before an app opens its own URL scheme. Text is matched as a
+      # full-string regex, so this can't tap "Open list".
+      - tapOn:
+          text: Open
+          optional: true
+      - extendedWaitUntil:
+          visible: ${READY}
+          timeout: 20000

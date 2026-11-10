@@ -1,0 +1,26 @@
+# A native pan, dragged twice. On Android, the detector once stopped for good partway
+# through the first drag, so the second is the one that matters.
+appId: ${APP_ID}
+---
+- runFlow:
+    file: shared/open.yaml
+    env:
+      BUNDLE: main
+      READY: 'Count: 0'
+- tapOn: Open gesture
+- extendedWaitUntil:
+    visible: 'Drags finished: 0'
+    timeout: 5000
+- swipe:
+    from: Drag me
+    direction: RIGHT
+- extendedWaitUntil:
+    visible: 'Drags finished: 1'
+    timeout: 5000
+- swipe:
+    from: Drag me
+    direction: LEFT
+- extendedWaitUntil:
+    visible: 'Drags finished: 2'
+    timeout: 5000
+- takeScreenshot: gesture
