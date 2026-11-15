@@ -266,7 +266,7 @@
     "@angular/router": "^21.2.26",
     "@lynx-js/genui": "^0.7.3",
     "@lynx-js/rspeedy": "^0.18.6",
-    "@ngtools/webpack": "21.2.16",
+    "@ngtools/webpack": "21.2.30",
     "@openuidev/lang-core": "^0.3.2",
     "@types/node": "^20.19.43",
     "acorn": "^8.19.0",

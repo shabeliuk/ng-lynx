@@ -786,6 +786,42 @@ importers:
         specifier: ~5.9.3
         version: 5.9.3
 
+  packages/create-ng-lynx: {}
+
+  packages/device-tests:
+    dependencies:
+      '@angular/common':
+        specifier: 21.2.26
+        version: 21.2.26(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(rxjs@7.8.2)
+      '@angular/compiler':
+        specifier: 21.2.26
+        version: 21.2.26
+      '@angular/core':
+        specifier: 21.2.26
+        version: 21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)
+      '@angular/router':
+        specifier: 21.2.26
+        version: 21.2.26(@angular/common@21.2.26(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(@angular/platform-browser@21.2.26(@angular/common@21.2.26(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)))(rxjs@7.8.2)
+      ng-lynx:
+        specifier: workspace:*
+        version: link:../ng-lynx
+      rxjs:
+        specifier: ^7.8.2
+        version: 7.8.2
+    devDependencies:
+      '@lynx-js/config-rsbuild-plugin':
+        specifier: ^0.2.5
+        version: 0.2.5(@lynx-js/rspeedy@0.18.6(@rspack/core@2.2.9(@swc/helpers@0.5.24))(@types/node@26.6.6)(core-js@3.47.0)(csso@5.0.5)(esbuild@0.28.2)(tslib@2.9.1)(typescript@5.9.3)(webpack@5.112.2(cssnano@7.1.9(postcss@8.5.33))(csso@5.0.5)(esbuild@0.28.2)(postcss@8.5.33)(svgo@4.1.0)))(@rsbuild/core@2.2.9(core-js@3.47.0))
+      '@lynx-js/qrcode-rsbuild-plugin':
+        specifier: ^0.7.3
+        version: 0.7.3(@lynx-js/rspeedy@0.18.6(@rspack/core@2.2.9(@swc/helpers@0.5.24))(@types/node@26.6.6)(core-js@3.47.0)(csso@5.0.5)(esbuild@0.28.2)(tslib@2.9.1)(typescript@5.9.3)(webpack@5.112.2(cssnano@7.1.9(postcss@8.5.33))(csso@5.0.5)(esbuild@0.28.2)(postcss@8.5.33)(svgo@4.1.0)))(@rsbuild/core@2.2.9(core-js@3.47.0))
+      '@lynx-js/rspeedy':
+        specifier: ^0.18.6
+        version: 0.18.6(@rspack/core@2.2.9(@swc/helpers@0.5.24))(@types/node@26.6.6)(core-js@3.47.0)(csso@5.0.5)(esbuild@0.28.2)(tslib@2.9.1)(typescript@5.9.3)(webpack@5.112.2(cssnano@7.1.9(postcss@8.5.33))(csso@5.0.5)(esbuild@0.28.2)(postcss@8.5.33)(svgo@4.1.0))
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+
   packages/ng-lynx:
     dependencies:
       '@babel/core':
@@ -841,8 +877,8 @@ importers:
         specifier: ^0.18.6
         version: 0.18.6(@rspack/core@2.2.9(@swc/helpers@0.5.24))(@types/node@20.19.43)(core-js@3.47.0)(csso@5.0.5)(esbuild@0.28.2)(tslib@2.9.1)(typescript@5.9.3)(webpack@5.112.2(cssnano@7.1.9(postcss@8.5.33))(csso@5.0.5)(esbuild@0.28.2)(postcss@8.5.33)(svgo@4.1.0))
       '@ngtools/webpack':
-        specifier: 21.2.16
-        version: 21.2.16(@angular/compiler-cli@21.2.26(@angular/compiler@21.2.26)(supports-color@8.1.1)(typescript@5.9.3))(typescript@5.9.3)(webpack@5.112.2(cssnano@7.1.9(postcss@8.5.33))(csso@5.0.5)(esbuild@0.28.2)(postcss@8.5.33)(svgo@4.1.0))
+        specifier: 21.2.30
+        version: 21.2.30(@angular/compiler-cli@21.2.26(@angular/compiler@21.2.26)(supports-color@8.1.1)(typescript@5.9.3))(typescript@5.9.3)(webpack@5.112.2(cssnano@7.1.9(postcss@8.5.33))(csso@5.0.5)(esbuild@0.28.2)(postcss@8.5.33)(svgo@4.1.0))
       '@openuidev/lang-core':
         specifier: ^0.3.2
         version: 0.3.2(zod@3.25.76)
@@ -864,42 +900,6 @@ importers:
       zod:
         specifier: ^3.25.76
         version: 3.25.76
-
-  packages/create-ng-lynx: {}
-
-  packages/device-tests:
-    dependencies:
-      '@angular/common':
-        specifier: 21.2.26
-        version: 21.2.26(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(rxjs@7.8.2)
-      '@angular/compiler':
-        specifier: 21.2.26
-        version: 21.2.26
-      '@angular/core':
-        specifier: 21.2.26
-        version: 21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)
-      '@angular/router':
-        specifier: 21.2.26
-        version: 21.2.26(@angular/common@21.2.26(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(@angular/platform-browser@21.2.26(@angular/common@21.2.26(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)))(rxjs@7.8.2)
-      ng-lynx:
-        specifier: workspace:*
-        version: link:../ng-lynx
-      rxjs:
-        specifier: ^7.8.2
-        version: 7.8.2
-    devDependencies:
-      '@lynx-js/config-rsbuild-plugin':
-        specifier: ^0.2.5
-        version: 0.2.5(@lynx-js/rspeedy@0.18.6(@rspack/core@2.2.9(@swc/helpers@0.5.24))(@types/node@26.6.6)(core-js@3.47.0)(csso@5.0.5)(esbuild@0.28.2)(tslib@2.9.1)(typescript@5.9.3)(webpack@5.112.2(cssnano@7.1.9(postcss@8.5.33))(csso@5.0.5)(esbuild@0.28.2)(postcss@8.5.33)(svgo@4.1.0)))(@rsbuild/core@2.2.9(core-js@3.47.0))
-      '@lynx-js/qrcode-rsbuild-plugin':
-        specifier: ^0.7.3
-        version: 0.7.3(@lynx-js/rspeedy@0.18.6(@rspack/core@2.2.9(@swc/helpers@0.5.24))(@types/node@26.6.6)(core-js@3.47.0)(csso@5.0.5)(esbuild@0.28.2)(tslib@2.9.1)(typescript@5.9.3)(webpack@5.112.2(cssnano@7.1.9(postcss@8.5.33))(csso@5.0.5)(esbuild@0.28.2)(postcss@8.5.33)(svgo@4.1.0)))(@rsbuild/core@2.2.9(core-js@3.47.0))
-      '@lynx-js/rspeedy':
-        specifier: ^0.18.6
-        version: 0.18.6(@rspack/core@2.2.9(@swc/helpers@0.5.24))(@types/node@26.6.6)(core-js@3.47.0)(csso@5.0.5)(esbuild@0.28.2)(tslib@2.9.1)(typescript@5.9.3)(webpack@5.112.2(cssnano@7.1.9(postcss@8.5.33))(csso@5.0.5)(esbuild@0.28.2)(postcss@8.5.33)(svgo@4.1.0))
-      typescript:
-        specifier: ~5.9.3
-        version: 5.9.3
 
 packages:
 
@@ -1608,8 +1608,8 @@ packages:
       '@emnapi/core': ^1.7.1
       '@emnapi/runtime': ^1.7.1
 
-  '@ngtools/webpack@21.2.16':
-    resolution: {integrity: sha512-ytJh8Bk2B/EkThXmo5qeK3uEvyN6R1zNvIxSwKRrtFnZ0FEee+21UBKNEq4pxQqy1h50IOrAQamvNUtKpY2Asg==}
+  '@ngtools/webpack@21.2.30':
+    resolution: {integrity: sha512-W3IG38ihoJb0PpMCFAsCVYDDh+OIvR0k09pzPs3fpaHvebKzo53kpJEPJ2jWkyNcW5m2f2tBi4C8q0Qr1XMXCQ==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0, npm: ^6.11.0 || ^7.5.6 || >=8.0.0, yarn: '>= 1.13.0'}
     peerDependencies:
       '@angular/compiler-cli': ^21.0.0
@@ -5225,7 +5225,7 @@ snapshots:
       '@tybys/wasm-util': 0.10.4
     optional: true
 
-  '@ngtools/webpack@21.2.16(@angular/compiler-cli@21.2.26(@angular/compiler@21.2.26)(supports-color@8.1.1)(typescript@5.9.3))(typescript@5.9.3)(webpack@5.112.2(cssnano@7.1.9(postcss@8.5.33))(csso@5.0.5)(esbuild@0.28.2)(postcss@8.5.33)(svgo@4.1.0))':
+  '@ngtools/webpack@21.2.30(@angular/compiler-cli@21.2.26(@angular/compiler@21.2.26)(supports-color@8.1.1)(typescript@5.9.3))(typescript@5.9.3)(webpack@5.112.2(cssnano@7.1.9(postcss@8.5.33))(csso@5.0.5)(esbuild@0.28.2)(postcss@8.5.33)(svgo@4.1.0))':
     dependencies:
       '@angular/compiler-cli': 21.2.26(@angular/compiler@21.2.26)(supports-color@8.1.1)(typescript@5.9.3)
       typescript: 5.9.3
@@ -7914,7 +7914,7 @@ snapshots:
       mime-db: 1.54.0
       minimizer-webpack-plugin: 5.14.0(cssnano@7.1.9(postcss@8.5.33))(csso@5.0.5)(esbuild@0.28.2)(postcss@8.5.33)(svgo@4.1.0)(webpack@5.112.2(cssnano@7.1.9(postcss@8.5.33))(csso@5.0.5)(esbuild@0.28.2)(postcss@8.5.33)(svgo@4.1.0))
       schema-utils: 4.8.3(webpack@5.112.2(cssnano@7.1.9(postcss@8.5.33))(csso@5.0.5)(esbuild@0.28.2)(postcss@8.5.33)(svgo@4.1.0))
-      tapable: 2.3.4
+      tapable: 2.3.3
       watchpack: 2.6.4
       webpack-sources: 3.7.0
     transitivePeerDependencies:
