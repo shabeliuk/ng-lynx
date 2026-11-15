@@ -4,7 +4,7 @@ import {
   computed,
   signal,
 } from '@angular/core';
-import { LYNX_ELEMENTS } from 'angular-lynx/elements';
+import { LYNX_ELEMENTS } from 'ng-lynx/elements';
 
 /**
  * A standalone, zoneless Angular component that renders with Lynx elements.

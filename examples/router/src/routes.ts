@@ -22,7 +22,7 @@ export const routes: Routes = [
     // `dist/` and the route 404s at navigation time. A named chunk group opts
     // out of that mapping (`LynxTemplatePlugin.#getAsyncChunkLayout` skips any
     // group with a name), keeping the chunk on rsbuild's default
-    // `static/js/async/[name].js` template — which is what angular-lynx's
+    // `static/js/async/[name].js` template — which is what ng-lynx's
     // lazy routes load through `lynx.requireModuleAsync`. See
     // docs/15-routing.md.
     path: 'lazy',

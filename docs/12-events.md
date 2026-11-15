@@ -13,7 +13,7 @@ Bind any Lynx event with the usual Angular `(event)` syntax on an element:
 ```
 
 The renderer maps the binding name to a Lynx event registration
-([renderer.ts](../packages/angular-lynx/runtime/src/renderer.ts), `parseEvent`):
+([renderer.ts](../packages/ng-lynx/runtime/src/renderer.ts), `parseEvent`):
 
 | Angular binding | Lynx registration | Notes |
 | --- | --- | --- |
@@ -60,14 +60,14 @@ The `$event` object is the Lynx event. Two fields you'll use most:
   `target.value` — see [09 — Forms](09-forms.md)).
 - **`$event.target`** / **`$event.currentTarget`** — Lynx sends `uid`, `id` and
   `dataset` here. Write `data-x="…"` on an element to read it back as
-  `$event.currentTarget.dataset.x`. angular-lynx fills `target` in with the bound
+  `$event.currentTarget.dataset.x`. ng-lynx fills `target` in with the bound
   element only when an event arrives without one, so DOM-oriented code like
   `@angular/forms`' `DefaultValueAccessor` doesn't crash.
 
 ### A typing gotcha: event names that collide with the DOM
 
 > **This gotcha is solved by the typed element directives** — with
-> `angular-lynx/elements` imported, the directive's output "claims" the event
+> `ng-lynx/elements` imported, the directive's output "claims" the event
 > name and `$event` gets the correct Lynx type (`(scroll)` →
 > `LynxScrollEvent`). See [18 — Typed templates](18-typed-templates.md). The
 > cast below is only needed for untyped (`NO_ERRORS_SCHEMA`) templates.
@@ -134,7 +134,7 @@ See `examples/lynx-forms`.
 The renderer **multiplexes** listeners: several directives can bind the same
 event on the same element (one native `__AddEvent`, fanned out to every
 callback). This is what lets `@angular/forms`' built-in `DefaultValueAccessor`
-and angular-lynx's `LynxValueAccessor` both listen for `input` on one field.
+and ng-lynx's `LynxValueAccessor` both listen for `input` on one field.
 
 ## Global events
 

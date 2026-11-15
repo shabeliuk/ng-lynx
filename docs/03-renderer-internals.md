@@ -1,7 +1,7 @@
 # Renderer internals
 
 This explains how `LynxRenderer2` (in
-[`packages/angular-lynx/runtime/src/renderer.ts`](../packages/angular-lynx/runtime/src/renderer.ts))
+[`packages/ng-lynx/runtime/src/renderer.ts`](../packages/ng-lynx/runtime/src/renderer.ts))
 turns Angular rendering into Lynx ops. Read
 [01 — Architecture](01-architecture.md) first.
 
@@ -68,7 +68,7 @@ there's no separate `__UpdateRawText` PAPI exposed to JS at all.
 
 ## The flush cycle
 
-[`flush.ts`](../packages/angular-lynx/runtime/src/flush.ts) batches ops. Two
+[`flush.ts`](../packages/ng-lynx/runtime/src/flush.ts) batches ops. Two
 triggers, both calling the idempotent `flushOps()`:
 
 1. **Microtask** — `scheduleFlush()` queues a microtask the first time it's
@@ -93,7 +93,7 @@ overlap (a second change-detection cycle can send its own batch before the
 first one's ack arrives), and an earlier single-shared-`resolve`-slot design
 let a later batch's ack silently orphan an earlier caller's promise forever —
 found live while building `examples/ui-gallery` (a `fields()` read in
-`afterNextRender` hung indefinitely). See `packages/angular-lynx/verify/harness-flush-race.ts`
+`afterNextRender` hung indefinitely). See `packages/ng-lynx/verify/harness-flush-race.ts`
 for the regression test (it patches the mock's ack to land asynchronously,
 since the mock's default same-tick ack can never reproduce overlapping
 batches) and `docs/10-element-queries.md` for the full story.

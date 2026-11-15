@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import { lynxGlobalProps } from 'angular-lynx';
-import { LYNX_ELEMENTS, type LynxLayoutChangeEvent } from 'angular-lynx/elements';
+import { lynxGlobalProps } from 'ng-lynx';
+import { LYNX_ELEMENTS, type LynxLayoutChangeEvent } from 'ng-lynx/elements';
 
 /**
  * CSS `@media` on Lynx 4.0+. Every chip in the first card is always rendered,

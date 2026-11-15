@@ -15,8 +15,8 @@ import {
   type MainThreadFunctionHandle,
   runOnMainThread,
   type ToMainThread,
-} from 'angular-lynx';
-import { LYNX_ELEMENTS } from 'angular-lynx/elements';
+} from 'ng-lynx';
+import { LYNX_ELEMENTS } from 'ng-lynx/elements';
 
 import { IndicatorComponent } from './indicator.component.js';
 import { goToIndex, linear, onTouchEnd, onTouchMove, onTouchStart, type SwiperState } from './swiper.mt.js';

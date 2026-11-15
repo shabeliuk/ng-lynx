@@ -1,5 +1,5 @@
 {
-  "name": "angular-lynx-hello-world",
+  "name": "ng-lynx-hello-world",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -7,12 +7,12 @@
     "dev": "rspeedy dev",
     "build": "rspeedy build",
     "preview": "rspeedy preview",
-    "capture": "angular-lynx-capture src/first-screen-entry.ts src/first-screen.json"
+    "capture": "ng-lynx-capture src/first-screen-entry.ts src/first-screen.json"
   },
   "dependencies": {
     "@angular/compiler": ">=21.2.26",
     "@angular/core": ">=21.2.26",
-    "angular-lynx": "workspace:*"
+    "ng-lynx": "workspace:*"
   },
   "devDependencies": {
     "@lynx-js/qrcode-rsbuild-plugin": "^0.7.3",

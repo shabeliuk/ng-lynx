@@ -13,7 +13,7 @@ The whole renderer package — including the Angular-dependent `renderer.ts` and
 `bootstrap.ts` — type-checks against real Angular.
 
 ```bash
-cd packages/angular-lynx
+cd packages/ng-lynx
 npm run typecheck    # tsc -p tsconfig.json ; expect exit 0
 ```
 
@@ -24,7 +24,7 @@ APIs (`ɵinternalCreateApplication`, `provideZonelessChangeDetection`).
 ## Level 2 — Headless end-to-end run (works now)
 
 ```bash
-cd packages/angular-lynx
+cd packages/ng-lynx
 npm run verify        # the hello-world runtime check
 npm run verify:list   # native <list> virtualization (see docs/08-lists.md)
 npm run verify:form   # two-way [(lynxModel)] input binding (see docs/09-forms.md)
@@ -71,7 +71,7 @@ Angular template compiled (JIT)
 tree, mocks `lynx.getNativeApp().callLepusMethod` to forward ops into the real
 `applyOps`, then prints the reconstructed tree and asserts it. `verify/build.mjs`
 bundles it with esbuild (defining `__DEV__`/`ngDevMode` and aliasing the
-`angular-lynx` specifiers to source), then runs it.
+`ng-lynx` specifiers to source), then runs it.
 
 Expected output (abridged): the native tree shows `view.app → banner / counter /
 parity / list / add`, the `@for` renders both list items, the computed parity
@@ -88,7 +88,7 @@ What it does **not** prove: rspack dual-thread bundling and engine compatibility
 
 `node scripts/verify-consumer.mjs [angular-major]`, from the repo root, covers the
 published package's layout: it packs the tarball, scaffolds every
-`create-angular-lynx` template outside the workspace, installs and builds them,
+`create-ng-lynx` template outside the workspace, installs and builds them,
 and runs the Vitest quick start from [19 — Testing](19-testing.md).
 
 ### Bootstrap provider audit (results)
@@ -139,7 +139,7 @@ the same ES2019 bar as the bundles.
 
 ```bash
 pnpm install
-pnpm --filter angular-lynx build
+pnpm --filter ng-lynx build
 cd examples/hello-world && pnpm rspeedy dev
 ```
 

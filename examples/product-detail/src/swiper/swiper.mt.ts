@@ -17,7 +17,7 @@ import {
   type MainThreadRef,
   type MainThreadTouchEvent,
   runOnBackground,
-} from 'angular-lynx/worklet';
+} from 'ng-lynx/worklet';
 
 /** What the handlers of one swiper share. The refs live on the Main Thread. */
 export interface SwiperState {

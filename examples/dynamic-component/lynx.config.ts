@@ -2,14 +2,14 @@
  * The **host** app build.
  *
  * `dynamicComponentHost: true` publishes this app's own framework instances
- * (Angular + angular-lynx) into the shared registry, so a dynamic-component
+ * (Angular + ng-lynx) into the shared registry, so a dynamic-component
  * bundle loaded at runtime resolves against *these* instead of carrying its
  * own copy — which provably cannot work (see docs/38-dynamic-component.md).
  */
 import { defineConfig, type RsbuildPlugin } from '@lynx-js/rspeedy';
 
 import { pluginQRCode } from '@lynx-js/qrcode-rsbuild-plugin';
-import { pluginAngularLynx } from 'angular-lynx/plugin';
+import { pluginAngularLynx } from 'ng-lynx/plugin';
 
 /**
  * Serves the dynamic bundle from the host's own origin. `npm run dev` and

@@ -7,8 +7,8 @@ import {
   ViewChild,
 } from '@angular/core';
 
-import { asLynxElement, lynxAssetUrl, whenFlushed } from 'angular-lynx';
-import { LYNX_ELEMENTS, type LynxEvent } from 'angular-lynx/elements';
+import { asLynxElement, lynxAssetUrl, whenFlushed } from 'ng-lynx';
+import { LYNX_ELEMENTS, type LynxEvent } from 'ng-lynx/elements';
 
 /** Simulated network latency for the pull-to-refresh demo. */
 const REFRESH_LATENCY_MS = 1200;
@@ -24,7 +24,7 @@ const REFRESH_LATENCY_MS = 1200;
 
 /**
  * Manual test bed for every built-in Lynx element typed by
- * `angular-lynx/elements` — including the 15 added for full "UI Primitives"
+ * `ng-lynx/elements` — including the 15 added for full "UI Primitives"
  * parity (`docs/18-typed-templates.md`). No `NO_ERRORS_SCHEMA`: every tag
  * used below is known to the template checker.
  *
@@ -52,7 +52,7 @@ const REFRESH_LATENCY_MS = 1200;
          what actually works. -->
     <scroll-view class="app" scroll-orientation="vertical" [enable-scroll]="pageScrollEnabled()">
       <text class="title">Built-in Primitives</text>
-      <text class="subtitle">angular-lynx/elements — full typed coverage</text>
+      <text class="subtitle">ng-lynx/elements — full typed coverage</text>
 
       <!-- ============================== svg ============================== -->
       <view class="section">

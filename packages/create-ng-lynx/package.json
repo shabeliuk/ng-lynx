@@ -1,0 +1,39 @@
+{
+  "name": "create-ng-lynx",
+  "version": "0.1.0-rc.0",
+  "description": "Scaffold an Angular-on-Lynx app (Angular custom renderer for the Lynx cross-platform engine)",
+  "keywords": [
+    "angular",
+    "lynx",
+    "ng-lynx",
+    "create",
+    "scaffold"
+  ],
+  "license": "Apache-2.0",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shabeliuk/ng-lynx.git",
+    "directory": "packages/create-ng-lynx"
+  },
+  "homepage": "https://github.com/shabeliuk/ng-lynx#readme",
+  "bugs": {
+    "url": "https://github.com/shabeliuk/ng-lynx/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "bin": {
+    "create-ng-lynx": "index.mjs"
+  },
+  "files": [
+    "index.mjs",
+    "templates",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

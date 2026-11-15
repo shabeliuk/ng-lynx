@@ -29,7 +29,7 @@ Two protocol demos sit alongside it as extra tabs: **A2UI** (JSON messages) and
 
 ```bash
 pnpm install
-pnpm --filter angular-lynx build        # the example links the package's dist
+pnpm --filter ng-lynx build        # the example links the package's dist
 cd examples/genui
 cp .env.example .env.local              # then paste your key into it
 npm run dev
@@ -161,12 +161,12 @@ not have shown any of them.
 | Symptom | Cause | Fix |
 | --- | --- | --- |
 | Text fields and the message box render as nothing | `<input>`/`<textarea>` live in the **`XElement`** pod, which the template omits (Lynx Explorer ships it) | `pod 'XElement'` in `ios/Podfile`, in step with `Lynx` |
-| Pre-filled fields show empty but still submit their value; the message box keeps its text after Send | Native inputs have **no `value` attribute** — text is set with the `setValue` UI method | angular-lynx's `LynxModel` and the OpenUI `TextField` now call `setValue` too (`runtime/src/input-value.ts`) |
+| Pre-filled fields show empty but still submit their value; the message box keeps its text after Send | Native inputs have **no `value` attribute** — text is set with the `setValue` UI method | ng-lynx's `LynxModel` and the OpenUI `TextField` now call `setValue` too (`runtime/src/input-value.ts`) |
 | Debug app always loads the bundled copy, never the dev server | The CLI passes `SPARKLING_DEV_SERVER_HOST/PORT`, but the template only reads a URL saved in its debug dialog | `DebugDevURLSupport.swift` honours the CLI's variables |
 | "Could not reach the dev server" on a Debug build | `output.assetPrefix: 'asset:///'` also became the **dev** bundle's public path, so `/api/…` stayed relative | `dev.assetPrefix: true` in `app.config.ts` |
 | …and again after every `npm run ios` | `npm run ios` always runs a production build into `dist/`, which the running dev server serves from disk | the dev server writes to `.sparkling/dev-dist` |
 | A good model response rendered as "no root" | PrimJS streams `ArrayBuffer` chunks and has no `TextDecoder`; the reader assumed browser `Uint8Array`s | `stream-text.ts` handles every chunk shape (tested against a PrimJS simulation) |
-| Offline agent: `e.at is not a function` | PrimJS has no `Array.prototype.at` (it lacks most ES2021+ built-ins) | index instead of `.at(-1)`; the angular-lynx runtime now polyfills `at` and the other built-ins PrimJS lacks (docs/05) |
+| Offline agent: `e.at is not a function` | PrimJS has no `Array.prototype.at` (it lacks most ES2021+ built-ins) | index instead of `.at(-1)`; the ng-lynx runtime now polyfills `at` and the other built-ins PrimJS lacks (docs/05) |
 | A web bundle inside the iOS app | `pluginAngularLynx` configured `web` even when the app declares only `lynx` | the plugin now configures declared environments only |
 | On a real iPhone the planner is always offline | The dev server had stopped, and a home-screen launch loads the packaged bundle, which has no proxy. (It was first blamed on the dev server listening on `localhost` only; measured, it listens on every interface.) | `npm run ios:device` checks the server is reachable before building; for the LLM away from the Mac, `PLANNER_EMBED_KEY=true` puts the key in the packaged bundle |
 
@@ -265,7 +265,7 @@ npm test
 - **The embed switch**, including that the key stays out unless you opt in.
 - **SSE parsing**, at every possible chunk cut point.
 
-`verify:genui-openui-parity` (in `packages/angular-lynx`) guarantees the
+`verify:genui-openui-parity` (in `packages/ng-lynx`) guarantees the
 Angular OpenUI library matches the signatures the prompt teaches.
 
 ## Assumptions and limits

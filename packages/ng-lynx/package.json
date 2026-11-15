@@ -1,0 +1,281 @@
+{
+  "name": "ng-lynx",
+  "version": "0.1.0-rc.0",
+  "private": false,
+  "description": "Angular custom renderer for building Lynx apps",
+  "keywords": [
+    "angular",
+    "lynx",
+    "ng-lynx",
+    "renderer"
+  ],
+  "license": "Apache-2.0",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shabeliuk/ng-lynx.git",
+    "directory": "packages/ng-lynx"
+  },
+  "homepage": "https://github.com/shabeliuk/ng-lynx#readme",
+  "bugs": {
+    "url": "https://github.com/shabeliuk/ng-lynx/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "exports": {
+    ".": {
+      "types": "./runtime/dist/index.d.ts",
+      "import": "./runtime/dist/index.js",
+      "default": "./runtime/dist/index.js"
+    },
+    "./entry-background": {
+      "types": "./runtime/dist/entry-background.d.ts",
+      "import": "./runtime/dist/entry-background.js",
+      "default": "./runtime/dist/entry-background.js"
+    },
+    "./forms": {
+      "types": "./runtime/dist/forms-public.d.ts",
+      "import": "./runtime/dist/forms-public.js",
+      "default": "./runtime/dist/forms-public.js"
+    },
+    "./forms/theme.css": "./forms-theme.css",
+    "./elements": {
+      "types": "./runtime/dist/elements.d.ts",
+      "import": "./runtime/dist/elements.js",
+      "default": "./runtime/dist/elements.js"
+    },
+    "./testing": {
+      "types": "./testing/dist/index.d.ts",
+      "import": "./testing/dist/index.js",
+      "default": "./testing/dist/index.js"
+    },
+    "./router": {
+      "types": "./runtime/dist/router.d.ts",
+      "import": "./runtime/dist/router.js",
+      "default": "./runtime/dist/router.js"
+    },
+    "./http": {
+      "types": "./runtime/dist/http.d.ts",
+      "import": "./runtime/dist/http.js",
+      "default": "./runtime/dist/http.js"
+    },
+    "./genui": {
+      "types": "./runtime/dist/genui.d.ts",
+      "import": "./runtime/dist/genui.js",
+      "default": "./runtime/dist/genui.js"
+    },
+    "./main-thread": {
+      "types": "./main-thread/dist/entry-main.d.ts",
+      "import": "./main-thread/dist/entry-main.js",
+      "default": "./main-thread/dist/entry-main.js"
+    },
+    "./worklet": {
+      "types": "./main-thread/dist/worklet-apply.d.ts",
+      "import": "./main-thread/dist/worklet-apply.js",
+      "default": "./main-thread/dist/worklet-apply.js"
+    },
+    "./plugin": {
+      "types": "./plugin/dist/index.d.ts",
+      "import": "./plugin/dist/index.js",
+      "default": "./plugin/dist/index.js"
+    },
+    "./internal/ops": {
+      "types": "./internal/dist/ops.d.ts",
+      "import": "./internal/dist/ops.js",
+      "default": "./internal/dist/ops.js"
+    },
+    "./internal/runtime": {
+      "types": "./runtime/dist/internal.d.ts",
+      "import": "./runtime/dist/internal.js",
+      "default": "./runtime/dist/internal.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./runtime/dist/index.js",
+  "types": "./runtime/dist/index.d.ts",
+  "bin": {
+    "ng-lynx-capture": "bin/capture-first-screen.mjs",
+    "ng-lynx-extract-i18n": "bin/extract-i18n.mjs"
+  },
+  "schematics": "./schematics/collection.json",
+  "files": [
+    "runtime/dist",
+    "main-thread/dist",
+    "plugin/dist",
+    "internal/dist",
+    "testing/dist",
+    "schematics/collection.json",
+    "schematics/dist",
+    "schematics/src/**/schema.json",
+    "bin",
+    "forms-theme.css",
+    "LICENSE",
+    "NOTICE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b internal main-thread plugin && ngc -p runtime/tsconfig.ngc.json && tsc -b testing && tsc -p schematics/tsconfig.json && node schematics/mark-commonjs.mjs",
+    "prepack": "npm run build",
+    "clean": "tsc -b internal main-thread plugin testing --clean && rm -rf runtime/dist schematics/dist",
+    "typecheck": "tsc -p tsconfig.json",
+    "verify": "node verify/build.mjs",
+    "verify:all": "node verify/run-all.mjs",
+    "verify:animate": "node verify/build.mjs harness-animate.ts",
+    "verify:appevents": "node verify/build.mjs harness-appevents.ts",
+    "verify:page-destroy": "node verify/build.mjs harness-page-destroy.ts",
+    "verify:asset-url": "node verify/build.mjs harness-asset-url.ts",
+    "verify:asset-url-build": "node verify/asset-url-build.mjs",
+    "verify:coalesce": "node verify/build.mjs harness-coalesce.ts",
+    "verify:data-processors": "node verify/build.mjs harness-data-processors.ts",
+    "verify:event-collision": "VERIFY_DEV=true node verify/build.mjs harness-event-collision.ts",
+    "verify:event-source": "node verify/build.mjs harness-event-source.ts",
+    "verify:invoke-types": "tsc -p verify/types/tsconfig.json",
+    "verify:ngtools-missing": "node verify/ngtools-missing.mjs",
+    "verify:controls": "node verify/build.mjs harness-controls.ts",
+    "verify:defer": "node verify/build.mjs harness-defer.ts",
+    "verify:destroy": "node verify/build.mjs harness-destroy.ts",
+    "verify:dev-reload": "node verify/build.mjs harness-dev-reload.ts",
+    "verify:dynamic-component": "node verify/build.mjs harness-dynamic-component.ts",
+    "verify:dynamic-component-build": "node verify/dynamic-component-build.mjs",
+    "verify:elements": "node verify/build.mjs harness-elements.ts",
+    "verify:events": "node verify/build.mjs harness-events.ts",
+    "verify:flush-race": "node verify/build.mjs harness-flush-race.ts",
+    "verify:form": "node verify/build.mjs harness-form.ts",
+    "verify:genui-a2ui": "node verify/build.mjs harness-genui-a2ui.ts",
+    "verify:genui-openui": "node verify/build.mjs harness-genui-openui.ts",
+    "verify:genui-openui-runtime": "node verify/build.mjs harness-genui-openui-runtime.ts",
+    "verify:genui-openui-parity": "node verify/build.mjs harness-genui-openui-parity.ts",
+    "verify:genui-openui-append": "node verify/build.mjs harness-genui-openui-append.ts",
+    "verify:genui-tools": "node verify/build.mjs harness-genui-tools.ts",
+    "verify:gesture": "node verify/build.mjs harness-gesture.ts",
+    "verify:hmr": "node verify/build.mjs harness-hmr.ts",
+    "verify:hostdata": "node verify/build.mjs harness-hostdata.ts",
+    "verify:http": "node verify/build.mjs harness-http.ts",
+    "verify:i18n": "node verify/i18n-build.mjs",
+    "verify:i18n-attr": "node verify/build.mjs harness-i18n-attr.ts",
+    "verify:i18n-extract": "node verify/i18n-extract.mjs",
+    "verify:ifr": "node verify/build.mjs harness-ifr.ts",
+    "verify:lazy-chunks": "node verify/lazy-chunks.mjs",
+    "verify:list": "node verify/build.mjs harness-list.ts",
+    "verify:list-scroll": "node verify/build.mjs harness-list-scroll.ts",
+    "verify:mtref": "node verify/build.mjs harness-mtref.ts",
+    "verify:main-thread-api": "node verify/build.mjs harness-main-thread-api.ts",
+    "verify:native-modules": "node verify/build.mjs harness-native-modules.ts",
+    "verify:native-semantics": "node verify/build.mjs harness-native-semantics.ts",
+    "verify:ngforms": "node verify/build.mjs harness-ngforms.ts",
+    "verify:oplog": "node verify/build.mjs harness-oplog.ts",
+    "verify:performance": "node verify/build.mjs harness-performance.ts",
+    "verify:platform": "node verify/build.mjs harness-platform.ts",
+    "verify:polyfills": "node verify/build.mjs harness-polyfills.ts",
+    "verify:primitives": "node verify/build.mjs harness-primitives.ts",
+    "verify:projection": "node verify/build.mjs harness-projection.ts",
+    "verify:query": "node verify/build.mjs harness-query.ts",
+    "verify:raf": "node verify/build.mjs harness-raf.ts",
+    "verify:replay-epoch": "node verify/build.mjs harness-replay-epoch.ts",
+    "verify:router": "node verify/build.mjs harness-router.ts",
+    "verify:router-deeplink": "node verify/build.mjs harness-router-deeplink.ts",
+    "verify:schematics": "node verify/schematics.mjs",
+    "verify:selector-lazy": "ENABLE_SELECTOR_QUERIES=lazy node verify/build.mjs harness-selector-lazy.ts",
+    "verify:selector-opt-out": "ENABLE_SELECTOR_QUERIES=false node verify/build.mjs harness-selector-opt-out.ts",
+    "verify:self": "node verify/build.mjs harness-self.ts",
+    "verify:style": "node verify/build.mjs harness-style-flush.ts",
+    "verify:testing": "node verify/build.mjs harness-testing.ts",
+    "verify:video": "node verify/build.mjs harness-video.ts",
+    "verify:virtual-for": "node verify/build.mjs harness-virtual-for.ts",
+    "verify:virtual-list-idle": "node verify/build.mjs harness-virtual-list-idle.ts",
+    "verify:wireproto-intern": "node verify/build.mjs harness-intern.ts",
+    "verify:wireproto-measure": "node verify/build.mjs harness-wireproto-measure.ts",
+    "verify:worklet": "node verify/build.mjs harness-worklet.ts"
+  },
+  "dependencies": {
+    "@babel/core": "^7.29.13",
+    "@lynx-js/react": "^0.129.3",
+    "@lynx-js/runtime-wrapper-webpack-plugin": "^0.2.6",
+    "@lynx-js/template-webpack-plugin": "^0.16.8",
+    "@lynx-js/types": "^4.4.2",
+    "babel-loader": "^9.2.1"
+  },
+  "peerDependencies": {
+    "@angular-devkit/core": ">=21.0.0 <23.0.0",
+    "@angular-devkit/schematics": ">=21.0.0 <23.0.0",
+    "@angular/common": ">=21.0.0 <23.0.0",
+    "@angular/compiler": ">=21.0.0 <23.0.0",
+    "@angular/compiler-cli": ">=21.0.0 <23.0.0",
+    "@angular/core": ">=21.0.0 <23.0.0",
+    "@angular/forms": ">=21.0.0 <23.0.0",
+    "@angular/localize": ">=21.0.0 <23.0.0",
+    "@angular/router": ">=21.0.0 <23.0.0",
+    "@lynx-js/genui": ">=0.7.0 <1.0.0",
+    "@lynx-js/rspeedy": "^0.18.0",
+    "@ngtools/webpack": ">=21.0.0 <23.0.0",
+    "@openuidev/lang-core": ">=0.3.0 <1.0.0",
+    "esbuild": ">=0.25.0",
+    "rxjs": "^6.5.3 || ^7.4.0",
+    "typescript": ">=5.9.0 <6.1.0",
+    "zod": ">=3.25.0"
+  },
+  "peerDependenciesMeta": {
+    "@angular-devkit/core": {
+      "optional": true
+    },
+    "@angular-devkit/schematics": {
+      "optional": true
+    },
+    "@angular/common": {
+      "optional": true
+    },
+    "@angular/forms": {
+      "optional": true
+    },
+    "@angular/localize": {
+      "optional": true
+    },
+    "@angular/router": {
+      "optional": true
+    },
+    "@lynx-js/genui": {
+      "optional": true
+    },
+    "@ngtools/webpack": {
+      "optional": true
+    },
+    "@openuidev/lang-core": {
+      "optional": true
+    },
+    "esbuild": {
+      "optional": true
+    },
+    "rxjs": {
+      "optional": true
+    },
+    "zod": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@angular-devkit/core": "^21.2.30",
+    "@angular-devkit/schematics": "^21.2.30",
+    "@angular/common": "^21.2.26",
+    "@angular/compiler": "^21.2.26",
+    "@angular/compiler-cli": "21.2.26",
+    "@angular/core": "^21.2.26",
+    "@angular/forms": "^21.2.26",
+    "@angular/localize": "21.2.26",
+    "@angular/router": "^21.2.26",
+    "@lynx-js/genui": "^0.7.3",
+    "@lynx-js/rspeedy": "^0.18.6",
+    "@ngtools/webpack": "21.2.16",
+    "@openuidev/lang-core": "^0.3.2",
+    "@types/node": "^20.19.43",
+    "acorn": "^8.19.0",
+    "esbuild": "^0.28.2",
+    "rxjs": "^7.8.2",
+    "typescript": "~5.9.3",
+    "zod": "^3.25.76"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

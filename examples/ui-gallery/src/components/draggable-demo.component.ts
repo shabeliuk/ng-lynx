@@ -1,13 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 
-import { LYNX_ELEMENTS } from 'angular-lynx/elements';
+import { LYNX_ELEMENTS } from 'ng-lynx/elements';
 
 import { lockDrag, unlockDrag } from '../drag-lock.service.js';
 
 /**
  * A recreation of `@lynx-js/lynx-ui`'s `<Draggable>` primitive
  * (https://lynxjs.org/next/ui/components/draggable.html) — free-form
- * drag-within-bounds — for angular-lynx.
+ * drag-within-bounds — for ng-lynx.
  *
  * The real component drives its drag loop through Lynx's native gesture
  * detector (`[lynxGesture]`), which is on-device-only (`@lynx-js/web-core`

@@ -1,8 +1,8 @@
-import { bootstrapLynxApplication } from 'angular-lynx';
+import { bootstrapLynxApplication } from 'ng-lynx';
 
 import './app.css';
 import { AppComponent } from './app.component.js';
 
 bootstrapLynxApplication(AppComponent).catch((err) => {
-  console.error('[angular-lynx] bootstrap failed', err);
+  console.error('[ng-lynx] bootstrap failed', err);
 });

@@ -4,7 +4,7 @@
 //
 // Usage:  node run.mjs --platform <ios|android> [--flow <name>] [--timeout <minutes>]
 //
-// The app's build is run first, so build angular-lynx before this. Android needs a
+// The app's build is run first, so build ng-lynx before this. Android needs a
 // booted emulator or device; iOS boots its own simulator and leaves yours alone.
 import { execFileSync, spawn } from 'node:child_process';
 import { createWriteStream, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';

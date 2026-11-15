@@ -6,7 +6,7 @@
  * Nothing here is special: it's an ordinary standalone Angular component
  * using ordinary Lynx elements. What makes it loadable is the *build* (see
  * `lynx.config.producer.ts`), not the source — in particular, its
- * `@angular/core` and `angular-lynx` imports are externalized to the host's
+ * `@angular/core` and `ng-lynx` imports are externalized to the host's
  * already-loaded instances, so this bundle carries no copy of them.
  *
  * It deliberately holds its own signal state and its own `(tap)` handler, so
@@ -15,7 +15,7 @@
  */
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 
-import { LYNX_ELEMENTS } from 'angular-lynx/elements';
+import { LYNX_ELEMENTS } from 'ng-lynx/elements';
 
 @Component({
   selector: 'remote-card',

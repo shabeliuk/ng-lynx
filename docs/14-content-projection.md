@@ -82,7 +82,7 @@ own template as its children — true on the DOM (`<app-card>` is a real, if
 unstyled, element there too) and equally true on Lynx.
 
 On Lynx this host element goes through `createTypedElement()`
-([`ops-apply.ts`](../packages/angular-lynx/main-thread/src/ops-apply.ts)), which
+([`ops-apply.ts`](../packages/ng-lynx/main-thread/src/ops-apply.ts)), which
 synthesizes a plain `<view>` for any tag that isn't one of Lynx's built-in
 elements ([lynxjs.org/api/elements/built-in](https://lynxjs.org/api/elements/built-in/))
 or listed in `pluginAngularLynx({ nativeElements })`.

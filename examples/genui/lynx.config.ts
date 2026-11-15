@@ -5,7 +5,7 @@ import { pluginLynxConfig } from '@lynx-js/config-rsbuild-plugin';
 import { defineConfig } from '@lynx-js/rspeedy';
 
 import { pluginQRCode } from '@lynx-js/qrcode-rsbuild-plugin';
-import { pluginAngularLynx } from 'angular-lynx/plugin';
+import { pluginAngularLynx } from 'ng-lynx/plugin';
 
 import { plannerDefines } from './server/embed.js';
 import { pluginPlannerApi } from './server/llm-proxy.js';

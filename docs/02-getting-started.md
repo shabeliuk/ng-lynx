@@ -1,6 +1,6 @@
 # Getting started
 
-> **Shortcut:** `npm create angular-lynx@latest my-app` scaffolds all of the
+> **Shortcut:** `npm create ng-lynx@latest my-app` scaffolds all of the
 > below (templates: minimal / router / forms) — see
 > [21 — Scaffolding](21-scaffolding.md). The rest of this page is the manual
 > setup.
@@ -23,7 +23,7 @@ fails inside Rspack (`WebAssembly.instantiate(): Unknown heap type -14`). The
   "dependencies": {
     "@angular/core": "^21.0.0",
     "@angular/compiler": "^21.0.0",
-    "angular-lynx": "^0.0.1"
+    "ng-lynx": "^0.1.0-rc.0"
   },
   "devDependencies": {
     "@angular/compiler-cli": "^21.0.0",
@@ -76,7 +76,7 @@ short version for an iOS simulator:
 // lynx.config.ts
 import { defineConfig } from '@lynx-js/rspeedy';
 import { pluginQRCode } from '@lynx-js/qrcode-rsbuild-plugin';
-import { pluginAngularLynx } from 'angular-lynx/plugin';
+import { pluginAngularLynx } from 'ng-lynx/plugin';
 
 export default defineConfig({
   source: { entry: { main: './src/index.ts' } },
@@ -92,7 +92,7 @@ export default defineConfig({
 
 ```ts
 // src/index.ts
-import { bootstrapLynxApplication } from 'angular-lynx';
+import { bootstrapLynxApplication } from 'ng-lynx';
 import './app.css';                 // global CSS, applied via the Lynx CSS engine
 import { AppComponent } from './app.component';
 
@@ -116,7 +116,7 @@ bootstrapLynxApplication(AppComponent, {
 ```ts
 // src/app.component.ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { LYNX_ELEMENTS } from 'angular-lynx/elements';
+import { LYNX_ELEMENTS } from 'ng-lynx/elements';
 
 @Component({
   selector: 'app-root',
@@ -168,7 +168,7 @@ The dev server serves both a **web preview** and a **Lynx bundle**:
   camera, so paste rather than scan). A physical device can scan the QR code.
 
 To run this repo's own examples, build the package first: `pnpm install`,
-`pnpm --filter angular-lynx build`, then `cd examples/hello-world && npm run dev`.
+`pnpm --filter ng-lynx build`, then `cd examples/hello-world && npm run dev`.
 For the build internals and PrimJS gotchas, see
 [05 — Build integration](05-build-integration.md); for the verification ladder,
 [07 — Verifying](07-verifying.md).

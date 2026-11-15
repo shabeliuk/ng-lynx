@@ -1,7 +1,7 @@
 # Styling
 
 Lynx has its own CSS engine that compiles styles **at build time** — there is no
-runtime stylesheet injection. So the way you style an angular-lynx app is with
+runtime stylesheet injection. So the way you style an ng-lynx app is with
 **CSS files**, the same model ReactLynx uses.
 
 ## The supported path: CSS files
@@ -104,8 +104,8 @@ Other Lynx CSS facts worth knowing:
   `enableCSSInvalidation` is the template flag
   [Lynx documents](https://lynxjs.org/api/rspeedy/react-rsbuild-plugin.pluginreactlynxoptions.enablecssinvalidation)
   for this. ReactLynx turns it on by default; `@lynx-js/template-webpack-plugin`,
-  which angular-lynx builds with, defaults it to `false`, so until
-  `pluginAngularLynx` set it, angular-lynx apps had it off. Measured on
+  which ng-lynx builds with, defaults it to `false`, so until
+  `pluginAngularLynx` set it, ng-lynx apps had it off. Measured on
   Explorer 4.1 (Android emulator and iOS simulator): `examples/styling`'s
   switch restyles its children at first render and on every tap. Built with
   `enableCSSInvalidation: false`, the same switch reproduces the old failure.
@@ -124,7 +124,7 @@ Other Lynx CSS facts worth knowing:
   That's why `LynxToggle` had *no* visible on-state on a device, and why
   `LynxCheckbox`'s box never turned its checked colour (its ✓ is `@if`-mounted,
   which masked it). The fix then was to put the state class on the element
-  being styled, and the controls in `angular-lynx/forms` keep it: it works
+  being styled, and the controls in `ng-lynx/forms` keep it: it works
   with the flag on or off, so the controls work in an app that turns it off.
   `npm run verify:controls` asserts those classes.
 
@@ -137,7 +137,7 @@ Other Lynx CSS facts worth knowing:
   `display: none` leaves the layout, but its text is still drawn at the parent's
   top-left corner, over whatever is there. Hiding the `<view>` around it does the same. Seen with
   plain rules and inside `@media`, with and without `enableCSSRule`.
-  angular-lynx creates text the way ReactLynx does (`__CreateRawText` plus a
+  ng-lynx creates text the way ReactLynx does (`__CreateRawText` plus a
   `text` attribute), so it looks like an engine issue, not yet confirmed
   against ReactLynx. To hide text, remove it with `@if`, or collapse a
   wrapping `<view>` (`height: 0; overflow: hidden`), as
@@ -153,7 +153,7 @@ Other Lynx CSS facts worth knowing:
 ## Media queries
 
 `@media` works on **engine 4.0+**, on every native platform, and needs
-nothing angular-lynx-specific. Measured on Lynx Explorer 4.1, on the iOS
+nothing ng-lynx-specific. Measured on Lynx Explorer 4.1, on the iOS
 simulator and the Android emulator: orientation, width and resolution
 queries all evaluate, and the page's fallback note disappears under
 `@media all`. What rotating the device does differs, on Explorer 4.2: on
@@ -237,12 +237,12 @@ exercised here yet.
 Sass works — verified end-to-end (`examples/styling`). Add
 [`@rsbuild/plugin-sass`](https://rsbuild.rs/plugins/list/plugin-sass) to the
 `plugins` array; rspeedy accepts Rsbuild plugins directly. That's the whole
-setup — nothing angular-lynx-specific:
+setup — nothing ng-lynx-specific:
 
 ```ts
 // lynx.config.ts
 import { pluginSass } from '@rsbuild/plugin-sass';
-import { pluginAngularLynx } from 'angular-lynx/plugin';
+import { pluginAngularLynx } from 'ng-lynx/plugin';
 
 export default defineConfig({
   plugins: [
@@ -298,7 +298,7 @@ export default config;
 ```ts
 // lynx.config.ts
 import { pluginTailwindCSS } from 'rsbuild-plugin-tailwindcss';
-import { pluginAngularLynx } from 'angular-lynx/plugin';
+import { pluginAngularLynx } from 'ng-lynx/plugin';
 
 export default defineConfig({
   plugins: [
@@ -330,7 +330,7 @@ Two things to know:
   newer TS-only syntax — `satisfies Config` and `import type` both trip it.
   Use a plain `const config = { … }; export default config;` (a `.js`/`.cjs`
   config avoids the transform entirely). This is a Tailwind-v3-loader quirk,
-  not an angular-lynx one.
+  not an ng-lynx one.
 - **The preset is experimental.** Its own README flags it as still-evolving
   ("exploring the best DX to write Tailwind upon Lynx"), so treat the exact
   utility set as a moving target and verify against your Lynx engine version.

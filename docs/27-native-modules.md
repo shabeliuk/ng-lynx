@@ -10,7 +10,7 @@ token instead.
 
 ```ts
 import { inject, Injectable } from '@angular/core';
-import { injectNativeModule } from 'angular-lynx';
+import { injectNativeModule } from 'ng-lynx';
 
 interface StorageModule {
   getItem(key: string): string | undefined;
@@ -33,7 +33,7 @@ export class SettingsService {
 `injectNativeModule<T>(name)` must be called in an injection context
 (constructor, field initializer). It returns the module typed as `T`, or
 `undefined` if the host didn't register it (with a dev-mode warning). You
-supply the `T` interface — angular-lynx can't know your host's module shapes.
+supply the `T` interface — ng-lynx can't know your host's module shapes.
 
 ## The generic bridge
 
@@ -41,7 +41,7 @@ Many hosts expose a single `bridge` with `call` / `on` instead of discrete
 modules:
 
 ```ts
-import { injectNativeBridge } from 'angular-lynx';
+import { injectNativeBridge } from 'ng-lynx';
 
 const bridge = injectNativeBridge();
 bridge?.call('haptics', { style: 'light' }, (result) => { … });
@@ -54,7 +54,7 @@ The registry is a DI token (`LYNX_NATIVE_MODULES`), so tests substitute fakes
 with one provider — no globals to stub:
 
 ```ts
-import { provideLynxNativeModules } from 'angular-lynx';
+import { provideLynxNativeModules } from 'ng-lynx';
 
 const fixture = await renderLynxComponent(SettingsComponent, {
   providers: [

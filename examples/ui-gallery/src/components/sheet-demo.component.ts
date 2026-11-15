@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 
-import { LYNX_ELEMENTS } from 'angular-lynx/elements';
+import { LYNX_ELEMENTS } from 'ng-lynx/elements';
 
 import { lockDrag, unlockDrag } from '../drag-lock.service.js';
 
@@ -8,7 +8,7 @@ import { lockDrag, unlockDrag } from '../drag-lock.service.js';
  * A recreation of `@lynx-js/lynx-ui`'s `<SheetRoot>`/`<Sheet…>` primitives
  * (https://lynxjs.org/next/ui/components/sheet.html) — a bottom sheet with a
  * backdrop, drag-to-close handle, and rubber-band-style clamped drag — for
- * angular-lynx. A single snap point (open/closed) rather than the real
+ * ng-lynx. A single snap point (open/closed) rather than the real
  * component's `snapPoints` array, to keep the demo focused.
  *
  * The panel is a `position: fixed` overlay (the same technique

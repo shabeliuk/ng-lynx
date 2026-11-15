@@ -1,12 +1,12 @@
 # Debugging — the op-stream logger & what else exists
 
 Angular DevTools can't attach to a Lynx app (no DOM, no Chrome bridge). Lynx's
-own inspector, Lynx DevTool, does work with an angular-lynx page (below), and
-angular-lynx ships a few other levers.
+own inspector, Lynx DevTool, does work with an ng-lynx page (below), and
+ng-lynx ships a few other levers.
 
 ## Lynx DevTool
 
-Lynx DevTool is a desktop app with Chrome-style panels. On an angular-lynx page
+Lynx DevTool is a desktop app with Chrome-style panels. On an ng-lynx page
 in Lynx Explorer 4.2 (iOS simulator, 2026-11-09, the `ng-forms` example):
 
 - **Elements** shows the real element tree (`scroll-view`, `view`, `text`,
@@ -41,7 +41,7 @@ seeing that batch is the fastest way to tell whether the bug is in your
 component (wrong ops emitted) or downstream. Turn it on:
 
 ```ts
-import { enableLynxOpLogging, disableLynxOpLogging } from 'angular-lynx';
+import { enableLynxOpLogging, disableLynxOpLogging } from 'ng-lynx';
 
 enableLynxOpLogging();   // every flush now prints its decoded ops
 // … reproduce the issue …
@@ -51,7 +51,7 @@ disableLynxOpLogging();
 Each flush prints a header and one readable line per op:
 
 ```
-[angular-lynx] flush (10 ops)
+[ng-lynx] flush (10 ops)
   SET_ATTR    #1 ng-version="21.2.17"
   CREATE      #2 view
   INSERT      #2 → #1 (append)
@@ -100,7 +100,7 @@ DevTool tracing (`profileStart`/`profileEnd`).
   around that (route lines through an op or a global the main thread reads).
 - **`rspeedy inspect`** — the resolved build config, for diagnosing plugin /
   bundling issues.
-- **Headless harnesses** (`npm run verify*`) and `angular-lynx/testing` — the
+- **Headless harnesses** (`npm run verify*`) and `ng-lynx/testing` — the
   fastest loop for reproducing a rendering bug without a device
   ([19 — Testing](19-testing.md)).
 

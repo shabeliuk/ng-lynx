@@ -7,7 +7,7 @@ import {
   ViewChild,
 } from '@angular/core';
 
-import { asLynxElement } from 'angular-lynx';
+import { asLynxElement } from 'ng-lynx';
 
 interface Contact {
   id: number;

@@ -6,7 +6,7 @@ real Angular app on the **iOS simulator** (via Lynx Explorer) and the **web
 preview**. Validated against `@lynx-js/rspeedy@0.18`, `rspack@2.2`, Angular 21.2
 — the toolchain that pairs with **Lynx engine 4.2**. Bundles still declare
 engine version 3.2 (`engineVersion`, formerly `targetSdkVersion`; the template
-plugin's default, which angular-lynx does not override), so they load on any
+plugin's default, which ng-lynx does not override), so they load on any
 engine from 3.2 up, 4.1 and 4.2 included; see
 [40 — Lynx 4.2 upgrade](40-lynx-4-2.md) and [39 — Lynx 4.1 upgrade](39-lynx-4-1.md).
 
@@ -25,7 +25,7 @@ Two compilation modes, **both validated on-device**:
 ```bash
 # from the workspace root (pnpm workspace)
 pnpm install
-pnpm --filter angular-lynx build          # build the package to dist/
+pnpm --filter ng-lynx build          # build the package to dist/
 cd examples/hello-world
 pnpm rspeedy dev                          # serves lynx + web bundles + web preview
 ```
@@ -61,11 +61,11 @@ The dev server prints three URLs:
   `jsc.target`), and compiles `node_modules` JS too. Under `aot: false` it also
   configures SWC for Angular's legacy decorators.
 - For each entry, creates two bundles using webpack **layers**
-  ([`layers.ts`](../packages/angular-lynx/plugin/src/layers.ts)):
-  - **Background** (`angular:background`): `angular-lynx/entry-background`
+  ([`layers.ts`](../packages/ng-lynx/plugin/src/layers.ts)):
+  - **Background** (`angular:background`): `ng-lynx/entry-background`
     (PrimJS polyfills + event bootstrap), plus `@angular/compiler` under JIT,
     prepended to your app code (Angular + `LynxRenderer2`).
-  - **Main thread** (`angular:main-thread`): `angular-lynx/main-thread` (the
+  - **Main thread** (`angular:main-thread`): `ng-lynx/main-thread` (the
     PAPI executor) + `@lynx-js/react/worklet-runtime` (Lynx's real worklet
     runtime — `[lynxMainThread]` is a no-op without it, see
     [11 — Worklets](11-worklets.md)) + any `mainThreadModules` (worklet
@@ -331,7 +331,7 @@ string literal as the first statement of a closure, right where you use it —
 a build-time SWC transform detects the marker, extracts the closure (capturing
 any outer variables it references into a `_c` object), and relocates it into
 the separate Main-Thread bundle, leaving a small registered-reference
-descriptor behind in the Background bundle. angular-lynx's worklets
+descriptor behind in the Background bundle. ng-lynx's worklets
 ([11 — Worklets](11-worklets.md)) are **explicit** instead — authored in a
 dedicated Main-Thread module, loaded via `mainThreadModules` — for two reasons
 specific to this AOT pipeline:

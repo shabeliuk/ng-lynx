@@ -38,7 +38,7 @@ properties against your engine version.
 [10 — Element queries](10-element-queries.md)) is a fully generic pass-through
 to `NodesRef.invoke(...)` — so `invoke({ method: 'animate', params: { keyframes,
 options } })` already reaches the native per-element `animate()` PAPI with no
-new angular-lynx code needed. This is the same underlying native method
+new ng-lynx code needed. This is the same underlying native method
 `lynx.getElementById(id).animate(keyframes, options)` calls (see
 [29 — Platform APIs](29-platform-apis.md) for `LynxObject`'s typed
 `LynxAnimationKeyframes`/`LynxAnimationOptions` — reuse those types for the
@@ -56,13 +56,13 @@ new needed; that's the worklet model's whole reason to exist.
 
 For a **timed** transition you want to trigger from a worklet (a fade-out
 after a tap, a settle animation after a gesture ends) without hand-rolling a
-timer loop, `angular-lynx/worklet` exports `lynxAnimate`: tweens a single
+timer loop, `ng-lynx/worklet` exports `lynxAnimate`: tweens a single
 number over time, calling your `toStyle(value)` on every tick and applying the
 result via `el.setStyle`.
 
 ```ts
 // gestures.mt.ts (a Main-Thread module)
-import { defineWorklet, lynxAnimate, type WorkletContext } from 'angular-lynx/worklet';
+import { defineWorklet, lynxAnimate, type WorkletContext } from 'ng-lynx/worklet';
 
 function fadeOutMT(ctx: WorkletContext): void {
   lynxAnimate(ctx, (v) => `opacity: ${v};`, { from: 1, to: 0, duration: 250 });
@@ -170,10 +170,10 @@ no frame was captured.
 
 For a hand-rolled frame loop (rather than the declarative `lynxAnimate`),
 `lynxRequestAnimationFrame(cb)` / `lynxCancelAnimationFrame(handle)` give you a
-scheduler that works everywhere angular-lynx runs:
+scheduler that works everywhere ng-lynx runs:
 
 ```ts
-import { lynxRequestAnimationFrame, lynxCancelAnimationFrame } from 'angular-lynx';
+import { lynxRequestAnimationFrame, lynxCancelAnimationFrame } from 'ng-lynx';
 
 let handle = lynxRequestAnimationFrame(function tick(t) {
   // …update per frame…

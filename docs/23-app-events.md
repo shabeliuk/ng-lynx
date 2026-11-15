@@ -9,7 +9,7 @@ the host lifecycle as a signal.
 
 ```ts
 import { effect } from '@angular/core';
-import { lynxForeground } from 'angular-lynx';
+import { lynxForeground } from 'ng-lynx';
 
 export class VideoComponent {
   readonly foreground = lynxForeground();
@@ -45,7 +45,7 @@ produced by this teardown are dropped, because the native tree is already going 
 
 ```ts
 import { inject, Injectable } from '@angular/core';
-import { LynxGlobalEvents } from 'angular-lynx';
+import { LynxGlobalEvents } from 'ng-lynx';
 
 @Injectable({ providedIn: 'root' })
 export class KeyboardService {
@@ -73,7 +73,7 @@ unwrapped, multi-argument emits arrive as the argument array.
 
 Typical events on this bus: whatever the host emits via
 `lynxView.sendGlobalEvent(...)`, Lynx's exposure system (`exposure` /
-`disexposure`), `keyboardstatuschanged`, `onWindowResize`, and angular-lynx's
+`disexposure`), `keyboardstatuschanged`, `onWindowResize`, and ng-lynx's
 own ReactLynx-parity `onDataChanged` / `onGlobalPropsChanged`
 ([17 — Host data](17-host-data.md)).
 

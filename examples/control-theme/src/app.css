@@ -1,6 +1,6 @@
 /*
  * Re-theme the whole control kit by overriding a few tokens from
- * angular-lynx/forms/theme.css — no per-control CSS needed. Here: a warmer
+ * ng-lynx/forms/theme.css — no per-control CSS needed. Here: a warmer
  * accent and a rounder radius. Everything else falls back to the theme's
  * defaults.
  */

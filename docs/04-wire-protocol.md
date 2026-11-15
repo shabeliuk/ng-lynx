@@ -10,9 +10,9 @@ payload size.
 — see [Replay-guard epoch](#replay-guard-epoch) below.
 
 Source of truth:
-[`packages/angular-lynx/internal/src/ops.ts`](../packages/angular-lynx/internal/src/ops.ts).
+[`packages/ng-lynx/internal/src/ops.ts`](../packages/ng-lynx/internal/src/ops.ts).
 Producer: the renderer (`pushOp`). Consumer:
-[`main-thread/src/ops-apply.ts`](../packages/angular-lynx/main-thread/src/ops-apply.ts).
+[`main-thread/src/ops-apply.ts`](../packages/ng-lynx/main-thread/src/ops-apply.ts).
 
 ## Op codes
 

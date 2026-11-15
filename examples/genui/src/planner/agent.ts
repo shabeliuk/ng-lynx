@@ -15,7 +15,7 @@
  * All three return OpenUI Lang, streamed as a growing string, so the planner
  * screen doesn't care which it has.
  */
-import { lynxAssetUrl } from 'angular-lynx';
+import { lynxAssetUrl } from 'ng-lynx';
 
 import type { ChatMessage } from './conversation.js';
 import { chatRequestBody, describeHttpError, type EmbeddedLlmConfig, pickModel, sendWithRetry, sseText } from './llm-wire.js';
@@ -26,7 +26,7 @@ import { createUtf8Decoder, StreamText } from './stream-text.js';
 /** Defined by `server/embed.ts`: the embedded LLM config, or `null`. */
 declare const __PLANNER_EMBEDDED__: EmbeddedLlmConfig | null;
 
-/** Lynx's runtime global (angular-lynx `system-info.ts`); `'web'` in the web preview. */
+/** Lynx's runtime global (ng-lynx `system-info.ts`); `'web'` in the web preview. */
 declare const SystemInfo: { platform?: string } | undefined;
 
 /**

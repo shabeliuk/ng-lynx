@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { LYNX_ELEMENTS } from 'angular-lynx/elements';
+import { LYNX_ELEMENTS } from 'ng-lynx/elements';
 
 import { SwiperComponent, type SwiperItem } from './swiper/swiper.component.js';
 import { easeInOut } from './swiper/swiper.mt.js';

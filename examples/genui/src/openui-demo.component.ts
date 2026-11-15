@@ -23,7 +23,7 @@ import {
 } from '@angular/core';
 
 import type { ActionEvent } from '@openuidev/lang-core';
-import { createOpenUiLibrary, OpenuiRenderer } from 'angular-lynx/genui';
+import { createOpenUiLibrary, OpenuiRenderer } from 'ng-lynx/genui';
 
 const LLM_RESPONSE = [
   '$notes = ""',

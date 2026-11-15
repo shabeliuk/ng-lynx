@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { LYNX_ELEMENTS } from 'angular-lynx/elements';
+import { LYNX_ELEMENTS } from 'ng-lynx/elements';
 import {
   LynxCheckbox,
   LynxRadioGroup,
@@ -10,10 +10,10 @@ import {
   LynxSlider,
   LynxStepper,
   LynxToggle,
-} from 'angular-lynx/forms';
+} from 'ng-lynx/forms';
 
 /**
- * Every control here is styled entirely by `angular-lynx/forms/theme.css`
+ * Every control here is styled entirely by `ng-lynx/forms/theme.css`
  * (imported in index.ts) — this component writes no control CSS of its own.
  * app.css only overrides a couple of `--lynx-*` tokens to re-theme the whole
  * kit at once, which is the point of the theme.
@@ -35,7 +35,7 @@ import {
   template: `
     <view class="app">
       <text class="title">Themed control kit</text>
-      <text class="subtitle">All styling from angular-lynx/forms/theme.css</text>
+      <text class="subtitle">All styling from ng-lynx/forms/theme.css</text>
 
       <lynx-checkbox [(ngModel)]="agreed">
         <text>I agree to the terms</text>

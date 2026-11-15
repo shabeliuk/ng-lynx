@@ -3,16 +3,16 @@
 Lynx delivers text-input changes differently from the DOM: the new value arrives
 as `event.detail.value` (not `event.target.value`). Angular's `@angular/forms`
 `DefaultValueAccessor` is built around the DOM assumptions, so it doesn't fit.
-angular-lynx gives you two options:
+ng-lynx gives you two options:
 
 - **`[(lynxModel)]`** — a tiny, dependency-free directive for simple two-way
   binding (no `@angular/forms`). Covered first below.
-- **`LynxValueAccessor`** (`angular-lynx/forms`) — a real `ControlValueAccessor`
+- **`LynxValueAccessor`** (`ng-lynx/forms`) — a real `ControlValueAccessor`
   so `[(ngModel)]`, reactive forms, and validators work. See
   [`@angular/forms`](#angularforms--ngmodel--reactive-forms) below.
 
 - **Richer controls** — `LynxSelect`, `LynxDatePicker`, `LynxTimePicker`,
-  `LynxAutocomplete` (also `angular-lynx/forms`) — `ControlValueAccessor`s for
+  `LynxAutocomplete` (also `ng-lynx/forms`) — `ControlValueAccessor`s for
   the field types Lynx has no native element for. See
   [Richer controls](#richer-controls)
   below.
@@ -28,7 +28,7 @@ Import `LynxModel` into your component and bind it on `<input>` / `<textarea>`:
 
 ```ts
 import { Component, signal, NO_ERRORS_SCHEMA } from '@angular/core';
-import { LynxModel } from 'angular-lynx';
+import { LynxModel } from 'ng-lynx';
 
 @Component({
   selector: 'app-root',
@@ -58,7 +58,7 @@ use the classic banana-in-a-box:
 
 ## How it works
 
-`LynxModel` ([forms.ts](../packages/angular-lynx/runtime/src/forms.ts)) is a
+`LynxModel` ([forms.ts](../packages/ng-lynx/runtime/src/forms.ts)) is a
 standalone directive with:
 
 - `@Input('lynxModel')` — written back to the element via a
@@ -69,7 +69,7 @@ standalone directive with:
   field cleared from code kept its text. The web preview honours both. The
   echo of the user's own typing is not written back, since that would move the
   cursor. Found running examples/genui as a native iOS app;
-  see [input-value.ts](../packages/angular-lynx/runtime/src/input-value.ts).
+  see [input-value.ts](../packages/ng-lynx/runtime/src/input-value.ts).
 - `@Output('lynxModelChange')` — emitted from a `@HostListener('input', …)`
   that reads `event.detail.value`.
 
@@ -85,14 +85,14 @@ computed greeting in the example updates with no extra wiring.
 
 For full `@angular/forms` support — `[(ngModel)]`, `[formControl]`,
 `formControlName`, validators, `<form>` groups — import **`LynxValueAccessor`**
-from the `angular-lynx/forms` entry (it pulls in `@angular/forms`, so it lives in
+from the `ng-lynx/forms` entry (it pulls in `@angular/forms`, so it lives in
 its own entry point). See the runnable [`examples/ng-forms`](../examples/ng-forms)
 and `verify/harness-ngforms.ts` (`npm run verify:ngforms`).
 
 ```ts
 import { Component, NO_ERRORS_SCHEMA, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
-import { LynxValueAccessor } from 'angular-lynx/forms';
+import { LynxValueAccessor } from 'ng-lynx/forms';
 
 @Component({
   selector: 'app-root',
@@ -132,7 +132,7 @@ make `LynxValueAccessor` win cleanly:
   listeners coexist on the one native `input` binding.
 
 When to use which: reach for **`[(lynxModel)]`** (main entry, no `@angular/forms`)
-for simple two-way binding; reach for **`LynxValueAccessor`** (`angular-lynx/forms`)
+for simple two-way binding; reach for **`LynxValueAccessor`** (`ng-lynx/forms`)
 when you want validators, reactive forms, or `<form>` groups.
 
 ## Richer controls
@@ -140,10 +140,10 @@ when you want validators, reactive forms, or `<form>` groups.
 Lynx has no native `<select>`, `<picker>`, checkbox, radio, or switch element
 in its [built-in elements
 reference](https://lynxjs.org/api/elements/built-in/view). Even `lynx-ui` (the official
-component library) builds its pickers the same way angular-lynx does here —
+component library) builds its pickers the same way ng-lynx does here —
 composed from those primitives, not a native control.
 
-`angular-lynx/forms` ships ten such controls, each a `ControlValueAccessor`
+`ng-lynx/forms` ships ten such controls, each a `ControlValueAccessor`
 so they drop into `[(ngModel)]` / `[formControl]` exactly like `LynxValueAccessor`.
 Four open a **modal dialog** (covered first, below); six are **inline** —
 no trigger, no dialog, always fully visible, the conventional UX for a
@@ -177,7 +177,7 @@ import {
   LynxStepper,
   LynxTimePicker,
   LynxToggle,
-} from 'angular-lynx/forms';
+} from 'ng-lynx/forms';
 
 @Component({
   selector: 'app-root',
@@ -229,7 +229,7 @@ export class AppComponent {
 See the full working version in
 [`examples/ng-forms/src/app.component.ts`](../examples/ng-forms/src/app.component.ts),
 exercised headlessly by
-[`verify/harness-controls.ts`](../packages/angular-lynx/verify/harness-controls.ts)
+[`verify/harness-controls.ts`](../packages/ng-lynx/verify/harness-controls.ts)
 (`npm run verify:controls`).
 
 ### Why the dialog is a plain `position: fixed` view, not `<overlay>`
@@ -571,13 +571,13 @@ web preview.
 The kit ships **headless** — every control emits stable class names and you
 bring the CSS (the tables above are the contract). For a batteries-included
 start there's also an **optional default theme**,
-`angular-lynx/forms/theme.css`, that styles all ten controls **entirely from
+`ng-lynx/forms/theme.css`, that styles all ten controls **entirely from
 CSS custom properties**. Import it, then re-theme the whole kit by overriding a
 few tokens — no per-control CSS:
 
 ```ts
 // index.ts — import the theme first
-import 'angular-lynx/forms/theme.css';
+import 'ng-lynx/forms/theme.css';
 import './app.css';
 ```
 
@@ -598,7 +598,7 @@ already speaks LUNA tokens elsewhere. **Shape/rhythm and per-control sizing**
 `--lynx-disabled-opacity`, `--lynx-checkbox-size`, `--lynx-toggle-w`,
 `--lynx-slider-thumb`, …) stay under this package's own `--lynx-*` prefix —
 LUNA is a color-only system and has no spacing/sizing tokens to match. See the
-top of [`forms-theme.css`](../packages/angular-lynx/forms-theme.css) for the
+top of [`forms-theme.css`](../packages/ng-lynx/forms-theme.css) for the
 full list of defaults.
 
 **Requires `enableCSSInheritance: true`** in `pluginAngularLynx({ … })` — Lynx

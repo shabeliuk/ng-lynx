@@ -197,9 +197,9 @@ importers:
       '@angular/forms':
         specifier: 21.2.26
         version: 21.2.26(@angular/common@21.2.26(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(@angular/platform-browser@21.2.26(@angular/common@21.2.26(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)))(rxjs@7.8.2)
-      angular-lynx:
+      ng-lynx:
         specifier: workspace:*
-        version: link:../../packages/angular-lynx
+        version: link:../../packages/ng-lynx
     devDependencies:
       '@lynx-js/qrcode-rsbuild-plugin':
         specifier: ^0.7.3
@@ -222,9 +222,9 @@ importers:
       '@angular/forms':
         specifier: 21.2.26
         version: 21.2.26(@angular/common@21.2.26(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(@angular/platform-browser@21.2.26(@angular/common@21.2.26(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)))(rxjs@7.8.2)
-      angular-lynx:
+      ng-lynx:
         specifier: workspace:*
-        version: link:../../packages/angular-lynx
+        version: link:../../packages/ng-lynx
     devDependencies:
       '@lynx-js/qrcode-rsbuild-plugin':
         specifier: ^0.7.3
@@ -244,9 +244,9 @@ importers:
       '@angular/core':
         specifier: 21.2.26
         version: 21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)
-      angular-lynx:
+      ng-lynx:
         specifier: workspace:*
-        version: link:../../packages/angular-lynx
+        version: link:../../packages/ng-lynx
     devDependencies:
       '@lynx-js/qrcode-rsbuild-plugin':
         specifier: ^0.7.3
@@ -272,9 +272,9 @@ importers:
       '@openuidev/lang-core':
         specifier: ^0.3.2
         version: 0.3.2(zod@3.25.76)
-      angular-lynx:
+      ng-lynx:
         specifier: workspace:*
-        version: link:../../packages/angular-lynx
+        version: link:../../packages/ng-lynx
       sparkling-method:
         specifier: ~2.1.0-rc.36
         version: 2.1.0-rc.36
@@ -312,9 +312,9 @@ importers:
       '@angular/core':
         specifier: 21.2.26
         version: 21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)
-      angular-lynx:
+      ng-lynx:
         specifier: workspace:*
-        version: link:../../packages/angular-lynx
+        version: link:../../packages/ng-lynx
     devDependencies:
       '@lynx-js/qrcode-rsbuild-plugin':
         specifier: ^0.7.3
@@ -334,9 +334,9 @@ importers:
       '@angular/core':
         specifier: 21.2.26
         version: 21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)
-      angular-lynx:
+      ng-lynx:
         specifier: workspace:*
-        version: link:../../packages/angular-lynx
+        version: link:../../packages/ng-lynx
     devDependencies:
       '@lynx-js/qrcode-rsbuild-plugin':
         specifier: ^0.7.3
@@ -359,9 +359,9 @@ importers:
       '@angular/localize':
         specifier: 21.2.26
         version: 21.2.26(@angular/compiler-cli@21.2.26(@angular/compiler@21.2.26)(supports-color@8.1.1)(typescript@5.9.3))(@angular/compiler@21.2.26)(supports-color@8.1.1)
-      angular-lynx:
+      ng-lynx:
         specifier: workspace:*
-        version: link:../../packages/angular-lynx
+        version: link:../../packages/ng-lynx
     devDependencies:
       '@lynx-js/qrcode-rsbuild-plugin':
         specifier: ^0.7.3
@@ -381,9 +381,9 @@ importers:
       '@angular/core':
         specifier: 21.2.26
         version: 21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)
-      angular-lynx:
+      ng-lynx:
         specifier: workspace:*
-        version: link:../../packages/angular-lynx
+        version: link:../../packages/ng-lynx
     devDependencies:
       '@lynx-js/qrcode-rsbuild-plugin':
         specifier: ^0.7.3
@@ -403,9 +403,9 @@ importers:
       '@angular/core':
         specifier: 21.2.26
         version: 21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)
-      angular-lynx:
+      ng-lynx:
         specifier: workspace:*
-        version: link:../../packages/angular-lynx
+        version: link:../../packages/ng-lynx
     devDependencies:
       '@lynx-js/qrcode-rsbuild-plugin':
         specifier: ^0.7.3
@@ -428,9 +428,9 @@ importers:
       '@angular/forms':
         specifier: 21.2.26
         version: 21.2.26(@angular/common@21.2.26(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(@angular/platform-browser@21.2.26(@angular/common@21.2.26(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)))(rxjs@7.8.2)
-      angular-lynx:
+      ng-lynx:
         specifier: workspace:*
-        version: link:../../packages/angular-lynx
+        version: link:../../packages/ng-lynx
     devDependencies:
       '@lynx-js/qrcode-rsbuild-plugin':
         specifier: ^0.7.3
@@ -453,9 +453,9 @@ importers:
       '@angular/forms':
         specifier: 21.2.26
         version: 21.2.26(@angular/common@21.2.26(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(@angular/platform-browser@21.2.26(@angular/common@21.2.26(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)))(rxjs@7.8.2)
-      angular-lynx:
+      ng-lynx:
         specifier: workspace:*
-        version: link:../../packages/angular-lynx
+        version: link:../../packages/ng-lynx
     devDependencies:
       '@lynx-js/qrcode-rsbuild-plugin':
         specifier: ^0.7.3
@@ -475,9 +475,9 @@ importers:
       '@angular/core':
         specifier: 21.2.26
         version: 21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)
-      angular-lynx:
+      ng-lynx:
         specifier: workspace:*
-        version: link:../../packages/angular-lynx
+        version: link:../../packages/ng-lynx
     devDependencies:
       '@lynx-js/qrcode-rsbuild-plugin':
         specifier: ^0.7.3
@@ -497,9 +497,9 @@ importers:
       '@angular/core':
         specifier: 21.2.26
         version: 21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)
-      angular-lynx:
+      ng-lynx:
         specifier: workspace:*
-        version: link:../../packages/angular-lynx
+        version: link:../../packages/ng-lynx
     devDependencies:
       '@lynx-js/qrcode-rsbuild-plugin':
         specifier: ^0.7.3
@@ -519,9 +519,9 @@ importers:
       '@angular/core':
         specifier: 21.2.26
         version: 21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)
-      angular-lynx:
+      ng-lynx:
         specifier: workspace:*
-        version: link:../../packages/angular-lynx
+        version: link:../../packages/ng-lynx
     devDependencies:
       '@lynx-js/qrcode-rsbuild-plugin':
         specifier: ^0.7.3
@@ -541,9 +541,9 @@ importers:
       '@angular/core':
         specifier: 21.2.26
         version: 21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)
-      angular-lynx:
+      ng-lynx:
         specifier: workspace:*
-        version: link:../../packages/angular-lynx
+        version: link:../../packages/ng-lynx
     devDependencies:
       '@lynx-js/config-rsbuild-plugin':
         specifier: ^0.2.5
@@ -572,9 +572,9 @@ importers:
       '@angular/router':
         specifier: 21.2.26
         version: 21.2.26(@angular/common@21.2.26(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(@angular/platform-browser@21.2.26(@angular/common@21.2.26(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)))(rxjs@7.8.2)
-      angular-lynx:
+      ng-lynx:
         specifier: workspace:*
-        version: link:../../packages/angular-lynx
+        version: link:../../packages/ng-lynx
     devDependencies:
       '@lynx-js/qrcode-rsbuild-plugin':
         specifier: ^0.7.3
@@ -594,9 +594,9 @@ importers:
       '@angular/core':
         specifier: 21.2.26
         version: 21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)
-      angular-lynx:
+      ng-lynx:
         specifier: workspace:*
-        version: link:../../packages/angular-lynx
+        version: link:../../packages/ng-lynx
     devDependencies:
       '@lynx-js/qrcode-rsbuild-plugin':
         specifier: ^0.7.3
@@ -619,9 +619,9 @@ importers:
       '@angular/core':
         specifier: 21.2.26
         version: 21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)
-      angular-lynx:
+      ng-lynx:
         specifier: workspace:*
-        version: link:../../packages/angular-lynx
+        version: link:../../packages/ng-lynx
     devDependencies:
       '@lynx-js/qrcode-rsbuild-plugin':
         specifier: ^0.7.3
@@ -650,9 +650,9 @@ importers:
       '@angular/core':
         specifier: 21.2.26
         version: 21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)
-      angular-lynx:
+      ng-lynx:
         specifier: workspace:*
-        version: link:../../packages/angular-lynx
+        version: link:../../packages/ng-lynx
       three:
         specifier: ^0.184.0
         version: 0.184.0
@@ -678,9 +678,9 @@ importers:
       '@angular/core':
         specifier: 21.2.26
         version: 21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)
-      angular-lynx:
+      ng-lynx:
         specifier: workspace:*
-        version: link:../../packages/angular-lynx
+        version: link:../../packages/ng-lynx
       three:
         specifier: ^0.184.0
         version: 0.184.0
@@ -706,9 +706,9 @@ importers:
       '@angular/core':
         specifier: 21.2.26
         version: 21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)
-      angular-lynx:
+      ng-lynx:
         specifier: workspace:*
-        version: link:../../packages/angular-lynx
+        version: link:../../packages/ng-lynx
     devDependencies:
       '@lynx-js/qrcode-rsbuild-plugin':
         specifier: ^0.7.3
@@ -728,9 +728,9 @@ importers:
       '@angular/core':
         specifier: 21.2.26
         version: 21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)
-      angular-lynx:
+      ng-lynx:
         specifier: workspace:*
-        version: link:../../packages/angular-lynx
+        version: link:../../packages/ng-lynx
     devDependencies:
       '@lynx-js/qrcode-rsbuild-plugin':
         specifier: ^0.7.3
@@ -750,9 +750,9 @@ importers:
       '@angular/core':
         specifier: 21.2.26
         version: 21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)
-      angular-lynx:
+      ng-lynx:
         specifier: workspace:*
-        version: link:../../packages/angular-lynx
+        version: link:../../packages/ng-lynx
     devDependencies:
       '@lynx-js/qrcode-rsbuild-plugin':
         specifier: ^0.7.3
@@ -772,9 +772,9 @@ importers:
       '@angular/core':
         specifier: 21.2.26
         version: 21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)
-      angular-lynx:
+      ng-lynx:
         specifier: workspace:*
-        version: link:../../packages/angular-lynx
+        version: link:../../packages/ng-lynx
     devDependencies:
       '@lynx-js/qrcode-rsbuild-plugin':
         specifier: ^0.7.3
@@ -786,7 +786,7 @@ importers:
         specifier: ~5.9.3
         version: 5.9.3
 
-  packages/angular-lynx:
+  packages/ng-lynx:
     dependencies:
       '@babel/core':
         specifier: ^7.29.13
@@ -865,7 +865,7 @@ importers:
         specifier: ^3.25.76
         version: 3.25.76
 
-  packages/create-angular-lynx: {}
+  packages/create-ng-lynx: {}
 
   packages/device-tests:
     dependencies:
@@ -881,9 +881,9 @@ importers:
       '@angular/router':
         specifier: 21.2.26
         version: 21.2.26(@angular/common@21.2.26(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(@angular/platform-browser@21.2.26(@angular/common@21.2.26(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)))(rxjs@7.8.2)
-      angular-lynx:
+      ng-lynx:
         specifier: workspace:*
-        version: link:../angular-lynx
+        version: link:../ng-lynx
       rxjs:
         specifier: ^7.8.2
         version: 7.8.2

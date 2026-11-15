@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 
-import { hotSwapComponent } from 'angular-lynx';
-import { LYNX_ELEMENTS } from 'angular-lynx/elements';
+import { hotSwapComponent } from 'ng-lynx';
+import { LYNX_ELEMENTS } from 'ng-lynx/elements';
 
 /**
  * Live demo of `hotSwapComponent` — state-preserving component hot-swap

@@ -210,7 +210,7 @@ for windowing:
   `<list-item>`s the list holds. Once the window has slid, the list's first
   item is no longer row 0: with the window starting at row 60, row 125 came
   back as `index: 65` (Android).
-- **The web preview has no `itemKey`.** angular-lynx sends item keys to the
+- **The web preview has no `itemKey`.** ng-lynx sends item keys to the
   list in its `update-list-info`, not as attributes, and the web list reads
   them from attributes. So there the cells carry only `index`, and the demo's
   window stays at its first 30 rows, as it always has in the web preview.

@@ -7,7 +7,7 @@ pan, fling, longpress, rotation, pinch — plus **relations** between them
 entirely on the Main Thread, via a dedicated PAPI call:
 `__SetGestureDetector(dom, id, type, config, relationMap)`.
 
-`angular-lynx` exposes it as `[lynxGesture]`, reusing the existing worklet
+`ng-lynx` exposes it as `[lynxGesture]`, reusing the existing worklet
 machinery — a gesture's callbacks are ordinary worklets, exactly like
 `[lynxMainThread]`'s.
 
@@ -44,7 +44,7 @@ The phases the engine calls (from its `BaseGestureHandler`, and observed on a de
 
 ```ts
 // gestures.mt.ts (a Main-Thread module)
-import { defineMainThreadRef, defineWorklet, type MainThreadGestureEvent, type WorkletContext } from 'angular-lynx/worklet';
+import { defineMainThreadRef, defineWorklet, type MainThreadGestureEvent, type WorkletContext } from 'ng-lynx/worklet';
 
 const grabX = defineMainThreadRef('grabX', 0);
 
@@ -68,7 +68,7 @@ export const onPanEnd = defineWorklet(onPanEndMT);
 
 ```ts
 // component
-import { LynxGesture, type LynxGestures } from 'angular-lynx';
+import { LynxGesture, type LynxGestures } from 'ng-lynx';
 import { onPanEnd, onPanStart, onPanUpdate } from './gestures.mt';
 
 @Component({
@@ -191,7 +191,7 @@ touch regardless. The fix is declarative, on the element the drag starts on:
 `pan-intercept-direction` picks the swipe direction to keep from native
 gestures (`0` horizontal, `1` vertical, `2` none), and `pan-intercept-scope`
 picks where (`1` = ancestors; `0` self, `2` descendants, `3`–`5` combinations,
-`6` none). Both are typed on every element in `angular-lynx/elements`.
+`6` none). Both are typed on every element in `ng-lynx/elements`.
 
 **Measured** on Lynx Explorer (engine 3.7, iOS simulator), on
 `examples/ui-gallery`'s Draggable demo:

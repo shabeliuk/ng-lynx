@@ -17,7 +17,7 @@ usable directly (that's the runtime half of full HMR, and how the transport
 applies updates):
 
 ```ts
-import { hotSwapComponent } from 'angular-lynx';
+import { hotSwapComponent } from 'ng-lynx';
 
 // CounterCard is live on screen with count() === 3.
 hotSwapComponent(CounterCard, CounterCardV2);

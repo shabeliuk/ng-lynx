@@ -18,7 +18,7 @@ import {
   type Type,
 } from '@angular/core';
 
-import { defineComponent, OPENUI_NODE_CONTEXT } from 'angular-lynx/genui';
+import { defineComponent, OPENUI_NODE_CONTEXT } from 'ng-lynx/genui';
 
 import { formatMoneyShort, type PlanResult, type ScenarioId, type ScenarioResult } from './calc.js';
 import { PLANNER_COMPONENTS } from './contract.js';

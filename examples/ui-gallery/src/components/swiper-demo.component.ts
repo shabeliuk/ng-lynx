@@ -1,14 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 
-import { lynxAssetUrl } from 'angular-lynx';
-import { LYNX_ELEMENTS, type LynxImageErrorEvent } from 'angular-lynx/elements';
+import { lynxAssetUrl } from 'ng-lynx';
+import { LYNX_ELEMENTS, type LynxImageErrorEvent } from 'ng-lynx/elements';
 
 import { lockDrag, unlockDrag } from '../drag-lock.service.js';
 
 /**
  * A recreation of `@lynx-js/lynx-ui`'s `<Swiper>` primitive
  * (https://lynxjs.org/next/ui/components/swiper.html) — a paged, draggable
- * carousel with pagination dots — for angular-lynx.
+ * carousel with pagination dots — for ng-lynx.
  *
  * Same portability trade-off as the Draggable demo: drag is driven by plain
  * `(catchtouchstart)`/`(catchtouchmove)`/`(catchtouchend)` rather than the

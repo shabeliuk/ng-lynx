@@ -1,5 +1,5 @@
 // Rewrites the workspace's pinned Angular version so CI can run the verify
-// suite against more than one Angular major (docs/36-ci.md). angular-lynx ships
+// suite against more than one Angular major (docs/36-ci.md). ng-lynx ships
 // partial-Ivy declarations linked at app-build time, so it's meant to be
 // version-independent across its `>=21 <23` peer range — this is how CI proves it.
 //
@@ -24,7 +24,7 @@ if (!/^\d+$/.test(major ?? '')) {
   process.exit(1);
 }
 
-// The full toolchain angular-lynx touches. Framework packages and
+// The full toolchain ng-lynx touches. Framework packages and
 // compiler-cli share the framework version line; @ngtools/webpack is on the
 // CLI line (same major, independent patch).
 const frameworkPkgs = [
@@ -35,7 +35,7 @@ const frameworkPkgs = [
   '@angular/forms',
   '@angular/router',
   '@angular/localize',
-  // Not used by angular-lynx's own bootstrap (it deliberately avoids the
+  // Not used by ng-lynx's own bootstrap (it deliberately avoids the
   // browser platform — see docs/07-verifying.md), but pinned so pnpm resolves
   // a coherent tree without cross-major peer warnings.
   '@angular/platform-browser',

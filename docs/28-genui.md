@@ -1,11 +1,11 @@
-# GenUI: A2UI + OpenUI in angular-lynx
+# GenUI: A2UI + OpenUI in ng-lynx
 
 Lynx's GenUI stack (`@lynx-js/genui`, [docs](https://lynxjs.org/next/api/genui/index.html))
-has four modules. All four work from an angular-lynx app — two as-is, two
-through Angular-native render layers shipped in the **`angular-lynx/genui`**
+has four modules. All four work from an ng-lynx app — two as-is, two
+through Angular-native render layers shipped in the **`ng-lynx/genui`**
 sub-entry:
 
-| Module | What it is | How angular-lynx uses it |
+| Module | What it is | How ng-lynx uses it |
 | --- | --- | --- |
 | `a2ui-prompt` | Node: build A2UI system prompts from catalogs | **As-is** — framework-agnostic |
 | `a2ui-catalog-extractor` | Node + TypeDoc: `@a2uiCatalog` interfaces → catalog JSON | **As-is** — framework-agnostic |
@@ -21,7 +21,7 @@ OpenUI protocol demos as extra tabs. Everything also runs offline on canned
 agents, with no keys needed; see its [README](../examples/genui/README.md).
 
 Dependencies: `@lynx-js/genui` (0.7+), `@openuidev/lang-core` (0.3+), and `zod` are
-**optional peers** of angular-lynx — only apps importing `angular-lynx/genui`
+**optional peers** of ng-lynx — only apps importing `ng-lynx/genui`
 need them installed. What moved in GenUI 0.7 is in
 [40 — The Lynx 4.2 upgrade](40-lynx-4-2.md#genui-07).
 
@@ -31,11 +31,11 @@ The upstream package splits cleanly: `@lynx-js/genui/a2ui/store` is "pure
 data logic, no React" (`MessageStore`, `MessageProcessor`, `SignalStore`,
 `Resource`, the payload normalizers, `FunctionRegistry`), and
 `@lynx-js/genui/a2ui/functions` (the basic-catalog client functions) is also
-React-free. angular-lynx consumes both directly. Only the render layer —
+React-free. ng-lynx consumes both directly. Only the render layer —
 `<A2UI>`, `NodeRenderer`, and the four hooks — is React, and that's what
-`angular-lynx/genui` re-creates:
+`ng-lynx/genui` re-creates:
 
-| Upstream (ReactLynx) | angular-lynx |
+| Upstream (ReactLynx) | ng-lynx |
 | --- | --- |
 | `<A2UI messageStore catalogs onAction>` | `<a2ui-surface [messageStore] [catalog] (action)>` |
 | `NodeRenderer` | `A2uiNode` (`<ng-container [a2uiNode]="..." [a2uiNodeSurface]="...">`) |
@@ -47,7 +47,7 @@ React-free. angular-lynx consumes both directly. Only the render layer —
 import { basicFunctions } from '@lynx-js/genui/a2ui/functions';
 import {
   A2UI_BASIC_CATALOG, A2uiSurface, createMessageStore, defineA2uiCatalog,
-} from 'angular-lynx/genui';
+} from 'ng-lynx/genui';
 
 const store = createMessageStore();
 const catalog = defineA2uiCatalog([...A2UI_BASIC_CATALOG, ...basicFunctions]);
@@ -88,7 +88,7 @@ the action's dynamic context and dispatches a `UserActionPayload`.
 ### How reactivity is bridged (and one caveat)
 
 The store's data model is `@preact/signals`-backed. Importing
-`@preact/signals` from angular-lynx would risk a second signals runtime next
+`@preact/signals` from ng-lynx would risk a second signals runtime next
 to the store's own (effects in one copy never see writes through the other),
 so the port avoids it entirely: prop resolution **collects the binding paths
 it touches** and subscribes to exactly those signals via the store's own
@@ -144,10 +144,10 @@ Upstream `@lynx-js/genui/openui` is a thin ReactLynx layer over
 `@openuidev/lang-core`, which owns the language: parsing (streaming-aware),
 prop schemas (zod), `$state` evaluation, ActionPlan semantics. The
 `@lynx-js/genui/openui` entry itself pulls in ReactLynx at import time, so
-angular-lynx uses **lang-core directly** — the same parser/evaluator, no
+ng-lynx uses **lang-core directly** — the same parser/evaluator, no
 fork — and re-creates the render layer:
 
-| Upstream (ReactLynx) | angular-lynx |
+| Upstream (ReactLynx) | ng-lynx |
 | --- | --- |
 | `<OpenUiRenderer response library onAction>` | `<openui-renderer [response] [library] [streaming] (action) (parseResult)>` |
 | `createOpenUiLibrary` | `createOpenUiLibrary` (same name, Angular components in the `component` slot — lang-core's `defineComponent` is generic over the renderer type) |
@@ -155,7 +155,7 @@ fork — and re-creates the render layer:
 | The built-in components | **Angular ports of all of them**, every signature checked against upstream's prompt library by `verify:genui-openui-parity`: Stack, Row, Column, List, Card, CardHeader, Text, TextContent, Separator, Divider, Button, Buttons, Tag, Image, Icon, Loading, AudioPlayer, Video, CheckBox, RadioGroup, ChoicePicker, Slider, DateTimeInput, TextField, Modal, Tabs, Canvas (renders upstream's "not supported on this platform" fallback). `Action` isn't a component upstream either — it's a prop schema. |
 
 ```ts
-import { createOpenUiLibrary, OpenuiRenderer } from 'angular-lynx/genui';
+import { createOpenUiLibrary, OpenuiRenderer } from 'ng-lynx/genui';
 const library = createOpenUiLibrary();          // or extend with your defineComponent()s
 ```
 
@@ -176,7 +176,7 @@ by reading `@lynx-js/genui/openui`'s own `Video`/`AudioPlayer` source before
 porting them: neither wires to Lynx's native `<video>` element, so this port
 matches that deliberate upstream choice rather than upgrading it. If you
 want real playback in your own app (inside or outside a GenUI surface), use
-the typed `<video>` element directly — `angular-lynx/elements`' `LynxVideo`,
+the typed `<video>` element directly — `ng-lynx/elements`' `LynxVideo`,
 see [18 — Typed templates](18-typed-templates.md#video).
 
 Feed `response` incrementally while streaming — partial text renders
@@ -331,7 +331,7 @@ Form component sets it yet.
 
 ## The two build-time tools
 
-Both run unchanged from an angular-lynx repo (Node ≥ 22):
+Both run unchanged from an ng-lynx repo (Node ≥ 22):
 
 ```ts
 // Extract catalog JSON from @a2uiCatalog-tagged interfaces (TypeDoc under the hood)
@@ -342,7 +342,7 @@ import { buildA2UISystemPrompt, createA2UICatalogFromManifests, BASIC_CATALOG } 
 
 The extractor consumes plain TypeScript interfaces (your Angular catalog
 component's public contract) — see the fixture at
-`packages/angular-lynx/verify/fixtures/genui/catalog-fixture.ts` and the
+`packages/ng-lynx/verify/fixtures/genui/catalog-fixture.ts` and the
 assertions in `harness-genui-tools.ts` for the exact shapes produced
 (`string | { path: string }` → `oneOf`, literal unions → `enum`, optionals
 kept out of `required`, `@a2uiFunction` → parameter schemas). The

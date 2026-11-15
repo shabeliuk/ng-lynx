@@ -4,7 +4,7 @@ import {
   NO_ERRORS_SCHEMA,
   signal,
 } from '@angular/core';
-import { LynxGesture, type LynxGestures, LynxMainThread, LynxMainThreadRef, runOnMainThread } from 'angular-lynx';
+import { LynxGesture, type LynxGestures, LynxMainThread, LynxMainThreadRef, runOnMainThread } from 'ng-lynx';
 
 import {
   cardRef,

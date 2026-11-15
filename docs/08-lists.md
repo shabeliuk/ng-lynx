@@ -2,7 +2,7 @@
 
 Lynx's `<list>` is a **virtualized** scroller — it only materialises the cells
 near the viewport. That makes it the right tool for long, scrollable content, but
-it has a different contract from a plain `<view>` full of children. angular-lynx
+it has a different contract from a plain `<view>` full of children. ng-lynx
 bridges Angular's `@for` to that contract.
 
 See the runnable example in [`examples/list`](../examples/list) and the
@@ -52,15 +52,15 @@ created with `__CreateList(...)` and a set of callbacks. The native runtime call
 `componentAtIndex(list, listID, cellIndex, operationID)` only when it needs a
 cell on screen.
 
-So angular-lynx does this:
+So ng-lynx does this:
 
 1. **Renderer (BG thread)** — when Angular inserts a `<list-item>` into a
    `<list>`, the item is recorded in the shadow tree and an `INSERT` op is sent,
    but comment/text anchors from `@for` are filtered out
-   ([renderer.ts](../packages/angular-lynx/runtime/src/renderer.ts), `emitInsert`).
+   ([renderer.ts](../packages/ng-lynx/runtime/src/renderer.ts), `emitInsert`).
 2. **Main Thread** — `INSERT` into a list parent doesn't `__AppendElement`;
    instead the item is **collected**
-   ([list-apply.ts](../packages/angular-lynx/main-thread/src/list-apply.ts),
+   ([list-apply.ts](../packages/ng-lynx/main-thread/src/list-apply.ts),
    `insertListItem`). Platform-info attributes are collected too, not applied via
    `__SetAttribute`.
 3. **After each ops batch** — `flushListUpdates()` diffs the current item order
@@ -110,7 +110,7 @@ stable across position changes for you.
 
 `<list>`'s scroll events and imperative scroll methods need **no special
 support** — they go through the same generic mechanisms every other event and
-element method already use, so there's nothing angular-lynx-specific to learn
+element method already use, so there's nothing ng-lynx-specific to learn
 beyond the two patterns below. Verified by `npm run verify:list-scroll` and
 demoed in `examples/list` (the "Scroll to top" button + status line).
 

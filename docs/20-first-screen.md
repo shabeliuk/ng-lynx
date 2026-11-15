@@ -2,7 +2,7 @@
 
 ReactLynx paints its first frame **on the Main Thread**, inside `renderPage()`,
 before the Background Thread has booted (Lynx calls this Instant First-Frame
-Rendering). angular-lynx's first frame normally waits for: BG engine boot →
+Rendering). ng-lynx's first frame normally waits for: BG engine boot →
 Angular bootstrap → first change-detection pass → ops across the thread
 boundary → Main-Thread replay.
 
@@ -12,7 +12,7 @@ Angular can't run on Lepus — but its first render is (normally)
 ```
 build time                            device, t=0                device, t=BG-ready
 ──────────                            ───────────                ──────────────────
-angular-lynx-capture                  renderPage():              first real ops batch:
+ng-lynx-capture                  renderPage():              first real ops batch:
   runs the app headlessly    ──►        paint snapshot   ──►       identical? drop it —
   records first ops batch               synchronously              ids & signs already live
                                                                    different? teardown + render
@@ -39,10 +39,10 @@ angular-lynx-capture                  renderPage():              first real ops 
 
    ```jsonc
    // package.json
-   "scripts": { "capture": "angular-lynx-capture src/first-screen-entry.ts src/first-screen.json" }
+   "scripts": { "capture": "ng-lynx-capture src/first-screen-entry.ts src/first-screen.json" }
    ```
 
-   The tool bundles your entry with esbuild, which angular-lynx doesn't install
+   The tool bundles your entry with esbuild, which ng-lynx doesn't install
    for you (it's an optional peer dependency): `npm install --save-dev esbuild`.
 
 3. **Embed**:
@@ -67,7 +67,7 @@ arrives, the Main Thread compares it to the snapshot **byte-for-byte**:
   reference already maps to a live element, and every `(tap)` the snapshot
   registered natively has a Background handler under the same sign. Verified
   on the real web engine: the **AOT-built** app hydrates against the
-  **JIT-captured** snapshot (`[angular-lynx] first-screen snapshot matched —
+  **JIT-captured** snapshot (`[ng-lynx] first-screen snapshot matched —
   hydrated in place` in the dev console) — ngtsc and the runtime compiler
   emit identical renderer-op sequences.
 - **Mismatch** (nondeterministic first render — host `initData` read in the
@@ -93,7 +93,7 @@ expecting/teardown bookkeeping is page-lifetime (reset by `renderPage`).
 
   > "Safe" is why a stale snapshot can go unnoticed for a long time, so check
   > the dev console for which path ran. `examples/hello-world`'s committed
-  > snapshot was silently stale: `angular-lynx-capture` had stopped working
+  > snapshot was silently stale: `ng-lynx-capture` had stopped working
   > (it didn't `define` two build-time constants the runtime added later, so
   > the capture bundle threw `ReferenceError` before rendering), the wire
   > format then gained string interning, and with no way to re-capture, the
@@ -102,7 +102,7 @@ expecting/teardown bookkeeping is page-lifetime (reset by `renderPage`).
   > teardown. Fixed by defining all three constants in the capture bin and
   > re-capturing; it now logs `matched — hydrated in place`.
 - The capture runs **JIT in Node** against the mock PAPI
-  (`angular-lynx/testing`'s environment — deterministic ids/signs come from
+  (`ng-lynx/testing`'s environment — deterministic ids/signs come from
   its per-render counter resets). It must `define` **every** build-time
   constant the runtime declares — today `__DEV__`,
   `__ENABLE_SELECTOR_QUERIES__` and `__HAS_FIRST_SCREEN__` — because they're
@@ -192,7 +192,7 @@ earlier on JavaScriptCore and about 80 ms earlier on PrimJS, for 3 to 5 ms more
 
 > **Caveat on what this measures.** These numbers time *first paint*. Whether
 > the snapshot then **matched** and hydrated in place (rather than being torn
-> down and re-rendered) is not observable in the native log — angular-lynx's
+> down and re-rendered) is not observable in the native log — ng-lynx's
 > own Lepus-side logs don't reach `os_log`. That half is covered by
 > `verify:ifr` headlessly and by the web preview's "matched — hydrated in
 > place" message, below.

@@ -58,14 +58,14 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Build angular-lynx
-        run: pnpm --filter angular-lynx build
+      - name: Build ng-lynx
+        run: pnpm --filter ng-lynx build
 
       - name: Typecheck
-        run: pnpm --filter angular-lynx typecheck
+        run: pnpm --filter ng-lynx typecheck
 
       - name: Verify (all harnesses)
-        run: pnpm --filter angular-lynx verify:all
+        run: pnpm --filter ng-lynx verify:all
 
   # Real AOT builds of representative examples — a compile + package smoke test
   # (catches template/AOT/config regressions the mock harnesses can't). Covers
@@ -93,15 +93,15 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Build angular-lynx (examples link to its dist)
-        run: pnpm --filter angular-lynx build
+      - name: Build ng-lynx (examples link to its dist)
+        run: pnpm --filter ng-lynx build
 
       - name: Build examples
         run: |
           set -euo pipefail
           for ex in hello-world ng-forms worklet product-detail styling tailwind control-theme responsive; do
             echo "::group::build examples/$ex"
-            pnpm --filter "angular-lynx-$ex" build
+            pnpm --filter "ng-lynx-$ex" build
             echo "::endgroup::"
           done
 
@@ -112,10 +112,10 @@ jobs:
       - name: GenUI planner — build + unit tests
         run: |
           set -euo pipefail
-          pnpm --filter angular-lynx-genui-example build
-          pnpm --filter angular-lynx-genui-example test
+          pnpm --filter ng-lynx-genui-example build
+          pnpm --filter ng-lynx-genui-example test
 
-  # Cross-Angular-version leg: proves angular-lynx's partial-Ivy / linker
+  # Cross-Angular-version leg: proves ng-lynx's partial-Ivy / linker
   # version-independence by running the suite against the other end of the peer
   # range. See docs/36-ci.md.
   angular-compat:
@@ -142,16 +142,16 @@ jobs:
 
       - run: pnpm install --no-frozen-lockfile
 
-      - name: Build angular-lynx
-        run: pnpm --filter angular-lynx build
+      - name: Build ng-lynx
+        run: pnpm --filter ng-lynx build
 
       - name: Typecheck
-        run: pnpm --filter angular-lynx typecheck
+        run: pnpm --filter ng-lynx typecheck
 
       - name: Verify (all harnesses)
-        run: pnpm --filter angular-lynx verify:all
+        run: pnpm --filter ng-lynx verify:all
 
-  # What a user gets: pack the tarball, scaffold every create-angular-lynx
+  # What a user gets: pack the tarball, scaffold every create-ng-lynx
   # template outside the workspace, npm install, build, and run the documented
   # Vitest quick start. Nothing else covers the published package's layout.
   consumer:

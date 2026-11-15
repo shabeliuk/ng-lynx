@@ -1,5 +1,5 @@
 {
-  "name": "angular-lynx-genui-example",
+  "name": "ng-lynx-genui-example",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -19,7 +19,7 @@
     "@angular/core": ">=21.2.26",
     "@lynx-js/genui": "^0.7.3",
     "@openuidev/lang-core": "^0.3.2",
-    "angular-lynx": "workspace:*",
+    "ng-lynx": "workspace:*",
     "sparkling-method": "~2.1.0-rc.36",
     "sparkling-navigation": "~2.1.0-rc.36",
     "zod": "^3.25.76"

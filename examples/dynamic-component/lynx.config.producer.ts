@@ -10,7 +10,7 @@
  */
 import { defineConfig } from '@lynx-js/rspeedy';
 
-import { pluginAngularLynx } from 'angular-lynx/plugin';
+import { pluginAngularLynx } from 'ng-lynx/plugin';
 
 export default defineConfig({
   source: {

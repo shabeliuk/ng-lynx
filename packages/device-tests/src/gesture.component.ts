@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { LynxGesture, type LynxGestures, LynxMainThreadRef } from 'angular-lynx';
-import { LYNX_ELEMENTS } from 'angular-lynx/elements';
+import { LynxGesture, type LynxGestures, LynxMainThreadRef } from 'ng-lynx';
+import { LYNX_ELEMENTS } from 'ng-lynx/elements';
 
 import { chipRef, onPanEnd, onPanStart, onPanUpdate } from './worklets.js';
 

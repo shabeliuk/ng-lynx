@@ -22,7 +22,7 @@ import {
   mainThreadLynx,
   type MainThreadGestureEvent,
   type WorkletContext,
-} from 'angular-lynx/worklet';
+} from 'ng-lynx/worklet';
 
 // A main-thread ref to the card, so a worklet on *another* element can reach it.
 export const cardRef = defineMainThreadRef('card');

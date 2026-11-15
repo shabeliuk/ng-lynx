@@ -10,7 +10,7 @@ Angular code and disconnects observers on app teardown.
 
 ```ts
 import { inject, Injectable, signal } from '@angular/core';
-import { LynxPerformance } from 'angular-lynx';
+import { LynxPerformance } from 'ng-lynx';
 
 @Injectable({ providedIn: 'root' })
 export class MetricsService {

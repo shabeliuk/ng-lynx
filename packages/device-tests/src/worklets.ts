@@ -6,7 +6,7 @@ import {
   mainThreadLynx,
   type MainThreadGestureEvent,
   type WorkletContext,
-} from 'angular-lynx/worklet';
+} from 'ng-lynx/worklet';
 
 mainThreadLynx.registerDataProcessors({
   defaultDataProcessor: (raw: { mockData?: string }) => ({ ...raw, processed: `${raw.mockData} processed` }),

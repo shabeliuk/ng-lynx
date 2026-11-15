@@ -1,5 +1,5 @@
 {
-  "name": "angular-lynx-threejs-rpg-skeleton",
+  "name": "ng-lynx-threejs-rpg-skeleton",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -11,7 +11,7 @@
   "dependencies": {
     "@angular/compiler": ">=21.2.26",
     "@angular/core": ">=21.2.26",
-    "angular-lynx": "workspace:*",
+    "ng-lynx": "workspace:*",
     "three": "^0.184.0"
   },
   "devDependencies": {

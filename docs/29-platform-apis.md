@@ -13,7 +13,7 @@ bootstrap does `globalThis.SystemInfo = message.systemInfo` before the app's
 own code ever runs) — so reading it needs no cross-thread plumbing.
 
 ```ts
-import { injectSystemInfo } from 'angular-lynx';
+import { injectSystemInfo } from 'ng-lynx';
 
 @Component({ … })
 export class DeviceAwareComponent {
@@ -73,7 +73,7 @@ and its host page, or between two cards in the same session. Distinct from:
 
 ```ts
 import { inject, Injectable } from '@angular/core';
-import { LynxSessionStorage } from 'angular-lynx';
+import { LynxSessionStorage } from 'ng-lynx';
 
 @Injectable({ providedIn: 'root' })
 export class DraftService {
@@ -99,14 +99,14 @@ injector is destroyed, matching `LynxGlobalEvents.listen`).
 
 App-wide control over the same exposure-detection system that drives the
 per-element `uiappear`/`uidisappear` events (typed on `LynxStandardElement` in
-`angular-lynx/elements`) and the global `exposure` event reachable via
+`ng-lynx/elements`) and the global `exposure` event reachable via
 `LynxGlobalEvents` (see [24 — Visibility](24-visibility.md)). Distinct from
 `LynxIntersectionObserver`, a separate, more capable imperative observer API
 for arbitrary elements/roots.
 
 ```ts
 import { inject, Injectable } from '@angular/core';
-import { LynxExposure } from 'angular-lynx';
+import { LynxExposure } from 'ng-lynx';
 
 @Injectable({ providedIn: 'root' })
 export class RouteTransitionService {
@@ -143,7 +143,7 @@ file per method, since each is a thin, stateless pass-through:
 
 ```ts
 import { inject, Injectable } from '@angular/core';
-import { LynxObject } from 'angular-lynx';
+import { LynxObject } from 'ng-lynx';
 
 @Injectable({ providedIn: 'root' })
 export class ProductCardService {
@@ -198,7 +198,7 @@ anything beyond passive observation.
 
 Lynx reloads a page in three steps: the Main Thread drops the old tree, the
 Background Thread is told to start over, and the Main Thread is asked to finish.
-angular-lynx destroys the app (`ngOnDestroy` runs, nothing it removes is sent),
+ng-lynx destroys the app (`ngOnDestroy` runs, nothing it removes is sent),
 merges the new data into `lynxInitData()`, and runs every
 `bootstrapLynxApplication` call again. The router starts at its initial URL.
 
@@ -212,7 +212,7 @@ data, and taps and navigation worked.
 
 ```ts
 import { toSignal } from '@angular/core/rxjs-interop';
-import { lynxEventSource } from 'angular-lynx/http';
+import { lynxEventSource } from 'ng-lynx/http';
 
 readonly price = toSignal(lynxEventSource('https://example.com/prices', { events: ['tick'] }));
 ```

@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, type ElementRef, signal, ViewChild } from '@angular/core';
 
-import { asLynxElement, lynxAssetUrl } from 'angular-lynx';
-import { LYNX_ELEMENTS, type LynxEvent, type LynxVideoFirstFrameEvent } from 'angular-lynx/elements';
+import { asLynxElement, lynxAssetUrl } from 'ng-lynx';
+import { LYNX_ELEMENTS, type LynxEvent, type LynxVideoFirstFrameEvent } from 'ng-lynx/elements';
 
 /**
  * Video and audio on Lynx — and an honest account of what the platform does
@@ -11,7 +11,7 @@ import { LYNX_ELEMENTS, type LynxEvent, type LynxVideoFirstFrameEvent } from 'an
  *
  * **Video: a real element.** `<video>` is a built-in
  * ([reference](https://lynxjs.org/api/elements/built-in/video.html)), typed
- * here by `angular-lynx/elements` as `LynxVideo` — `src`, `poster`,
+ * here by `ng-lynx/elements` as `LynxVideo` — `src`, `poster`,
  * `autoplay`, `object-fit`, plus `(playing)`, `(pause)`, `(ended)`,
  * `(timeupdate)`, `(error)`. This page binds all of them.
  *

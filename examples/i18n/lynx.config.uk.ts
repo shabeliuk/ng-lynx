@@ -1,7 +1,7 @@
 import { defineConfig } from '@lynx-js/rspeedy';
 
 import { pluginQRCode } from '@lynx-js/qrcode-rsbuild-plugin';
-import { pluginAngularLynx } from 'angular-lynx/plugin';
+import { pluginAngularLynx } from 'ng-lynx/plugin';
 
 /**
  * A per-locale build config — see docs/35-i18n.md. Run `rspeedy build

@@ -25,8 +25,8 @@ import {
   signal,
 } from '@angular/core';
 
-import { LynxModel } from 'angular-lynx';
-import { type ActionEvent, createOpenUiLibrary, createParser, OpenuiRenderer } from 'angular-lynx/genui';
+import { LynxModel } from 'ng-lynx';
+import { type ActionEvent, createOpenUiLibrary, createParser, OpenuiRenderer } from 'ng-lynx/genui';
 
 import { type Agent, AgentError, type AgentInfo, connectAgent, ScriptedAgent } from './agent.js';
 import { PLANNER_LIBRARY_COMPONENTS } from './components.js';

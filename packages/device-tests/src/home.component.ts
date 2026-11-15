@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { lynxGlobalProps, lynxInitData } from 'angular-lynx';
-import { LYNX_ELEMENTS } from 'angular-lynx/elements';
+import { lynxGlobalProps, lynxInitData } from 'ng-lynx';
+import { LYNX_ELEMENTS } from 'ng-lynx/elements';
 
 /** First paint, tap handling, and the way to every other screen. */
 @Component({
