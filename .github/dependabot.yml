@@ -1,0 +1,54 @@
+# Dependabot version updates: one grouped PR a week per lockfile.
+# Security alerts still show on the repo's Security tab; fix PRs for them are off in Settings.
+version: 2
+updates:
+  # The pnpm workspace: packages/*, examples/* and the templates share the root lockfile.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      # Angular moves as one set, and the overrides in pnpm-workspace.yaml must move with it.
+      angular:
+        patterns: ['@angular/*', '@angular-devkit/*', '@ngtools/*']
+        update-types: [minor, patch]
+      lynx:
+        patterns: ['@lynx-js/*', 'sparkling-app-cli']
+        update-types: [minor, patch]
+      everything-else:
+        patterns: ['*']
+        update-types: [minor, patch]
+    ignore:
+      # Major versions are a deliberate change: the supported Angular range, TypeScript, rspeedy.
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
+      # No fix we can reach. zod 3.x is pinned inside @lynx-js/genui's @a2ui/web_core, and
+      # its fix is only in 4.x; minimatch comes from typedoc, also through @lynx-js/genui;
+      # deepmerge, from @rsbuild/plugin-sass, has no fixed release. Drop these once upstream moves.
+      - dependency-name: zod
+      - dependency-name: minimatch
+      - dependency-name: deepmerge
+
+  # CocoaPods tooling for the genui example's native iOS app.
+  - package-ecosystem: bundler
+    directory: /examples/genui/ios
+    schedule:
+      interval: monthly
+    groups:
+      ios-tooling:
+        patterns: ['*']
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
+
+  # The actions the workflows use.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ['*']
