@@ -21,7 +21,7 @@ are from the emulator.**
 
 ```bash
 pnpm install
-pnpm --filter angular-lynx build
+pnpm --filter ng-lynx build
 cd examples/<app> && npm run dev
 ```
 
@@ -73,20 +73,20 @@ runs it every night. Nothing here replaces the per-example checks below: it catc
 contract, not a slider that feels wrong.
 
 ```bash
-pnpm --filter angular-lynx build
+pnpm --filter ng-lynx build
 ```
 
 ```bash
-pnpm --filter angular-lynx-device-tests test:android
+pnpm --filter ng-lynx-device-tests test:android
 ```
 
 ```bash
-pnpm --filter angular-lynx-device-tests test:ios
+pnpm --filter ng-lynx-device-tests test:ios
 ```
 
 Android needs a booted emulator. iOS creates and boots its own simulator, "Angular Lynx Device Tests",
 and leaves yours alone. Both need Java 17. `run.mjs` downloads Maestro and Lynx Explorer into
-`~/.cache/angular-lynx-e2e` on first use (about 520 MB) and checks each against the SHA-256 in
+`~/.cache/ng-lynx-e2e` on first use (about 520 MB) and checks each against the SHA-256 in
 [`tools.json`](../packages/device-tests/tools.json). Bump Explorer there together with the Lynx
 toolchain. Add `--flow <name>` to run one flow. Results land in `packages/device-tests/artifacts/`:
 screenshots, the JUnit report, the engine log and every request the device made.

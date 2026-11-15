@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 
-import { LYNX_ELEMENTS } from 'angular-lynx/elements';
+import { LYNX_ELEMENTS } from 'ng-lynx/elements';
 
 import { lockDrag, unlockDrag } from '../drag-lock.service.js';
 
@@ -9,7 +9,7 @@ const ITEM_HEIGHT = 52;
 /**
  * A recreation of `@lynx-js/lynx-ui`'s `<SortableRoot>`/`<SortableItem>`
  * primitives (https://lynxjs.org/next/ui/components/sortable.html) — drag a
- * handle to reorder a list — for angular-lynx. Built directly on the same
+ * handle to reorder a list — for ng-lynx. Built directly on the same
  * touch-driven approach as Draggable (the real component composes `Draggable`
  * internally too).
  *

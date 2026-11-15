@@ -9,12 +9,12 @@ import {
   ViewChild,
 } from '@angular/core';
 
-import { asLynxElement, LynxVirtualFor } from 'angular-lynx';
+import { asLynxElement, LynxVirtualFor } from 'ng-lynx';
 import {
   LYNX_ELEMENTS,
   type LynxListScrollEvent,
   type LynxListScrollStateChangeEvent,
-} from 'angular-lynx/elements';
+} from 'ng-lynx/elements';
 
 interface Row {
   id: number;

@@ -6,8 +6,8 @@ Thread, and the web preview's worker has the browser's own `fetch`.
 
 ```ts
 import { withInterceptors } from '@angular/common/http';
-import { bootstrapLynxApplication } from 'angular-lynx';
-import { provideLynxHttpClient } from 'angular-lynx/http';
+import { bootstrapLynxApplication } from 'ng-lynx';
+import { provideLynxHttpClient } from 'ng-lynx/http';
 
 bootstrapLynxApplication(AppComponent, {
   providers: [provideLynxHttpClient(withInterceptors([authInterceptor]))],

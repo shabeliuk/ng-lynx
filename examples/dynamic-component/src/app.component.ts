@@ -12,8 +12,8 @@ import {
   ViewContainerRef,
 } from '@angular/core';
 
-import { injectSystemInfo, loadDynamicComponent, lynxAssetUrl } from 'angular-lynx';
-import { LYNX_ELEMENTS } from 'angular-lynx/elements';
+import { injectSystemInfo, loadDynamicComponent, lynxAssetUrl } from 'ng-lynx';
+import { LYNX_ELEMENTS } from 'ng-lynx/elements';
 
 import './app.css';
 

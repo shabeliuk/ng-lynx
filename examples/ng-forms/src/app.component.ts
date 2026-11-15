@@ -24,7 +24,7 @@ import {
   LynxTimePicker,
   LynxToggle,
   LynxValueAccessor,
-} from 'angular-lynx/forms';
+} from 'ng-lynx/forms';
 
 /**
  * `@angular/forms` on Lynx via `LynxValueAccessor`.
@@ -34,7 +34,7 @@ import {
  * `<input>`. Compare with `examples/lynx-forms`, which uses the dependency-free
  * `[(lynxModel)]` instead.
  *
- * Also demonstrates the richer controls from `angular-lynx/forms` — `LynxSelect`
+ * Also demonstrates the richer controls from `ng-lynx/forms` — `LynxSelect`
  * (single + multi), `LynxDatePicker`, `LynxTimePicker`, `LynxAutocomplete`,
  * `LynxRadioGroup`, `LynxToggle`, `LynxCheckbox`, `LynxSegmentedControl`,
  * `LynxSlider`, and `LynxStepper` — each a `ControlValueAccessor` Lynx has no

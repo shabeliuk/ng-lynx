@@ -1,0 +1,29 @@
+{
+  "//": "Whole-program type-check config (no emit). The per-subpackage composite configs (internal/runtime/main-thread/plugin) drive the dist build via `tsc -b`.",
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2020", "DOM"],
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "forceConsistentCasingInFileNames": true,
+    "types": ["node"],
+    "paths": {
+      "ng-lynx/internal/ops": ["./internal/src/ops.ts"],
+      "ng-lynx/internal/runtime": ["./runtime/src/internal.ts"],
+      "ng-lynx": ["./runtime/src/index.ts"]
+    }
+  },
+  "include": [
+    "internal/src",
+    "runtime/src",
+    "main-thread/src",
+    "plugin/src",
+    "testing/src"
+  ]
+}

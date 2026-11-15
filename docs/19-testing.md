@@ -1,7 +1,7 @@
-# Testing — `angular-lynx/testing`
+# Testing — `ng-lynx/testing`
 
 Headless component testing for Angular-on-Lynx, in plain Node — no device, no
-simulator, no browser. The package is the same environment angular-lynx's own
+simulator, no browser. The package is the same environment ng-lynx's own
 verification harnesses run on, made public:
 
 - the **real** `LynxRenderer2`, wire protocol, and Main-Thread executor run;
@@ -13,10 +13,10 @@ verification harnesses run on, made public:
 
 ```ts
 import '@angular/compiler'; // JIT — must come first
-import 'angular-lynx/main-thread'; // installs the ops executor
+import 'ng-lynx/main-thread'; // installs the ops executor
 
 import { Component, NO_ERRORS_SCHEMA, signal } from '@angular/core';
-import { renderLynxComponent } from 'angular-lynx/testing';
+import { renderLynxComponent } from 'ng-lynx/testing';
 
 @Component({
   standalone: true,
@@ -58,7 +58,7 @@ export default defineConfig({
 });
 ```
 
-For Jest: Angular and angular-lynx are ES modules only, so Jest runs in its ESM
+For Jest: Angular and ng-lynx are ES modules only, so Jest runs in its ESM
 mode (`node --experimental-vm-modules node_modules/jest/bin/jest.js`), with
 `@swc/jest` for TypeScript and decorators:
 
@@ -101,7 +101,7 @@ fresh mock page and resolves once the first render has been applied:
 the text an element shows:
 
 ```ts
-import { textContent, within } from 'angular-lynx/testing';
+import { textContent, within } from 'ng-lynx/testing';
 
 const pear = fixture.findAllByClass('card')[1]!;
 await fixture.fire(within(pear).getByText('Buy'), 'tap');

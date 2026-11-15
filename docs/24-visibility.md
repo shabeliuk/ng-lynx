@@ -1,6 +1,6 @@
 # Visibility detection — exposure, IntersectionObserver, `@defer` triggers
 
-Lynx has two visibility systems, and angular-lynx surfaces both — plus a
+Lynx has two visibility systems, and ng-lynx surfaces both — plus a
 generic event-listener bridge that makes `@defer (on interaction)` work too.
 
 ## 1. Exposure events (works everywhere, incl. the web preview)

@@ -1,9 +1,9 @@
-# angular-lynx
+# ng-lynx
 
 **Angular for [Lynx](https://lynxjs.org/), built around Lynx's two threads.**
 
 Lynx runs an app on two threads: a **Background Thread** for JavaScript logic and a
-**Main Thread** that owns the native UI. angular-lynx is designed around that split:
+**Main Thread** that owns the native UI. ng-lynx is designed around that split:
 
 - **Angular runs on the Background Thread.** Components, signals, change detection, the
   router, forms and HTTP all live there, so app logic never blocks the thread that draws.
@@ -35,8 +35,8 @@ Standalone, zoneless components with signals, no Zone.js:
 
 ```ts
 import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
-import { bootstrapLynxApplication } from 'angular-lynx';
-import { LYNX_ELEMENTS, type LynxTouchEvent } from 'angular-lynx/elements';
+import { bootstrapLynxApplication } from 'ng-lynx';
+import { LYNX_ELEMENTS, type LynxTouchEvent } from 'ng-lynx/elements';
 
 @Component({
   selector: 'app-root',
@@ -69,7 +69,7 @@ build loads on the Main Thread, and bind it on an element:
 
 ```ts
 // worklets.ts, listed in pluginAngularLynx({ mainThreadModules: ['./src/worklets.ts'] })
-import { defineWorklet, type WorkletContext } from 'angular-lynx/worklet';
+import { defineWorklet, type WorkletContext } from 'ng-lynx/worklet';
 
 function pressFadeMT(ctx: WorkletContext): void {
   ctx.setStyle('opacity: 0.6'); // applied on the Main Thread, in the same frame
@@ -88,8 +88,8 @@ The same model drives `[lynxGesture]`, `runOnMainThread()`, `MainThread.Element`
 ## Status
 
 **Pre-release.** It will be published as `ng-lynx`, with the starter `create-ng-lynx`
-(`npm create ng-lynx`). Both names are reserved on npm, and the code still uses the
-working name `angular-lynx` until the rename.
+(`npm create ng-lynx`). Both names are reserved on npm, and the first release
+candidate isn't out yet.
 
 It builds and runs on Lynx Explorer 4.1 and 4.2 on the iOS simulator and the Android
 emulator, in the web preview, and as a native iOS app through Sparkling. Several examples
@@ -117,7 +117,7 @@ What has been run where is in [41 — Device testing](docs/41-device-testing.md)
 | Dynamic components | Load separately built bundles at runtime, sharing the host's Angular | [38](docs/38-dynamic-component.md) |
 | i18n, accessibility | `$localize` per-locale builds and extraction; typed `accessibility-*` | [35](docs/35-i18n.md), [34](docs/34-accessibility.md) |
 | GenUI | Angular renderers for A2UI and OpenUI | [28](docs/28-genui.md) |
-| Testing & tooling | `renderLynxComponent` under Vitest, `create-angular-lynx`, `ng add` | [19](docs/19-testing.md), [21](docs/21-scaffolding.md) |
+| Testing & tooling | `renderLynxComponent` under Vitest, `create-ng-lynx`, `ng add` | [19](docs/19-testing.md), [21](docs/21-scaffolding.md) |
 
 **Experimental in 1.0:** native gestures, dynamic components, GenUI, HarmonyOS and the
 desktop-only elements. They work, but their API may still change.
@@ -131,7 +131,7 @@ Angular 21 and 22 are supported, on Node 22.12 or later. 66 headless harnesses
 
 ```bash
 pnpm install
-pnpm --filter angular-lynx build
+pnpm --filter ng-lynx build
 cd examples/hello-world && npm run dev
 ```
 
@@ -141,16 +141,16 @@ printed bundle URL in [Lynx Explorer](docs/02-getting-started.md#1b-get-lynx-exp
 ## Repository layout
 
 ```
-packages/angular-lynx/
+packages/ng-lynx/
   internal/      # ops.ts — the BG↔MT wire protocol (shared)
   runtime/       # Background Thread: LynxRenderer2, bootstrap, shadow tree, flush, events
   main-thread/   # Main Thread (Lepus): ops executor + page bootstrap + first-screen snapshot
   plugin/        # rspeedy/rsbuild plugin: dual-thread build + JIT/AOT + Lynx packaging
   testing/       # headless TestBed: mock PAPI + renderLynxComponent fixture
   schematics/    # ng add + ng generate
-  bin/           # angular-lynx-capture, angular-lynx-extract-i18n
+  bin/           # ng-lynx-capture, ng-lynx-extract-i18n
   verify/        # the headless harnesses
-packages/create-angular-lynx/
+packages/create-ng-lynx/
   index.mjs      # the scaffolding CLI (zero deps)
   templates/     # minimal / router / forms app templates
 packages/device-tests/
@@ -224,6 +224,6 @@ exists because of them, and of Angular (MIT).
 
 Code derived from other open-source projects is credited in [`NOTICE`](NOTICE), and in a comment at the
 top of each derived file. [`THIRD-PARTY.md`](THIRD-PARTY.md) lists every dependency's licence,
-what an app built with angular-lynx has to carry, and where the examples' media comes from.
+what an app built with ng-lynx has to carry, and where the examples' media comes from.
 
-angular-lynx is an independent project, not affiliated with the Lynx project or the Angular team.
+ng-lynx is an independent project, not affiliated with the Lynx project or the Angular team.

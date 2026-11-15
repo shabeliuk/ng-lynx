@@ -1,5 +1,5 @@
 // The flow a user goes through, against what npm would really publish: pack the
-// package, scaffold each create-angular-lynx template outside this workspace,
+// package, scaffold each create-ng-lynx template outside this workspace,
 // `npm install` the tarball, and build. Then run the Vitest quick start from
 // docs/19-testing.md the same way.
 //
@@ -12,15 +12,15 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const major = process.argv[2];
-const work = mkdtempSync(path.join(tmpdir(), 'angular-lynx-consumer-'));
+const work = mkdtempSync(path.join(tmpdir(), 'ng-lynx-consumer-'));
 const env = { ...process.env, DO_NOT_TRACK: '1' };
 const run = (command, cwd) => execSync(command, { cwd, env, stdio: 'pipe', encoding: 'utf8' });
 
-const packed = run(`npm pack --pack-destination ${work} --silent`, path.join(root, 'packages/angular-lynx')).trim().split('\n').pop();
+const packed = run(`npm pack --pack-destination ${work} --silent`, path.join(root, 'packages/ng-lynx')).trim().split('\n').pop();
 const tarball = path.join(work, packed);
 
 function pin(pkg) {
-  pkg.dependencies['angular-lynx'] = `file:${tarball}`;
+  pkg.dependencies['ng-lynx'] = `file:${tarball}`;
   if (!major) return;
   for (const deps of [pkg.dependencies, pkg.devDependencies]) {
     for (const name of Object.keys(deps)) {
@@ -41,10 +41,25 @@ function step(name, fn) {
   }
 }
 
+// npm rewrites a package.json it thinks is wrong while publishing, and says so only in a
+// warning. It once dropped every `bin` (a `./` path prefix), which would have shipped a
+// `create-ng-lynx` with nothing to run. Fail on any such correction.
+for (const pkgName of ['ng-lynx', 'create-ng-lynx']) {
+  step(`${pkgName}: npm publish --dry-run keeps package.json as written`, () => {
+    const output = execSync('npm publish --dry-run --access public --tag rc 2>&1', {
+      cwd: path.join(root, 'packages', pkgName),
+      env,
+      encoding: 'utf8',
+    });
+    const corrected = output.split('\n').filter((line) => /corrected|invalid and removed/.test(line));
+    if (corrected.length > 0) throw new Error(corrected.join('\n'));
+  });
+}
+
 for (const template of ['minimal', 'router', 'forms']) {
   const app = path.join(work, template);
   step(`${template}: scaffold, install, build`, () => {
-    run(`node ${path.join(root, 'packages/create-angular-lynx/index.mjs')} ${template} --template ${template}`, work);
+    run(`node ${path.join(root, 'packages/create-ng-lynx/index.mjs')} ${template} --template ${template}`, work);
     const file = path.join(app, 'package.json');
     const pkg = JSON.parse(readFileSync(file, 'utf8'));
     pin(pkg);
@@ -81,7 +96,7 @@ step('the Vitest quick start from docs/19-testing.md passes', () => {
       '@angular/common': version,
       '@angular/compiler': version,
       '@angular/core': version,
-      'angular-lynx': `file:${tarball}`,
+      'ng-lynx': `file:${tarball}`,
     },
     devDependencies: {
       '@angular/compiler-cli': version,
@@ -96,9 +111,9 @@ export default defineConfig({
 });
 `);
   writeFileSync(path.join(app, 'counter.test.ts'), `import '@angular/compiler';
-import 'angular-lynx/main-thread';
+import 'ng-lynx/main-thread';
 import { Component, NO_ERRORS_SCHEMA, signal } from '@angular/core';
-import { renderLynxComponent } from 'angular-lynx/testing';
+import { renderLynxComponent } from 'ng-lynx/testing';
 import { expect, it } from 'vitest';
 
 @Component({
@@ -136,7 +151,7 @@ step('the Jest quick start from docs/19-testing.md passes', () => {
       '@angular/common': version,
       '@angular/compiler': version,
       '@angular/core': version,
-      'angular-lynx': `file:${tarball}`,
+      'ng-lynx': `file:${tarball}`,
     },
     devDependencies: {
       '@angular/compiler-cli': version,
@@ -147,7 +162,7 @@ step('the Jest quick start from docs/19-testing.md passes', () => {
       typescript: angularMajor >= 22 ? '~6.0.0' : '~5.9.0',
     },
   }));
-  // Angular and angular-lynx are ESM only, so Jest runs in its ESM mode.
+  // Angular and ng-lynx are ESM only, so Jest runs in its ESM mode.
   writeFileSync(path.join(app, 'jest.config.js'), `export default {
   testEnvironment: 'node',
   extensionsToTreatAsEsm: ['.ts'],
@@ -164,9 +179,9 @@ step('the Jest quick start from docs/19-testing.md passes', () => {
 };
 `);
   writeFileSync(path.join(app, 'counter.test.ts'), `import '@angular/compiler';
-import 'angular-lynx/main-thread';
+import 'ng-lynx/main-thread';
 import { Component, NO_ERRORS_SCHEMA, signal } from '@angular/core';
-import { renderLynxComponent } from 'angular-lynx/testing';
+import { renderLynxComponent } from 'ng-lynx/testing';
 
 @Component({
   standalone: true,

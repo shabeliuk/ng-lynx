@@ -1,26 +1,26 @@
 # Third-party software
 
-The licence of angular-lynx itself is in [`LICENSE`](LICENSE), and the code derived from other
+The licence of ng-lynx itself is in [`LICENSE`](LICENSE), and the code derived from other
 projects is credited in [`NOTICE`](NOTICE). This page lists what it depends on, and what
 the examples use. Every package here allows use in an Apache-2.0 project, and in closed-source
 apps. The media files at the end are checked.
 
-**If you ship an app built with angular-lynx,** its bundle contains these packages, so your
+**If you ship an app built with ng-lynx,** its bundle contains these packages, so your
 app has to carry their notices. Angular's MIT notice and the Apache-2.0 notice of `@lynx-js/*`
 are the ones that always apply.
 
 ## What the package depends on
 
 These install from npm with their own licences. None of them is copied into the
-`angular-lynx` tarball.
+`ng-lynx` tarball.
 
 | Package | Licence | Used for |
 |---|---|---|
 | `@angular/*` (`core`, `compiler`, `common`, `forms`, `router`, `localize`, `compiler-cli`), `@ngtools/webpack`, `@angular-devkit/*` | MIT | The framework, and the AOT compile. Peer dependencies |
 | `@lynx-js/rspeedy`, `@lynx-js/template-webpack-plugin`, `@lynx-js/runtime-wrapper-webpack-plugin`, other `@lynx-js/*` build tools | Apache-2.0 | The build |
 | `@lynx-js/react` | Apache-2.0 | Only its worklet runtime, in apps with `mainThreadModules` |
-| `@lynx-js/genui` | Apache-2.0 | `angular-lynx/genui`. Optional peer |
-| `@openuidev/lang-core` | MIT | `angular-lynx/openui`. Optional peer |
+| `@lynx-js/genui` | Apache-2.0 | `ng-lynx/genui`. Optional peer |
+| `@openuidev/lang-core` | MIT | `ng-lynx/openui`. Optional peer |
 | `typescript` | Apache-2.0 | Peer dependency |
 | `tslib` | 0BSD | Helpers used by compiled code |
 | `@babel/core`, `babel-loader`, `esbuild` | MIT | The build |

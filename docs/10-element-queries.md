@@ -2,7 +2,7 @@
 
 Sometimes you need to reach a native element directly — measure its size, scroll
 it into view, or push a property without a re-render. Lynx exposes this through
-`lynx.createSelectorQuery()`. angular-lynx surfaces it on the element you already
+`lynx.createSelectorQuery()`. ng-lynx surfaces it on the element you already
 have: `ElementRef.nativeElement` **is** a Lynx element (`ShadowElement`), so a
 template ref gives you the query methods.
 
@@ -12,7 +12,7 @@ See the verification in `verify/harness-query.ts` (`npm run verify:query`).
 
 ```ts
 import { Component, ViewChild, ElementRef, NO_ERRORS_SCHEMA } from '@angular/core';
-import { asLynxElement } from 'angular-lynx';
+import { asLynxElement } from 'ng-lynx';
 
 @Component({
   selector: 'app-root',
@@ -150,7 +150,7 @@ Two single-node queries for elements you don't hold an `ElementRef` to. Each
 returns `fields` / `invoke` / `setNativeProps` / `path`:
 
 ```ts
-import { lynxSelectRoot, lynxSelectUniqueID } from 'angular-lynx';
+import { lynxSelectRoot, lynxSelectUniqueID } from 'ng-lynx';
 
 // The <page> itself: page-wide effects.
 lynxSelectRoot().setNativeProps({ filter: 'grayscale(100%)' });
@@ -237,7 +237,7 @@ selector in one round-trip, use `lynxSelectAll(selector)` — Lynx's native
 `selectorQuery.selectAll(...)`:
 
 ```ts
-import { lynxSelectAll } from 'angular-lynx';
+import { lynxSelectAll } from 'ng-lynx';
 
 // Measure every .item at once — one query, one callback with an array.
 lynxSelectAll('.item').fields({ size: true }, (rects) => {

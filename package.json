@@ -1,12 +1,12 @@
 {
-  "name": "angular-lynx-workspace",
+  "name": "ng-lynx-workspace",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "description": "Angular custom renderer for building Lynx apps (monorepo)",
   "scripts": {
-    "build": "pnpm --filter angular-lynx build",
-    "watch": "pnpm --filter angular-lynx watch"
+    "build": "pnpm --filter ng-lynx build",
+    "watch": "pnpm --filter ng-lynx watch"
   },
   "engines": {
     "node": ">=22.12.0",

@@ -5,13 +5,13 @@ couple of differently-named ones) on `StandardProps` — meaning **every**
 element supports them, the same way every element supports `id` or `style`.
 They configure the platform's native accessibility service (iOS
 `UIAccessibility`, Android `AccessibilityNodeInfo`, HarmonyOS) directly; there
-is no separate "accessibility tree" angular-lynx builds — it's the same
+is no separate "accessibility tree" ng-lynx builds — it's the same
 native element tree everything else renders into, just with extra attributes
 the OS-level screen reader reads.
 
 ## Typed attributes
 
-All ten are on `LynxStandardElement` (`angular-lynx/elements`), curated from
+All ten are on `LynxStandardElement` (`ng-lynx/elements`), curated from
 `@lynx-js/types`' `StandardProps`, which is more precise than the prose on
 lynxjs.org's accessibility guide (see the callout below):
 
@@ -94,7 +94,7 @@ when VoiceOver calls them. Without that, VoiceOver has nothing to invoke and
 falls back to its default gesture handling (focus navigation) — exactly what
 was observed.
 
-**This isn't fixable from `angular-lynx` or application code.** `LynxSlider`
+**This isn't fixable from `ng-lynx` or application code.** `LynxSlider`
 is a custom `<view>` driven by plain `touchstart`/`touchmove` (Lynx has no
 native `<input type="range">` — see slider.ts's doc comment), and there is no
 `accessibility-increment`/`accessibility-decrement` event, PAPI method, or any

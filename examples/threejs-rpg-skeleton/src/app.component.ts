@@ -15,7 +15,7 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
-import { lynxAssetUrl } from 'angular-lynx';
+import { lynxAssetUrl } from 'ng-lynx';
 
 /**
  * A real animated character skeleton — loaded from `RobotExpressive.glb`, the

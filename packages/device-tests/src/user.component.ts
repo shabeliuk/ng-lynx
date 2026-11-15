@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { LYNX_ELEMENTS } from 'angular-lynx/elements';
+import { LYNX_ELEMENTS } from 'ng-lynx/elements';
 
 import { BackButtonComponent } from './back-button.component.js';
 

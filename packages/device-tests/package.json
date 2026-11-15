@@ -1,5 +1,5 @@
 {
-  "name": "angular-lynx-device-tests",
+  "name": "ng-lynx-device-tests",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -14,7 +14,7 @@
     "@angular/compiler": ">=21.2.26",
     "@angular/core": ">=21.2.26",
     "@angular/router": ">=21.2.26",
-    "angular-lynx": "workspace:*",
+    "ng-lynx": "workspace:*",
     "rxjs": "^7.8.2"
   },
   "devDependencies": {

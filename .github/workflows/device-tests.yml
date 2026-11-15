@@ -51,13 +51,13 @@ jobs:
 
       - run: pnpm install --no-frozen-lockfile
 
-      - name: Build angular-lynx
-        run: pnpm --filter angular-lynx build
+      - name: Build ng-lynx
+        run: pnpm --filter ng-lynx build
 
       - name: Cache Maestro and Lynx Explorer
         uses: actions/cache@v4
         with:
-          path: ~/.cache/angular-lynx-e2e
+          path: ~/.cache/ng-lynx-e2e
           key: device-tests-android-${{ hashFiles('packages/device-tests/tools.json') }}
 
       - name: Enable KVM
@@ -119,13 +119,13 @@ jobs:
 
       - run: pnpm install --no-frozen-lockfile
 
-      - name: Build angular-lynx
-        run: pnpm --filter angular-lynx build
+      - name: Build ng-lynx
+        run: pnpm --filter ng-lynx build
 
       - name: Cache Maestro and Lynx Explorer
         uses: actions/cache@v4
         with:
-          path: ~/.cache/angular-lynx-e2e
+          path: ~/.cache/ng-lynx-e2e
           key: device-tests-ios-${{ hashFiles('packages/device-tests/tools.json') }}
 
       - name: Run the flows

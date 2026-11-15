@@ -1,18 +1,18 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 
-import { LYNX_ELEMENTS } from 'angular-lynx/elements';
+import { LYNX_ELEMENTS } from 'ng-lynx/elements';
 
 /**
  * A recreation of `@lynx-js/lynx-ui`'s `<FeedList>` primitive
  * (https://lynxjs.org/next/ui/components/feed-list.html) — a scrolling feed
- * with pull-to-refresh and load-more — for angular-lynx. A `single`-layout
+ * with pull-to-refresh and load-more — for ng-lynx. A `single`-layout
  * feed rather than the real component's `waterfall`/`flow` masonry modes, to
  * keep the demo focused.
  *
  * Unlike the other demos in this gallery, this one needs **no raw touch
  * tracking at all** — `<scroll-view>`'s own `scrolltoupper`/`scrolltolower`
  * events (native Lynx scroll thresholds, see `LynxScrollView` in
- * `angular-lynx/elements`) directly give "user reached the top" / "user
+ * `ng-lynx/elements`) directly give "user reached the top" / "user
  * reached the bottom", which is exactly pull-to-refresh / load-more. A real
  * pull-to-refresh would also want a visible drag distance while pulling (the
  * real component's rubber-band header) — simplified here to a

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 
-import { LYNX_ELEMENTS } from 'angular-lynx/elements';
+import { LYNX_ELEMENTS } from 'ng-lynx/elements';
 
 import { DraggableDemoComponent } from './components/draggable-demo.component.js';
 import { FeedListDemoComponent } from './components/feed-list-demo.component.js';
@@ -12,7 +12,7 @@ import { dragLockScrollEnabled } from './drag-lock.service.js';
 
 /**
  * A gallery of `@lynx-js/lynx-ui` component patterns
- * (https://lynxjs.org/next/ui/components/) recreated for angular-lynx:
+ * (https://lynxjs.org/next/ui/components/) recreated for ng-lynx:
  * Draggable, Swiper, Sheet, SwipeAction, Sortable, FeedList. Each is its own
  * demo component under `src/components/`; see each file's doc comment for how
  * it differs from the real `@lynx-js/lynx-ui` primitive (they're React
@@ -37,7 +37,7 @@ import { dragLockScrollEnabled } from './drag-lock.service.js';
     <view class="app">
       <view class="app-header">
         <text class="app-title">UI Gallery</text>
-        <text class="app-subtitle">lynx-ui component patterns on angular-lynx</text>
+        <text class="app-subtitle">lynx-ui component patterns on ng-lynx</text>
       </view>
       <scroll-view class="app-scroll" scroll-orientation="vertical" [enable-scroll]="dragLockScrollEnabled()">
         <view class="app-scroll-content">

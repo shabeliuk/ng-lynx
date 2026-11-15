@@ -1,7 +1,7 @@
 # UI gallery — `@lynx-js/lynx-ui` patterns
 
 `examples/ui-gallery` recreates six patterns from
-[`@lynx-js/lynx-ui`](https://lynxjs.org/next/ui/components/) for angular-lynx:
+[`@lynx-js/lynx-ui`](https://lynxjs.org/next/ui/components/) for ng-lynx:
 Draggable, Swiper, Sheet, SwipeAction, Sortable, FeedList.
 
 `@lynx-js/lynx-ui` is a **React** component library — every one of these is a
@@ -9,7 +9,7 @@ headless React component built on Lynx's native gesture system and
 main-thread transforms, with no corresponding built-in `<tag>`. There's
 nothing to "port": this gallery reimplements the *interaction pattern* each
 component demonstrates, as plain Angular components using primitives
-angular-lynx already has (signals, `computed()`, typed touch events, CSS
+ng-lynx already has (signals, `computed()`, typed touch events, CSS
 transforms/transitions).
 
 Run it: `cd examples/ui-gallery && npm run dev`.
@@ -56,13 +56,13 @@ work here:
   to the card's content width), so instead of guessing at it, the field has
   `overflow: hidden` and simply clips a box dragged past the true edge.
 
-This also led to a real angular-lynx bug fix: chasing why `fields()`'s
+This also led to a real ng-lynx bug fix: chasing why `fields()`'s
 callback never fired surfaced that `whenFlushed()` could hang forever when
 two ops batches overlapped (a single shared resolver got clobbered by a
 later batch) — fixed in `runtime/src/flush.ts`, see
 [03 — Renderer internals](03-renderer-internals.md) and
 `verify/harness-flush-race.ts`. That fix is unrelated to the `getFields` gap
-above (which no fix on the angular-lynx side can work around) but was found
+above (which no fix on the ng-lynx side can work around) but was found
 in the course of debugging it.
 
 ## The six components

@@ -9,7 +9,7 @@ import { ChangeDetectionStrategy, Component, computed, NO_ERRORS_SCHEMA, signal 
  * the attribute form silently stop rendering everything past the first
  * `i18n`-attributed element; see docs/35-i18n.md for the root cause and fix).
  * This example sticks with `$localize` fields because the bundled extractor,
- * `angular-lynx-extract-i18n`, only scans `.ts` source for `$localize` calls
+ * `ng-lynx-extract-i18n`, only scans `.ts` source for `$localize` calls
  * — see docs/35-i18n.md.
  *
  * Every message below has an explicit custom id (`@@id`) — hand-authored

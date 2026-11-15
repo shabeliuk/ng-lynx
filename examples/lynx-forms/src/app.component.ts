@@ -6,7 +6,7 @@ import {
   NO_ERRORS_SCHEMA,
   signal,
 } from '@angular/core';
-import { LynxGlobalEvents, LynxModel } from 'angular-lynx';
+import { LynxGlobalEvents, LynxModel } from 'ng-lynx';
 
 /**
  * Two-way input binding with `[(lynxModel)]` (or the signal-friendly

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import { LYNX_ELEMENTS } from 'angular-lynx/elements';
+import { LYNX_ELEMENTS } from 'ng-lynx/elements';
 
 /** The tutorial's page dots: the Background Thread's view of the swiper. */
 @Component({

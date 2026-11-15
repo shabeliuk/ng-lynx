@@ -1,6 +1,6 @@
 # Routing (`@angular/router`)
 
-`angular-lynx/router` makes `@angular/router` work on Lynx: real route config,
+`ng-lynx/router` makes `@angular/router` work on Lynx: real route config,
 `<router-outlet>`, route params, guards, resolvers, lazy loading — everything
 `@angular/router` ships, running on an in-memory location instead of
 `window.history`.
@@ -25,8 +25,8 @@ export const routes: Routes = [
 
 ```ts
 // index.ts
-import { bootstrapLynxApplication } from 'angular-lynx';
-import { provideLynxRouter } from 'angular-lynx/router';
+import { bootstrapLynxApplication } from 'ng-lynx';
+import { provideLynxRouter } from 'ng-lynx/router';
 import { AppComponent } from './app.component.js';
 import { routes } from './routes.js';
 
@@ -230,7 +230,7 @@ Two constraints to know about:
 
   **Naming the chunk does not turn it into a lazy bundle** — it keeps it out
   of that path. The Lynx lazy-bundle mechanism is still reachable, just
-  explicitly: `loadDynamicComponent(source)` (`angular-lynx`) is a
+  explicitly: `loadDynamicComponent(source)` (`ng-lynx`) is a
   manually-called runtime API over the same
   `lynx.QueryComponent`/`getDynamicComponentExports` primitives, for loading a
   bundle by a runtime-computed source string the app's own build graph doesn't
@@ -238,7 +238,7 @@ Two constraints to know about:
   cover at all, since it always resolves against a build-time-known chunk
   graph). See [38 — Dynamic components](38-dynamic-component.md).
 
-Two angular-lynx-specific fixes were needed, both for the same underlying
+Two ng-lynx-specific fixes were needed, both for the same underlying
 reason — one `rspeedy build` compiles the `lynx` and `web` environments **in
 parallel into the same `dist/`**, so any output they name identically is a
 race:
@@ -287,8 +287,8 @@ URL, and Android hosts commonly forward the hardware back button. Both are
 `provideLynxRouter` options:
 
 ```ts
-import { lynxInitData } from 'angular-lynx';
-import { provideLynxRouter } from 'angular-lynx/router';
+import { lynxInitData } from 'ng-lynx';
+import { provideLynxRouter } from 'ng-lynx/router';
 
 provideLynxRouter(routes, {
   // Seed the starting route from init data instead of always '/'.
@@ -310,7 +310,7 @@ falsy return (or the option omitted) falls back to the default `/`.
 dispatches for the hardware/gesture back button. **There's no single
 Lynx-wide event name for this** — it's whatever your native host integration
 is built to emit — so there's intentionally no default; pass the name your
-host actually uses. When set, angular-lynx listens for it (through
+host actually uses. When set, ng-lynx listens for it (through
 [`LynxGlobalEvents`](23-app-events.md)) and calls `Location.back()`. If the
 in-memory history is already at its root, `back()` is a no-op
 (`LynxPlatformLocation` bounds-checks its stack index) — check

@@ -18,7 +18,7 @@ what makes Lynx feel responsive.
 
 A framework binding's job is to (1) run on the Background Thread and decide
 *what the UI should be*, and (2) express that as instructions the Main Thread
-can apply. ReactLynx does this for React. **angular-lynx does it for Angular.**
+can apply. ReactLynx does this for React. **ng-lynx does it for Angular.**
 
 ## The pattern: a custom renderer that emits ops
 
@@ -28,7 +28,7 @@ operation a component performs goes through the
 `@angular/platform-browser` ships a `Renderer2` that mutates the DOM; this is
 exactly the seam non-DOM platforms (NativeScript, etc.) replace.
 
-angular-lynx provides **`LynxRenderer2`** (+ `LynxRendererFactory2`). It runs on
+ng-lynx provides **`LynxRenderer2`** (+ `LynxRendererFactory2`). It runs on
 the Background Thread and does two things per operation:
 
 1. updates a cheap **shadow tree** of `ShadowElement` nodes (so Angular can
@@ -70,7 +70,7 @@ call. The Main Thread replays them against real elements and calls
 
 Angular's classic change detection relies on **Zone.js**, which monkey-patches
 timers, promises, and many globals to know when to re-check the view. On Lynx's
-PrimJS engine that patching is risky and heavyweight. angular-lynx therefore
+PrimJS engine that patching is risky and heavyweight. ng-lynx therefore
 targets **zoneless** Angular (`provideZonelessChangeDetection()`):
 
 - Reading a signal in a template registers a dependency.

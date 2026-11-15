@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const tools = JSON.parse(readFileSync(path.join(here, 'tools.json'), 'utf8'));
-const cache = process.env.DEVICE_TESTS_CACHE ?? path.join(homedir(), '.cache/angular-lynx-e2e');
+const cache = process.env.DEVICE_TESTS_CACHE ?? path.join(homedir(), '.cache/ng-lynx-e2e');
 
 async function sha256(file) {
   const hash = createHash('sha256');

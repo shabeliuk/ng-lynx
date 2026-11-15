@@ -14,7 +14,7 @@ half of Lynx's "dynamic component" mechanism (ReactLynx's `loadLazyBundle` +
 
 ```ts
 import { Component, ViewChild, ViewContainerRef } from '@angular/core';
-import { loadDynamicComponent } from 'angular-lynx';
+import { loadDynamicComponent } from 'ng-lynx';
 
 @Component({
   selector: 'app-root',
@@ -116,7 +116,7 @@ separately bundled copy — works completely.** Built the producer with
 those two) instead: `createComponent()` succeeded, the loaded component's own
 template rendered correctly, and a `(tap)` inside it correctly updated its
 own signal and re-rendered — full interactivity, not just a static mount. The
-loaded component didn't even need to import `angular-lynx` itself: its Lynx
+loaded component didn't even need to import `ng-lynx` itself: its Lynx
 element tags compile to `Renderer2` calls resolved via DI from the *host's*
 already-running `LynxRendererFactory2`, not a static import — so the only
 package that needs to be shared this way is Angular itself.
@@ -245,19 +245,19 @@ well-known global under
 `target = __LEPUS__ ? globalThis : lynx` — i.e. on the Background Thread the
 registry lives on the **`lynx` object** (BG and MT don't share a `globalThis`
 on a real engine). Its `lazy` package-export condition then swaps every
-runtime import for a shim reading out of that registry. angular-lynx uses the
+runtime import for a shim reading out of that registry. ng-lynx uses the
 same shape, one namespace per module id, via
-[`runtime/src/shared-runtime.ts`](../packages/angular-lynx/runtime/src/shared-runtime.ts).
+[`runtime/src/shared-runtime.ts`](../packages/ng-lynx/runtime/src/shared-runtime.ts).
 
 **`sharedModules` defaults to the minimal identity-critical set** —
-`@angular/core`, `angular-lynx`, `angular-lynx/elements` — all of which any
-angular-lynx app already contains, so publishing them costs a host nothing.
+`@angular/core`, `ng-lynx`, `ng-lynx/elements` — all of which any
+ng-lynx app already contains, so publishing them costs a host nothing.
 Matching is on the **exact request string**, so subpaths need their own
-entries (`angular-lynx` does *not* cover `angular-lynx/elements` — found by
+entries (`ng-lynx` does *not* cover `ng-lynx/elements` — found by
 building a real component and seeing the elements package bundled into it).
 
 Larger packages (`@angular/common`, `@angular/forms`, `@angular/router`,
-`angular-lynx/forms`, …) are deliberately **not** shared by default: a host
+`ng-lynx/forms`, …) are deliberately **not** shared by default: a host
 must import a shared module's whole namespace, which defeats tree-shaking and
 would pull e.g. the router into hosts that never use it. Add what your
 components need to `sharedModules` on **both** sides. A module the producer
@@ -296,7 +296,7 @@ component, and tapping its button updated its own signal through the host's shar
 ## Verifying
 
 `npm run verify:dynamic-component`: `registerDynamicComponent(schema,
-exports)` (`angular-lynx/testing`) simulates the native host having already
+exports)` (`ng-lynx/testing`) simulates the native host having already
 fetched and cached a bundle, mirroring `loadedDynamicComponentsSet`'s
 already-loaded fast path; `lynx.QueryComponent` and
 `lynxCoreInject.tt.getDynamicComponentExports` are mocked to the confirmed

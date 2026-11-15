@@ -1,4 +1,4 @@
-# Typed templates — `angular-lynx/elements`
+# Typed templates — `ng-lynx/elements`
 
 Without help, Angular's template compiler only knows the DOM vocabulary, so a
 Lynx template needs `schemas: [NO_ERRORS_SCHEMA]` — which turns *all* template
@@ -6,7 +6,7 @@ checking off: tag typos compile, attribute typos compile, and `$event` is
 untyped (or wrongly typed when a Lynx event name collides with a DOM one — the
 `(scroll)` gotcha in [12 — Events](12-events.md)).
 
-`angular-lynx/elements` fixes this with a set of **typed element directives**
+`ng-lynx/elements` fixes this with a set of **typed element directives**
 covering Lynx's built-in elements (`view`, `text`, `image`,
 `scroll-view`, `list`, `list-item`, `input`, `textarea`, `video`, `svg`,
 `frame`, `overlay`, `refresh`, `refresh-header`, `title-bar-view`,
@@ -15,7 +15,7 @@ covering Lynx's built-in elements (`view`, `text`, `image`,
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { LYNX_ELEMENTS, type LynxTouchEvent } from 'angular-lynx/elements';
+import { LYNX_ELEMENTS, type LynxTouchEvent } from 'ng-lynx/elements';
 
 @Component({
   selector: 'app-root',
@@ -166,7 +166,7 @@ or escape them as `&lt;video&gt;` in static text.
 `LynxSvg` types [`<svg>`](https://lynxjs.org/next/api/elements/built-in/svg.html)
 (`src`, `content`, `current-color`; event `load`) — it renders as a single
 native view built from the `content`/`src` XML rather than one node per shape,
-the same mechanism `angular-lynx/genui`'s `LineChart`/`PieChart` components use.
+the same mechanism `ng-lynx/genui`'s `LineChart`/`PieChart` components use.
 `LynxFrame` types [`<frame>`](https://lynxjs.org/next/api/elements/built-in/frame.html),
 Lynx's `<iframe>` equivalent for embedding a nested Lynx page (`src`, `data`,
 `global-props`, `auto-width`/`auto-height`, `preset-width`/`preset-height`,

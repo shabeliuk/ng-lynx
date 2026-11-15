@@ -1,5 +1,5 @@
 {
-  "name": "angular-lynx-ui-gallery",
+  "name": "ng-lynx-ui-gallery",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -11,7 +11,7 @@
   "dependencies": {
     "@angular/compiler": ">=21.2.26",
     "@angular/core": ">=21.2.26",
-    "angular-lynx": "workspace:*"
+    "ng-lynx": "workspace:*"
   },
   "devDependencies": {
     "@lynx-js/qrcode-rsbuild-plugin": "^0.7.3",

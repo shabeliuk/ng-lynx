@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { lynxAssetUrl } from 'angular-lynx';
-import { LYNX_ELEMENTS } from 'angular-lynx/elements';
-import { LynxSlider, LynxStepper } from 'angular-lynx/forms';
+import { lynxAssetUrl } from 'ng-lynx';
+import { LYNX_ELEMENTS } from 'ng-lynx/elements';
+import { LynxSlider, LynxStepper } from 'ng-lynx/forms';
 
 /**
  * A single accessible screen, exercising the typed `accessibility-*` inputs
@@ -27,7 +27,7 @@ import { LynxSlider, LynxStepper } from 'angular-lynx/forms';
  *    toggle;
  *  - `[accessibility-actions]` on the message row (custom actions a screen
  *    reader can surface beyond a plain tap);
- *  - `LynxSlider` / `LynxStepper` (`angular-lynx/forms`) already carry their
+ *  - `LynxSlider` / `LynxStepper` (`ng-lynx/forms`) already carry their
  *    own `accessibility-traits`/`accessibility-value`/`accessibility-label`
  *    wiring internally — see slider.ts / stepper.ts.
  *

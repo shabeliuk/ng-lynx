@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { lynxAssetUrl } from 'angular-lynx';
-import { LYNX_ELEMENTS } from 'angular-lynx/elements';
+import { lynxAssetUrl } from 'ng-lynx';
+import { LYNX_ELEMENTS } from 'ng-lynx/elements';
 
 import { BackButtonComponent } from './back-button.component.js';
 

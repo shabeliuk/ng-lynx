@@ -3,14 +3,14 @@
 A Lynx card lives inside a native app. The host passes data **at load time**
 (init data), can **push updates** afterwards (`updateData`), and exposes
 app-wide **global props** (theme, locale, host context) with its own update
-channel. angular-lynx surfaces all three as **signals**, so zoneless change
+channel. ng-lynx surfaces all three as **signals**, so zoneless change
 detection picks host pushes up automatically — no manual wiring.
 
 ## Reading init data
 
 ```ts
 import { Component, computed } from '@angular/core';
-import { lynxInitData } from 'angular-lynx';
+import { lynxInitData } from 'ng-lynx';
 
 interface CardData {
   title: string;
@@ -46,7 +46,7 @@ re-renders. Merge semantics mirror ReactLynx exactly:
 
 ```ts
 import { computed } from '@angular/core';
-import { lynxGlobalProps } from 'angular-lynx';
+import { lynxGlobalProps } from 'ng-lynx';
 
 export class ThemedComponent {
   readonly globalProps = lynxGlobalProps<{ theme: 'light' | 'dark' }>();
@@ -64,7 +64,7 @@ module in `mainThreadModules`, at its top level:
 
 ```ts
 // src/worklets.ts, listed in `mainThreadModules` in lynx.config.ts
-import { mainThreadLynx } from 'angular-lynx/worklet';
+import { mainThreadLynx } from 'ng-lynx/worklet';
 
 mainThreadLynx.registerDataProcessors({
   // Runs on init data, and on any updateData that doesn't name a processor.
@@ -136,7 +136,7 @@ framework moves it to `lynx.__initData`, as ReactLynx does. The web runtime sets
 `lynxInitData()` was empty on every native engine, in the web preview it worked, and
 the harness mocked the web's shape.
 
-The signals are the reason this needs no change-detection glue: angular-lynx is
+The signals are the reason this needs no change-detection glue: ng-lynx is
 zoneless, and a signal write from the native push handler schedules CD exactly
 like one from your own code.
 

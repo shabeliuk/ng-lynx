@@ -2,7 +2,7 @@ import { defineConfig } from '@lynx-js/rspeedy';
 
 import { pluginLynxConfig } from '@lynx-js/config-rsbuild-plugin';
 import { pluginQRCode } from '@lynx-js/qrcode-rsbuild-plugin';
-import { pluginAngularLynx } from 'angular-lynx/plugin';
+import { pluginAngularLynx } from 'ng-lynx/plugin';
 
 /**
  * CSS `@media` queries on Lynx 4.0+ — see docs/13-styling.md#media-queries.

@@ -15,7 +15,7 @@ import {
   defineA2uiCatalog,
   type ServerToClientMessage,
   type UserActionPayload,
-} from 'angular-lynx/genui';
+} from 'ng-lynx/genui';
 
 const INITIAL_MESSAGES = [
   { createSurface: { surfaceId: 'shop' } },

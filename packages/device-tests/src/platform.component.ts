@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
-import { LynxObject, lynxAssetUrl, lynxSelectRoot, lynxSelectUniqueID } from 'angular-lynx';
-import { LYNX_ELEMENTS, type LynxTouchEvent } from 'angular-lynx/elements';
-import { lynxEventSource } from 'angular-lynx/http';
+import { LynxObject, lynxAssetUrl, lynxSelectRoot, lynxSelectUniqueID } from 'ng-lynx';
+import { LYNX_ELEMENTS, type LynxTouchEvent } from 'ng-lynx/elements';
+import { lynxEventSource } from 'ng-lynx/http';
 import type { Subscription } from 'rxjs';
 
 import { BackButtonComponent } from './back-button.component.js';

@@ -2,10 +2,10 @@ import { defineConfig } from '@lynx-js/rspeedy';
 
 import { pluginQRCode } from '@lynx-js/qrcode-rsbuild-plugin';
 import { pluginTailwindCSS } from 'rsbuild-plugin-tailwindcss';
-import { pluginAngularLynx } from 'angular-lynx/plugin';
+import { pluginAngularLynx } from 'ng-lynx/plugin';
 
 /**
- * Tailwind under angular-lynx — see docs/13-styling.md#tailwind.
+ * Tailwind under ng-lynx — see docs/13-styling.md#tailwind.
  *
  * `pluginTailwindCSS` (the Lynx-recommended integration) wires Tailwind into
  * rsbuild's PostCSS step: it reads `tailwind.config.ts`, scans the `content`

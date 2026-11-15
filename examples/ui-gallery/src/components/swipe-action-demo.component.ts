@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 
-import { LYNX_ELEMENTS } from 'angular-lynx/elements';
+import { LYNX_ELEMENTS } from 'ng-lynx/elements';
 
 import { lockDrag, unlockDrag } from '../drag-lock.service.js';
 
@@ -16,7 +16,7 @@ const ACTION_WIDTH = 88;
 /**
  * A recreation of `@lynx-js/lynx-ui`'s `<SwipeAction>` primitive
  * (https://lynxjs.org/next/ui/components/swipe-action.html) — swipe a row to
- * reveal a hidden action — for angular-lynx.
+ * reveal a hidden action — for ng-lynx.
  *
  * Each row is a `displayArea` (the swipeable content) stacked over an
  * `actionArea` (the revealed action button). The touch listeners are bound

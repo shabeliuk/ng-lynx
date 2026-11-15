@@ -2,7 +2,7 @@ import { defineConfig, type RsbuildPlugin } from '@lynx-js/rspeedy';
 
 import { pluginLynxConfig } from '@lynx-js/config-rsbuild-plugin';
 import { pluginQRCode } from '@lynx-js/qrcode-rsbuild-plugin';
-import { pluginAngularLynx } from 'angular-lynx/plugin';
+import { pluginAngularLynx } from 'ng-lynx/plugin';
 
 import { sendServerEvents } from './server.mjs';
 

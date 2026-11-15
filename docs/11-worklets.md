@@ -17,7 +17,7 @@ worklet can call).
 
 **Coming from ReactLynx?**
 
-| ReactLynx | angular-lynx |
+| ReactLynx | ng-lynx |
 | --- | --- |
 | `main-thread:bindtap={fn}` | `[lynxMainThread]="{ tap: fn }"` |
 | A `'main thread'` closure | `defineWorklet` in a Main-Thread module. Pass what it would capture through [`bindWorklet`](#state-for-each-instance-bindworklet-and-mainthreadref) |
@@ -30,7 +30,7 @@ worklet can call).
 
 ## The model
 
-angular-lynx uses an **explicit** worklet model: you write the worklet in a
+ng-lynx uses an **explicit** worklet model: you write the worklet in a
 Main-Thread module and bind it from a component. Use `defineWorklet` for a
 **typed reference** (recommended) or `registerWorklet` for a string id.
 
@@ -38,7 +38,7 @@ Main-Thread module and bind it from a component. Use `defineWorklet` for a
 
 ```ts
 // src/worklets.ts
-import { defineWorklet, type WorkletContext } from 'angular-lynx/worklet';
+import { defineWorklet, type WorkletContext } from 'ng-lynx/worklet';
 
 // Registers it AND returns a typed reference to bind — no magic string. The
 // registry id comes from the function's own name (`pressFadeMT`) — name it
@@ -61,7 +61,7 @@ pluginAngularLynx({ mainThreadModules: ['./src/worklets.ts'] })
 **3. Bind the reference on an element:**
 
 ```ts
-import { LynxMainThread } from 'angular-lynx';
+import { LynxMainThread } from 'ng-lynx';
 import { pressFade } from './worklets';
 
 @Component({
@@ -160,7 +160,7 @@ card — with no Background round-trip.
 
 ```ts
 // gestures.mt.ts  (Main-Thread module)
-import { defineMainThreadRef, defineWorklet } from 'angular-lynx/worklet';
+import { defineMainThreadRef, defineWorklet } from 'ng-lynx/worklet';
 
 // defineMainThreadRef always takes an explicit id — there's no function here
 // to derive one from, unlike defineWorklet.
@@ -174,7 +174,7 @@ export const resetCard = defineWorklet(resetCardMT);
 
 ```ts
 // component
-import { LynxMainThread, LynxMainThreadRef } from 'angular-lynx';
+import { LynxMainThread, LynxMainThreadRef } from 'ng-lynx';
 import { card, resetCard } from './gestures.mt';
 
 @Component({
@@ -384,7 +384,7 @@ plugin already uses internally — your app never imports from it directly. The
   package uses; there's no Background ops batch for a pure MT mutation —
   asserted by `verify:worklet`).
 - `runOnBackground` hops back to the BG through the bridge the background
-  bootstrap installs (`entry-background.ts`) — angular-lynx's own mechanism,
+  bootstrap installs (`entry-background.ts`) — ng-lynx's own mechanism,
   independent of the real runtime's own (much more involved) cross-thread
   closure system, which this package doesn't need since worklets here are
   always plain, explicitly-authored top-level functions with no captured
