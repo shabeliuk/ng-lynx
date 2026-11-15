@@ -62,6 +62,12 @@ import {
 } from './mock-papi.js';
 import { type LynxQueries, within } from './queries.js';
 
+// A Lynx build defines `ngServerMode: false` (see the plugin); a test runner doesn't.
+// Angular 22.2.6 reads it unguarded at bootstrap (`ngDevMode || ngServerMode`), so
+// without this every render throws `ngServerMode is not defined`.
+const angularGlobals = globalThis as { ngServerMode?: boolean };
+if (typeof angularGlobals.ngServerMode === 'undefined') angularGlobals.ngServerMode = false;
+
 export { textContent, within, type LynxQueries, type LynxTextMatch, type LynxTextMatchOptions } from './queries.js';
 
 // Everything low-level stays available for advanced tests.
