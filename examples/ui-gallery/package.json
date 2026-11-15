@@ -9,14 +9,14 @@
     "preview": "rspeedy preview"
   },
   "dependencies": {
-    "@angular/core": ">=21.0.0",
-    "@angular/compiler": ">=21.0.0",
+    "@angular/compiler": ">=21.2.26",
+    "@angular/core": ">=21.2.26",
     "angular-lynx": "workspace:*"
   },
   "devDependencies": {
     "@lynx-js/qrcode-rsbuild-plugin": "^0.7.3",
-    "@lynx-js/rspeedy": "^0.18.4",
-    "typescript": "~5.9.0"
+    "@lynx-js/rspeedy": "^0.18.6",
+    "typescript": "~5.9.3"
   },
   "engines": {
     "node": ">=18"
