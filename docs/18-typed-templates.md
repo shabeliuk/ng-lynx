@@ -313,6 +313,14 @@ through `asLynxElement<'markdown'>` ([10](10-element-queries.md#typed-invoke)). 
 render on the iOS simulator in the device-tests `attributes` flow, where
 `(drawEnd)` and `<filter-image>`'s `(load)` fire.
 
+> ⚠️ **Not on Lynx Explorer 4.2.0 for Android.** Its release APK aborts the whole app as
+> soon as a `<markdown>` is drawn (a JNI error in `com.lynx.markdown.Markdown`), and it has
+> no `<filter-image>` at all ("No BehaviorController defined for class filter-image"), after
+> which the engine also fails to place that element's siblings. Both come from Explorer's
+> build, not from ng-lynx; a host app that ships these elements hasn't been tried. Until then,
+> guard them with `injectSystemInfo().platform !== 'Android'`, as the device-tests
+> `attributes` screen does (2026-11-15).
+
 ## Verifying
 
 - `npm run verify:elements` — runtime behavior: lazy outputs (no listener for

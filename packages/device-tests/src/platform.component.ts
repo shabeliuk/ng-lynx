@@ -23,6 +23,8 @@ import { BackButtonComponent } from './back-button.component.js';
       <view class="button" [flatten]="false" accessibility-label="Toggle grayscale" (tap)="toggleGrayscale()">
         <text class="button-label">{{ grayscale() ? 'Colour page' : 'Grayscale page' }}</text>
       </view>
+      <!-- On Android the button's accessibility-label hides its inner text from Maestro. -->
+      <text class="line" [flatten]="false">Grayscale: {{ grayscale() ? 'on' : 'off' }}</text>
 
       <view class="boxes" [flatten]="false" (tap)="paintTapped($event)">
         <view class="box" [flatten]="false" accessibility-label="Box 1"></view>

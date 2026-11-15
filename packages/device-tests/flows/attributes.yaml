@@ -20,12 +20,24 @@ appId: ${APP_ID}
 - extendedWaitUntil:
     visible: 'Long presses: 1'
     timeout: 5000
-- extendedWaitUntil:
-    visible: 'Markdown drawn: yes'
-    timeout: 5000
-- extendedWaitUntil:
-    visible: 'Filter image loaded: yes'
-    timeout: 5000
+# Explorer 4.2.0's Android APK crashes on <markdown> and has no <filter-image>, so the
+# screen leaves both out there.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible: 'Markdown drawn: yes'
+          timeout: 5000
+      - extendedWaitUntil:
+          visible: 'Filter image loaded: yes'
+          timeout: 5000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible: 'Markdown: skipped on Android'
+      - assertVisible: 'Filter image: skipped on Android'
 - assertVisible: Preset
 - assertVisible: Row 40
 - assertNotVisible: Row 0

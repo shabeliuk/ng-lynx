@@ -130,6 +130,10 @@ jobs:
 
       - name: Run the flows
         run: node packages/device-tests/run.mjs --platform ios
+        env:
+          # Maestro's default wait for its iOS driver is too short for a cold
+          # GitHub macOS runner: it timed out once and no flow ran at all.
+          MAESTRO_DRIVER_STARTUP_TIMEOUT: '180000'
 
       - uses: actions/upload-artifact@v7
         if: always()
