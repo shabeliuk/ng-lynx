@@ -17,7 +17,7 @@
   "dependencies": {
     "@angular/compiler": ">=21.2.26",
     "@angular/core": ">=21.2.26",
-    "@lynx-js/genui": "^0.7.3",
+    "@lynx-js/genui": "^0.8.0",
     "@openuidev/lang-core": "^0.4.1",
     "ng-lynx": "workspace:*",
     "sparkling-method": "~2.1.0-rc.36",
