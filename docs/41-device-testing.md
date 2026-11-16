@@ -111,11 +111,11 @@ A flow passing on screen isn't enough, so `run.mjs` also fails the run on:
 | `input` | Typing on the native keyboard, Return firing `(confirm)` | `(confirm)` needing `confirm-type` on Android |
 | `main-thread` | A worklet on a tap, `runOnBackground`, `runOnMainThread` | Worklets not reaching the engine |
 | `gesture` | A native pan, dragged twice | The detector stopping after the first drag on Android |
-| `gesture-lab` | Tap and long-press detectors, a tap that waits for a long press, and `ctx.gesture.fail()` and `end()` in a pan (iOS so far) | `fail()`/`end()` throwing `not a function` |
+| `gesture-lab` | Tap and long-press detectors, a tap that waits for a long press, and `ctx.gesture.fail()` and `end()` in a pan | `fail()`/`end()` throwing `not a function` |
 | `assets` | An image through `lynxAssetUrl()`, with no lazy chunk in the build | Asset URLs staying relative |
 | `page-exit` | Leaving the page | `(null) is not a function`, LynxError 20100 |
 | `host-data` | Init data from the host, through a data processor | `lynxInitData()` empty on every native engine |
-| `attributes` | `(longpress)`, `initial-scroll-index`, `default-value`, `<markdown>` drawing, `<filter-image>` loading, and the engine accepting the other typed attributes and events | Attributes the engine rejects |
+| `attributes` | `(longpress)`, `initial-scroll-index`, `default-value`, `<markdown>` drawing and `<filter-image>` loading (iOS only: Explorer 4.2.0's Android APK crashes on the first and lacks the second, see [18](18-typed-templates.md)), and the engine accepting the other typed attributes and events | Attributes the engine rejects |
 | `platform` | `lynxSelectRoot()`, `lynxSelectUniqueID()`, `lynxEventSource()` with the line held open, and `reload()` with new init data | Lynx's `EventSource` delivering nothing on iOS; `removeComponents is not a function` on reload |
 
 **To try the screens by hand**, on a phone or a simulator: `npm run dev` in `packages/device-tests`,

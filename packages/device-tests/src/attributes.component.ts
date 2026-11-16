@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { lynxAssetUrl } from 'ng-lynx';
+import { injectSystemInfo, lynxAssetUrl } from 'ng-lynx';
 import { LYNX_ELEMENTS } from 'ng-lynx/elements';
 
 import { BackButtonComponent } from './back-button.component.js';
@@ -62,6 +62,9 @@ import { BackButtonComponent } from './back-button.component.js';
         <text class="button-label">Long press me</text>
       </view>
       <input class="field" [flatten]="false" default-value="Preset" />
+      <!-- Explorer 4.2.0's Android APK aborts the app as soon as a <markdown> is drawn
+           (JNI: com.lynx.markdown.Markdown.initialClassCache, java_class == null). -->
+      @if (androidGaps === false) {
       <markdown
         class="markdown"
         content="**Bold** and a [link](https://lynxjs.org)"
@@ -72,15 +75,26 @@ import { BackButtonComponent } from './back-button.component.js';
         (overflow)="noop($event.detail.type)"
       ></markdown>
       <text class="line" [flatten]="false">Markdown drawn: {{ markdownDrawn() ? 'yes' : 'no' }}</text>
+      } @else {
+      <text class="line" [flatten]="false">Markdown: skipped on Android</text>
+      }
       <view class="images" [flatten]="false">
-        <filter-image class="thumb" [src]="square" mode="aspectFill" blur-radius="2px" (load)="filterLoaded.set(true)"></filter-image>
+        <!-- Explorer 4.2.0's Android APK has no <filter-image> ("No BehaviorController
+             defined for class filter-image"), and the engine then fails to place its siblings. -->
+        @if (androidGaps === false) {
+          <filter-image class="thumb" [src]="square" mode="aspectFill" blur-radius="2px" (load)="filterLoaded.set(true)"></filter-image>
+        }
         <text class="line" [flatten]="false">
           Inline <inline-text text-maxline="1">text</inline-text> and
           <inline-image class="inline" [src]="square" custom-baseline-shift="-2px"></inline-image>
           <inline-truncation><inline-text>…</inline-text></inline-truncation>
         </text>
       </view>
-      <text class="line" [flatten]="false">Filter image loaded: {{ filterLoaded() ? 'yes' : 'no' }}</text>
+      @if (androidGaps === false) {
+        <text class="line" [flatten]="false">Filter image loaded: {{ filterLoaded() ? 'yes' : 'no' }}</text>
+      } @else {
+        <text class="line" [flatten]="false">Filter image: skipped on Android</text>
+      }
       <list
         class="list"
         list-type="single"
@@ -101,6 +115,8 @@ import { BackButtonComponent } from './back-button.component.js';
 })
 export class AttributesComponent {
   protected readonly presses = signal(0);
+  /** Explorer 4.2.0 on Android is missing <markdown> and <filter-image>: see the template. */
+  protected readonly androidGaps = injectSystemInfo().platform === 'Android';
   protected readonly markdownDrawn = signal(false);
   protected readonly filterLoaded = signal(false);
   protected readonly square = lynxAssetUrl('square.png');

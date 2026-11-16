@@ -9,7 +9,11 @@ import { LYNX_ELEMENTS } from 'ng-lynx/elements';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [LYNX_ELEMENTS],
+  // The links outgrow a short screen (the Android emulator's), and a plain <view>
+  // doesn't scroll, so the flows' scrollUntilVisible had nothing to scroll.
+  host: { class: 'fill' },
   template: `
+    <scroll-view class="fill" scroll-orientation="vertical">
     <view class="page">
       <text class="title" [flatten]="false">Count: {{ count() }}</text>
       <text class="line" [flatten]="false">{{ parity() }}</text>
@@ -31,6 +35,7 @@ import { LYNX_ELEMENTS } from 'ng-lynx/elements';
         </view>
       }
     </view>
+    </scroll-view>
   `,
 })
 export class HomeComponent {
