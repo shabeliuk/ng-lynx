@@ -267,6 +267,31 @@ by the plugin/runtime now — keep them in mind if you change the build:
   in [07 — Verifying](07-verifying.md#bootstrap-provider-audit-results).
 - **No SSR / hydration** on Lynx.
 
+## ReactLynx options ng-lynx doesn't take
+
+`pluginAngularLynx` takes the same options as `pluginReactLynx` wherever the option
+reaches Lynx itself (`enableCSSSelector`, `engineVersion`, `enableNewGesture`, …).
+Three ReactLynx options configure ReactLynx's own compiler or runtime instead, and
+have nothing to act on in an Angular app:
+
+- **`globalPropsMode`.** In ReactLynx's default `'reactive'` mode, a host's
+  `updateGlobalProps` re-renders the whole tree; `'event'` mode updates only the
+  components that read global props. ng-lynx always works the second way:
+  `lynxGlobalProps()` is a signal, replaced copy-on-write on every update, so only
+  the components that read it are checked, and `onGlobalPropsChanged` is emitted
+  either way. See [17 — Host data](17-host-data.md#reading-global-props).
+- **`extractStr`.** ReactLynx compiles the same component code into both threads,
+  so the same string literals ship twice; `extractStr` moves them into one array
+  that the Main Thread receives through init data. In ng-lynx your components run
+  on the Background Thread only. The Main Thread bundle is ng-lynx's executor plus
+  your worklet modules, so there are no duplicated app strings to merge.
+- **`enableUiSourceMap`.** It's produced by ReactLynx's Main Thread JSX transform,
+  which maps each element to the JSX that created it, for Lynx DevTool. Angular
+  templates compile on the Background Thread and ng-lynx has no such transform.
+  Mapping elements back to their template would be a separate feature.
+
+Passing one of these to `pluginAngularLynx` is a type error.
+
 ## AOT (ngtsc under rspack)
 
 AOT precompiles templates at build time and ships **no** `@angular/compiler` —
