@@ -30,6 +30,11 @@ updates:
       - dependency-name: zod
       - dependency-name: minimatch
       - dependency-name: deepmerge
+      # genui 0.8 moves a2ui to protocol v1.0 (`version: '1.0'`, `@path`/`@call`, `action`),
+      # which ng-lynx/genui doesn't speak yet. 0.7 patches still come through. Drop this
+      # with the v1.0 migration (to-do list, Phase 3, Later).
+      - dependency-name: '@lynx-js/genui'
+        versions: ['>=0.8.0']
 
   # CocoaPods tooling for the genui example's native iOS app.
   - package-ecosystem: bundler
