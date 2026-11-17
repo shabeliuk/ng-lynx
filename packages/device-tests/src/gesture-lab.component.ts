@@ -24,7 +24,11 @@ const phases = (label: string, names: string[], prefix = '') =>
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [BackButtonComponent, LYNX_ELEMENTS, LynxGesture],
+  // Five boxes and their logs outgrow the CI emulator's screen: the page scrolls, and
+  // the flow scrolls each box into view before it touches it.
+  host: { class: 'fill' },
   template: `
+    <scroll-view class="fill" scroll-orientation="vertical">
     <view class="page">
       <app-back-button></app-back-button>
       @for (box of boxes; track box.key) {
@@ -42,6 +46,7 @@ const phases = (label: string, names: string[], prefix = '') =>
         <text class="button-label">Clear log</text>
       </view>
     </view>
+    </scroll-view>
   `,
 })
 export class GestureLabComponent {

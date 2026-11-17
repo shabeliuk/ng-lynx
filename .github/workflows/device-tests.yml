@@ -8,7 +8,8 @@ name: Device tests
 # outside the change. A schedule only ever runs from the default branch.
 on:
   schedule:
-    - cron: '0 4 * * *'
+    # Mondays, 04:00 UTC.
+    - cron: '0 4 * * 1'
   workflow_dispatch:
 
 # Same telemetry opt-out as ci.yml. See docs/39-lynx-4-1.md.
@@ -88,8 +89,11 @@ jobs:
     # private the iOS job only runs when started by hand. Public repositories don't
     # pay for them.
     if: github.event_name == 'workflow_dispatch' || !github.event.repository.private
-    # Apple silicon, which the pinned simulator build of Explorer targets.
-    runs-on: macos-15
+    # Apple silicon, which the pinned simulator build of Explorer targets. Maestro's iOS
+    # driver never came up on macos-15, nor locally on Xcode 26.5, even with a
+    # three-minute wait; on Xcode 27.2 every flow passes. This image is
+    # a preview: move to the macos-27 label once it exists.
+    runs-on: xcode-27
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -127,6 +131,10 @@ jobs:
         with:
           path: ~/.cache/ng-lynx-e2e
           key: device-tests-ios-${{ hashFiles('packages/device-tests/tools.json') }}
+
+      # The image defaults to 27.1; 27.2 is the version the flows were checked on.
+      - name: Select Xcode 27.2
+        run: sudo xcode-select -s /Applications/Xcode_27.2.app
 
       - name: Run the flows
         run: node packages/device-tests/run.mjs --platform ios
