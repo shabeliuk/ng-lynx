@@ -39,5 +39,9 @@ The first release candidate.
 Native gestures (`[lynxGesture]`), dynamic components, GenUI (`ng-lynx/genui`),
 HarmonyOS and the desktop-only elements.
 
+Gestures: pan, tap, long press and fling run on iOS and Android. Lynx's engines have no
+recognizer for `pinch` or `rotation`, so those never fire, and a dev build warns when you
+bind one. A fling's event is typed as `MainThreadFlingGestureEvent`.
+
 [Unreleased]: https://github.com/shabeliuk/ng-lynx/compare/v0.1.0-rc.0...HEAD
 [0.1.0-rc.0]: https://github.com/shabeliuk/ng-lynx/releases/tag/v0.1.0-rc.0

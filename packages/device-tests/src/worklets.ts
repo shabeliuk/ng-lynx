@@ -67,3 +67,13 @@ function endOnUpdateMT(ctx: WorkletContext<MainThreadGestureEvent, PhaseParams>)
   ctx.gesture?.end();
 }
 export const endOnUpdate = defineWorklet(endOnUpdateMT);
+
+/**
+ * An `onUpdate` that also reports what the event carries, as `<label>~<json>`, so the
+ * lab shows what a fling's `params` carry.
+ */
+function recordUpdateMT(ctx: WorkletContext<MainThreadGestureEvent, PhaseParams>): void {
+  ctx.runOnBackground(`${ctx.params.label}:update`);
+  ctx.runOnBackground(`${ctx.params.label}~${JSON.stringify(ctx.event.params)}`);
+}
+export const recordUpdate = defineWorklet(recordUpdateMT);

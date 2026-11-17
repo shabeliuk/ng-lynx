@@ -20,8 +20,9 @@
  *
  * @remarks
  * **Experimental.** It needs `pluginAngularLynx({ enableNewGesture: true })`.
- * Pan has run on Explorer 4.2 on iOS and Android; tap, long press, a `waitFor`
- * relation and `ctx.gesture.fail()`/`end()` on iOS only. The web preview's
+ * Pan, tap, long press, fling, a `waitFor` relation and `ctx.gesture.fail()`/`end()`
+ * have run on Explorer 4.2 on iOS and Android. Pinch and rotation have type codes
+ * but no recognizer in either engine, so they never fire. The web preview's
  * detectors are no-ops (web-core 0.26). See docs/32-gestures.md.
  */
 import {
@@ -171,6 +172,12 @@ export class LynxGesture implements OnInit, OnDestroy {
         .filter((id): id is number => id !== undefined);
 
     for (const [key, gesture] of entries) {
+      if (__DEV__ && (gesture.type === 'pinch' || gesture.type === 'rotation')) {
+        console.warn(
+          `[ng-lynx] [lynxGesture] '${key}' is a ${gesture.type} gesture, which Lynx's iOS and Android ` +
+            'engines don\'t recognize (Explorer 4.2): its callbacks will never run. See docs/32-gestures.md.',
+        );
+      }
       const config: Record<string, unknown> = {
         callbacks: Object.entries(gesture.callbacks).map(([name, worklet]) => ({
           name,
@@ -200,3 +207,5 @@ export class LynxGesture implements OnInit, OnDestroy {
 export function resetGestureState(): void {
   nextGestureId = 1;
 }
+
+declare const __DEV__: boolean;

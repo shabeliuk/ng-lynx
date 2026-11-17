@@ -1,7 +1,7 @@
 # Gestures
 
 Lynx has a native gesture-recognizer system beyond plain tap/touch events —
-pan, fling, longpress, rotation, pinch — plus **relations** between them
+pan, fling, tap and long press — plus **relations** between them
 (`waitFor`, `simultaneousWith`, `continueWith`) so you can compose things like
 "this pan only activates once that tap has failed to recognize." It runs
 entirely on the Main Thread, via a dedicated PAPI call:
@@ -16,19 +16,25 @@ only initialise with that flag.
 
 **Run on Lynx Explorer 4.2, on the iOS simulator and the Android emulator**, on Angular 21
 and 22: a pan fires `onStart`, `onUpdate` for each move, and `onEnd`, and repeats on the next
-drag ([`examples/worklet`](../examples/worklet)). Tap, long press, a `waitFor` relation and
-`ctx.gesture.fail()`/`end()` have run on the iOS simulator (Explorer 4.2, 2026-11-10), in the
-`gesture-lab` device flow. Fling, rotation and pinch, and Android for all of these, haven't.
-The web preview has no-op detectors (web-core 0.26), so a gesture never fires there, and
-nothing crashes.
+drag ([`examples/worklet`](../examples/worklet)). Tap, long press, a `waitFor` relation,
+`ctx.gesture.fail()`/`end()` and fling have run on the iOS simulator and the Android emulator
+(Explorer 4.2, 2026-11-17), in the `gesture-lab` device flow. The web preview has no-op
+detectors (web-core 0.26), so a gesture never fires there, and nothing crashes.
 
-What each type fired on the iOS simulator:
+What each type fired, the same on both platforms:
 
 | Type | Phases, in order |
 | --- | --- |
 | `tap` | `onBegin`, `onStart`, `onEnd`, on a quick tap |
 | `longpress` | `onBegin`, `onStart`, `onEnd`, on a hold |
 | `tap` with `waitFor: ['hold']`, beside a `longpress` | a quick tap fires the tap; a hold fires only the long press |
+| `fling`, beside a `pan` ([below](#fling)) | `onBegin` as the finger lifts, `onUpdate` each frame while it glides, then `onEnd`. No `onStart`. |
+
+**`pinch` and `rotation` never fire.** They have type codes, so `[lynxGesture]` accepts them, but
+neither engine has a recognizer for them: Lynx's iOS and Android gesture handlers cover pan,
+fling, tap, long press, `default` and `native` only (its `develop` branch, read 2026-11-17).
+Two-finger drags on such a detector on the iOS simulator logged nothing. A dev build warns
+when you bind one.
 
 The phases the engine calls (from its `BaseGestureHandler`, and observed on a device):
 
@@ -101,7 +107,7 @@ one-emitter-per-binding model `[lynxMainThread]` uses.
 
 ## In a phase
 
-`ctx.event.params` has where the finger is, in logical pixels: `clientX`/`clientY`,
+For a pan, tap or long press, `ctx.event.params` has where the finger is, in logical pixels: `clientX`/`clientY`,
 `pageX`/`pageY`, `x`/`y` relative to the element, and the element's `scrollX`, `scrollY`,
 `isAtStart` and `isAtEnd`. On Android they're rounded to whole numbers.
 
@@ -123,8 +129,30 @@ Measured on the iOS simulator, with a pan:
 - `end()` in the first `onUpdate`: that one update, then `onEnd`, and nothing more for the
   rest of the touch.
 - `fail()` in `onStart`: `onEnd` follows at once and no `onUpdate` gets through, but the pan
-  starts again on the next move, so a drag logs `start, end` over and over. To stop a
+  starts again on the next move, so a drag logs `start, end` over and over. Android does the
+  same. To stop a
   gesture for the whole touch, use `end()`.
+
+## Fling
+
+A fling runs after the finger lifts, so it can't claim a touch by itself: a fling detector
+alone never fires. Pair it with a `pan`, and make the two simultaneous, or the pan's win shuts
+the fling out:
+
+```html
+<view
+  [lynxGesture]="{
+    pan: { type: 'pan', callbacks: { onUpdate: onDrag }, simultaneousWith: ['fling'] },
+    fling: { type: 'fling', callbacks: { onUpdate: onGlide, onEnd: onStop }, simultaneousWith: ['pan'] }
+  }">
+</view>
+```
+
+A slow release still fires `onBegin` and `onEnd`, with no updates in between. In a fling's
+phases, `ctx.event.params` is how far it moved since the last frame, not where a finger is:
+`deltaX`, `deltaY`, `scrollX`, `scrollY`, `isAtStart`, `isAtEnd`. Type the context as
+`WorkletContext<MainThreadFlingGestureEvent>`. iOS sends `isAtStart`/`isAtEnd` as `0`/`1`,
+Android as booleans.
 
 ## A gesture's element isn't flattened
 
@@ -222,7 +250,7 @@ too, but unmeasured.
 
 `npm run verify:gesture` covers: two related gesture detectors reaching the
 Main Thread as real `__SetGestureDetector` calls with the right numeric type
-codes; relation maps resolving local keys to the correct cross-referenced
+codes; the dev warning for `pinch` and `rotation`; relation maps resolving local keys to the correct cross-referenced
 ids; each gesture's callbacks running as real worklets (mutating the element,
 reaching the Background Thread via `runOnBackground`) — independently, so two
 detectors on one element don't clobber each other; and the safe, warning-only
