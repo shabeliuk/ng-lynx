@@ -34,6 +34,11 @@ appId: ${APP_ID}
     visible: 'race: tap-start,hold-start'
     timeout: 5000
 # fail() in onStart: no onUpdate gets through. (On iOS the pan starts again on the next move.)
+- scrollUntilVisible:
+    element: fail box
+    direction: DOWN
+    timeout: 10000
+    centerElement: true
 - swipe:
     from: fail box
     direction: RIGHT
@@ -41,6 +46,11 @@ appId: ${APP_ID}
     visible: 'fail: start,end(,start,end)*'
     timeout: 5000
 # end() in the first onUpdate: one update, then onEnd, for the rest of the touch.
+- scrollUntilVisible:
+    element: end box
+    direction: DOWN
+    timeout: 10000
+    centerElement: true
 - swipe:
     from: end box
     direction: RIGHT

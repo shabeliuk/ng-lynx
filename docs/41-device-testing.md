@@ -68,7 +68,7 @@ The Explorer's log line `lynx sdk version: x.y` is the engine that actually ran.
 ## Automated flows
 
 [`packages/device-tests`](../packages/device-tests) drives a small test app on a real engine with
-[Maestro](https://maestro.dev). [`device-tests.yml`](36-ci.md#device-testsyml--nightly-on-a-real-engine)
+[Maestro](https://maestro.dev). [`device-tests.yml`](36-ci.md#device-testsyml--weekly-on-a-real-engine)
 runs it every night. Nothing here replaces the per-example checks below: it catches a broken engine
 contract, not a slider that feels wrong.
 
