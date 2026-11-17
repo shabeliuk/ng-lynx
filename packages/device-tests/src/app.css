@@ -125,6 +125,12 @@
   justify-content: center;
 }
 
+.lab-params {
+  font-size: 11px;
+  color: #c0c8d8;
+  margin-bottom: 10px;
+}
+
 .lab-log {
   font-size: 14px;
   color: #ffffff;

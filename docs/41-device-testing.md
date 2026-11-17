@@ -111,7 +111,7 @@ A flow passing on screen isn't enough, so `run.mjs` also fails the run on:
 | `input` | Typing on the native keyboard, Return firing `(confirm)` | `(confirm)` needing `confirm-type` on Android |
 | `main-thread` | A worklet on a tap, `runOnBackground`, `runOnMainThread` | Worklets not reaching the engine |
 | `gesture` | A native pan, dragged twice | The detector stopping after the first drag on Android |
-| `gesture-lab` | Tap and long-press detectors, a tap that waits for a long press, and `ctx.gesture.fail()` and `end()` in a pan | `fail()`/`end()` throwing `not a function` |
+| `gesture-lab` | Tap and long-press detectors, a tap that waits for a long press, `ctx.gesture.fail()` and `end()` in a pan, and a fling after a fast swipe | `fail()`/`end()` throwing `not a function` |
 | `assets` | An image through `lynxAssetUrl()`, with no lazy chunk in the build | Asset URLs staying relative |
 | `page-exit` | Leaving the page | `(null) is not a function`, LynxError 20100 |
 | `host-data` | Init data from the host, through a data processor | `lynxInitData()` empty on every native engine |

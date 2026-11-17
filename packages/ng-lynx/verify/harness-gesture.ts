@@ -66,11 +66,21 @@ function registerHarnessWorklets(): void {
         (mainThreadCallback)="onMessage($event)"
       ></view>
     }
+    @if (showTwoFinger()) {
+      <view
+        class="two-finger"
+        [lynxGesture]="{
+          zoom: { type: 'pinch', callbacks: { onStart: 'onTapStartMT' } },
+          turn: { type: 'rotation', callbacks: { onStart: 'onTapStartMT' } }
+        }"
+      ></view>
+    }
     <text class="log">{{ log() }}</text>
   `,
 })
 class GestureComponent {
   readonly showTarget = signal(true);
+  readonly showTwoFinger = signal(false);
   readonly log = signal('(none)');
   onMessage(data: unknown): void {
     this.log.set(`bg:${JSON.stringify(data)}`);
@@ -119,6 +129,27 @@ async function main(): Promise<void> {
   await tick();
   await tick();
   assert(findText(page, 'bg:{"phase":"tap"}') != null, 'tap onStart (a different detector, same element) ran independently');
+
+  console.log('\n=== Pinch and rotation warn: no engine recognizes them ===');
+  const warnings: string[] = [];
+  const realWarn = console.warn;
+  console.warn = (...args: unknown[]) => void warnings.push(args.map(String).join(' '));
+  try {
+    cmp.showTwoFinger.set(true);
+    await tick();
+    await tick();
+  } finally {
+    console.warn = realWarn;
+  }
+  assert(
+    warnings.some((w) => w.includes("'zoom' is a pinch gesture")),
+    `binding a pinch warns in dev (got ${JSON.stringify(warnings)})`,
+  );
+  assert(warnings.some((w) => w.includes("'turn' is a rotation gesture")), 'binding a rotation warns in dev');
+  assert(
+    Object.keys(findByClass(page, 'two-finger')?.gestures ?? {}).length === 2,
+    'the detectors are still registered, in case a future engine adds them',
+  );
 
   console.log('\n=== Graceful degradation: engine without __SetGestureDetector ===');
   cmp.showTarget.set(false);

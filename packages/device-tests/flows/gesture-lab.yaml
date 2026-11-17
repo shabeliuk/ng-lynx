@@ -59,4 +59,18 @@ appId: ${APP_ID}
 - extendedWaitUntil:
     visible: 'end: start,update,end'
     timeout: 5000
+# A fast swipe: the pan takes the touch, then the fling runs after the finger lifts.
+# iOS skips the fling's onStart; Android may not, so the regex allows it.
+- scrollUntilVisible:
+    element: 'fling: -'
+    direction: DOWN
+    timeout: 30000
+    visibilityPercentage: 100
+- swipe:
+    from: fling box
+    direction: RIGHT
+    duration: 100
+- extendedWaitUntil:
+    visible: 'fling: pan-start,begin,(start,)?update(×\d+)?,end'
+    timeout: 10000
 - takeScreenshot: gesture-lab

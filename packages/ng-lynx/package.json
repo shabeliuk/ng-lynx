@@ -149,7 +149,7 @@
     "verify:genui-openui-parity": "node verify/build.mjs harness-genui-openui-parity.ts",
     "verify:genui-openui-append": "node verify/build.mjs harness-genui-openui-append.ts",
     "verify:genui-tools": "node verify/build.mjs harness-genui-tools.ts",
-    "verify:gesture": "node verify/build.mjs harness-gesture.ts",
+    "verify:gesture": "VERIFY_DEV=true node verify/build.mjs harness-gesture.ts",
     "verify:hmr": "node verify/build.mjs harness-hmr.ts",
     "verify:hostdata": "node verify/build.mjs harness-hostdata.ts",
     "verify:http": "node verify/build.mjs harness-http.ts",

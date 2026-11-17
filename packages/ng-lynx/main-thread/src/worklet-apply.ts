@@ -228,6 +228,23 @@ export interface MainThreadGestureEvent extends MainThreadEvent {
 }
 
 /**
+ * `ctx.event` in a fling's phases: `WorkletContext<MainThreadFlingGestureEvent>`. A
+ * fling reports how far it moved since the last frame, not where a finger is: the
+ * finger is already up. iOS sends `isAtStart`/`isAtEnd` as `0`/`1`. @public
+ */
+export interface MainThreadFlingGestureEvent extends MainThreadEvent {
+  readonly params: {
+    /** Movement since the previous `onUpdate`, in logical pixels. */
+    readonly deltaX: number;
+    readonly deltaY: number;
+    readonly scrollX: number;
+    readonly scrollY: number;
+    readonly isAtStart: boolean | number;
+    readonly isAtEnd: boolean | number;
+  };
+}
+
+/**
  * What a worklet receives when it runs on the Main Thread. `E` types `ctx.event`,
  * and `P` types `ctx.params`, the values {@link bindWorklet} gave this binding.
  */
