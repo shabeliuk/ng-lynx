@@ -34,11 +34,13 @@ appId: ${APP_ID}
     visible: 'race: tap-start,hold-start'
     timeout: 5000
 # fail() in onStart: no onUpdate gets through. (On iOS the pan starts again on the next move.)
+# Scroll until the box's log line is fully on screen: it sits under the box, so the
+# box is on screen too. (centerElement timed out on CI: the last boxes can't reach the middle.)
 - scrollUntilVisible:
-    element: fail box
+    element: 'fail: -'
     direction: DOWN
-    timeout: 10000
-    centerElement: true
+    timeout: 30000
+    visibilityPercentage: 100
 - swipe:
     from: fail box
     direction: RIGHT
@@ -47,10 +49,10 @@ appId: ${APP_ID}
     timeout: 5000
 # end() in the first onUpdate: one update, then onEnd, for the rest of the touch.
 - scrollUntilVisible:
-    element: end box
+    element: 'end: -'
     direction: DOWN
-    timeout: 10000
-    centerElement: true
+    timeout: 30000
+    visibilityPercentage: 100
 - swipe:
     from: end box
     direction: RIGHT
