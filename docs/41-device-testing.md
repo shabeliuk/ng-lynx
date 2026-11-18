@@ -108,11 +108,12 @@ A flow passing on screen isn't enough, so `run.mjs` also fails the run on:
 | `lazy-route` | A lazy chunk over the network, `Location.back()` | Chunks that never reach the device |
 | `route-param` | Router navigation with a param | Angular 22's router skipping every navigation |
 | `list` | Scrolling a native list far enough to recycle cells, both ways | Cells appended again on each request |
-| `input` | Typing on the native keyboard, Return firing `(confirm)` | `(confirm)` needing `confirm-type` on Android |
+| `input` | Typing on the native keyboard, Return firing `(confirm)`, and, on Android, typing into the middle of an `[(ngModel)]` field | `(confirm)` needing `confirm-type` on Android; the cursor jumping to the end. iOS has no key to move the cursor with |
 | `main-thread` | A worklet on a tap, `runOnBackground`, `runOnMainThread` | Worklets not reaching the engine |
 | `gesture` | A native pan, dragged twice | The detector stopping after the first drag on Android |
 | `gesture-lab` | Tap and long-press detectors, a tap that waits for a long press, `ctx.gesture.fail()` and `end()` in a pan, and a fling after a fast swipe | `fail()`/`end()` throwing `not a function` |
-| `assets` | An image through `lynxAssetUrl()`, with no lazy chunk in the build | Asset URLs staying relative |
+| `assets` | An image through `lynxAssetUrl()`, with no lazy chunk in the build, and two images imported as modules: one emitted as a file, one inlined as a `data:` URL | Asset URLs staying relative |
+| `network` | A lazy route whose chunk's connection is cut, then retried on a slow network | A failed chunk failing every later navigation too, without a request |
 | `page-exit` | Leaving the page | `(null) is not a function`, LynxError 20100 |
 | `host-data` | Init data from the host, through a data processor | `lynxInitData()` empty on every native engine |
 | `attributes` | `(longpress)`, `initial-scroll-index`, `default-value`, `<markdown>` drawing and `<filter-image>` loading (iOS only: Explorer 4.2.0's Android APK crashes on the first and lacks the second, see [18](18-typed-templates.md)), and the engine accepting the other typed attributes and events | Attributes the engine rejects |

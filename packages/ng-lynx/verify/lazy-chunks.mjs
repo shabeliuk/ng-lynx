@@ -21,7 +21,8 @@
 //      function factories — the exact shape `installChunk` consumes.
 //   5. Each bundle's app-service carries the loading runtime: the
 //      `lynx.requireModuleAsync` ensure-chunk handler and a chunk-filename
-//      function pointing into `static/js/async/`.
+//      function pointing into `static/js/async/`, with the plugin's patch that
+//      lets a failed chunk be fetched again.
 //
 // The live half of the proof (the web preview fetching the chunk at
 // navigation time and rendering the route) is a browser check — see
@@ -109,6 +110,10 @@ assert(!webChunk.includes(`.define("`), 'web chunk is NOT runtime-wrapped');
 for (const [name, bundle] of [['main.lynx.bundle', lynxBundle], ['main.web.bundle', webBundle]]) {
   assert(bundle.includes('requireModuleAsync'), `${name} has the requireModuleAsync ensure-chunk handler`);
   assert(bundle.includes('static/js/async/'), `${name} has the async chunk-filename template`);
+  // A chunk that failed to load must be asked for again by the next import():
+  // the plugin patches the runtime to clear its entry before rejecting.
+  const callback = /requireModuleAsync\([^;]*?=>\{if\((\w+)\)\{(\w+)\[(\w+)\]=void 0,\w+\(\1\)/.test(bundle);
+  assert(callback, `${name}: a failed chunk is cleared from installedChunks, so a retry fetches it again`);
 }
 // The web runtime must point at the renamed chunks, the lynx one at the plain
 // names — each app-service embeds its own filename template.

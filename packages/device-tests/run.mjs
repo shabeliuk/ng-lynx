@@ -125,7 +125,9 @@ const SERVED = [
   { flow: 'counter', label: 'the main bundle', test: /^\/main\.lynx\.bundle$/ },
   { flow: 'lazy-route', label: 'the lazy route chunk', test: /^\/static\/js\/async\/lazy-route\.[^/]+\.js$/ },
   { flow: 'assets', label: 'the image from lynxAssetUrl()', test: /^\/square\.png$/ },
+  { flow: 'assets', label: 'the image imported as a module', test: /^\/static\/image\/imported-photo\.[0-9a-f]+\.png$/ },
   { flow: 'platform', label: 'the server-sent events stream', test: /^\/sse$/ },
+  { flow: 'network', label: 'the lazy chunk on a slow network', test: /^\/static\/js\/async\/lazy-route\.[^/]+\.js$/ },
 ];
 
 function checkRequests(requests) {
@@ -137,7 +139,8 @@ function checkRequests(requests) {
     }
   }
   for (const { pathname, status } of requests) {
-    if (status !== 200) failures.push(`The device got ${status} for ${pathname}.`);
+    // The network flow cuts the lazy chunk's connection on purpose.
+    if (status !== 200 && status !== 'dropped') failures.push(`The device got ${status} for ${pathname}.`);
   }
   return failures;
 }
@@ -150,7 +153,8 @@ const ENGINE_ERRORS = [
   /LynxError.*\b\d{4,}\b/,
   /FiberElement re-insert node/,
 ];
-const NOISE = /Duplicated Behavior|timing_map|lynx_plugin: load original/;
+// The last one is the network flow cutting the lazy chunk's connection on purpose.
+const NOISE = /Duplicated Behavior|timing_map|lynx_plugin: load original|load external js script failed! url: http:\/\/127\.0\.0\.1:8791\/static\/js\/async\/lazy-route\./;
 
 function checkLog(file) {
   const lines = readFileSync(file, 'utf8').split('\n');

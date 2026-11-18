@@ -198,6 +198,16 @@ Two constraints to know about:
   production deploy must host the `static/js/async/` files next to the bundle
   (set `output.assetPrefix` to the hosting base). If the app must work fully
   offline from one file, keep the default eager mode.
+- **A chunk can fail to load**, on a bad network. The navigation then fails
+  with a `NavigationError` (and `navigateByUrl()` rejects) within a few
+  milliseconds: `load external js script failed! url: … error: Error when
+  fetch external resource`. Engine 4.2 tries the request three times first.
+  Handle it like any failed navigation, and let the user try again: the next
+  navigation fetches the chunk afresh. That needed a fix: Lynx's
+  chunk-loading runtime (`@lynx-js/chunk-loading-webpack-plugin`, 0.4.3 too)
+  kept a failed chunk's rejected promise, so every later `import()` of it
+  failed at once without a request, until the app restarted.
+  `pluginAngularLynx` patches the runtime to clear the entry before rejecting.
 - **Every lazy `import()` MUST carry a `webpackChunkName` magic comment.**
   This inverts the advice this page gave before the Lynx 4.1 toolchain bump,
   because the upstream default flipped:
@@ -276,9 +286,12 @@ race:
   code exists *only* in that chunk, so the render is proof the runtime fetch
   worked. Booting directly on `/lazy` (via `initialUrl`) exercises the same
   path during bootstrap.
-- On-device network fetch (dev-server `publicPath`) follows the same
-  contract ReactLynx code splitting uses but hasn't been exercised on real
-  hardware from this repo — no device on hand; noted honestly here.
+- On a real engine, the device-tests `lazy-route` flow loads a chunk over the
+  network, and the `network` flow cuts the chunk's connection, sees the
+  navigation fail, then retries on a slow network (3 s) and sees the page load.
+  Both pass on the iOS simulator and the Android emulator (Explorer 4.2), and
+  the retry fails without the patch. `verify:lazy-chunks` also checks that
+  both bundles carry the patch.
 
 ## Deep links & the hardware back button
 

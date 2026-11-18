@@ -28,6 +28,10 @@ release may change the API; experimental features may change in any release.
   times faster on large bodies.
 - `LynxIntersectionObserver`'s `relativeTo` finds the ancestor by id, so it works with
   lazy selector queries.
+- A lazy route whose chunk failed to load, on a dropped network, stayed broken until the
+  app restarted: Lynx's chunk-loading runtime kept the rejected promise, so every later
+  navigation failed at once without a request. `pluginAngularLynx` patches the runtime
+  so the next navigation fetches the chunk again.
 
 ## [0.1.0-rc.0]
 

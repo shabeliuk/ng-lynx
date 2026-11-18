@@ -1,4 +1,6 @@
-# Typing on the native keyboard reaches `(input)`, and Return fires `(confirm)`.
+# Typing on the native keyboard reaches `(input)`, and Return fires `(confirm)`. Then
+# `[(ngModel)]`: on Android, typing with the cursor moved back into the text inserts
+# there. iOS has no key to move the cursor with.
 appId: ${APP_ID}
 ---
 - runFlow:
@@ -19,4 +21,19 @@ appId: ${APP_ID}
 - extendedWaitUntil:
     visible: 'Confirmed: Ada'
     timeout: 5000
+- tapOn: Model field
+- inputText: abcd
+- extendedWaitUntil:
+    visible: 'Model: abcd'
+    timeout: 5000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - pressKey: Remote Dpad Left
+      - pressKey: Remote Dpad Left
+      - inputText: XY
+      - extendedWaitUntil:
+          visible: 'Model: abXYcd'
+          timeout: 5000
 - takeScreenshot: input

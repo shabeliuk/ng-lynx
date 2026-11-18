@@ -1,0 +1,43 @@
+# A lazy route on a bad network. With the chunk's connection cut, the navigation must
+# fail, with an error, instead of hanging; the app stays usable. On a slow network,
+# the retry then loads the page. run.mjs's server does the slowing and cutting.
+appId: ${APP_ID}
+---
+- runFlow:
+    file: shared/open.yaml
+    env:
+      BUNDLE: main
+      READY: 'Count: 0'
+- scrollUntilVisible:
+    element: Open network
+    direction: DOWN
+    timeout: 10000
+- tapOn: Open network
+- extendedWaitUntil:
+    visible: 'Network: normal'
+    timeout: 5000
+- tapOn: Drop network
+- extendedWaitUntil:
+    visible: 'Network: dropped'
+    timeout: 5000
+- tapOn: Open lazy page
+- extendedWaitUntil:
+    visible: 'Navigation: failed after .+'
+    timeout: 60000
+- takeScreenshot: network-dropped
+- tapOn: Slow network
+- extendedWaitUntil:
+    visible: 'Network: slow'
+    timeout: 5000
+- tapOn: Open lazy page
+- extendedWaitUntil:
+    visible: 'Navigation: loading'
+    timeout: 2000
+- extendedWaitUntil:
+    visible: Lazy page loaded
+    timeout: 20000
+- takeScreenshot: network-retried
+- tapOn: Go back
+- extendedWaitUntil:
+    visible: 'Navigation: none'
+    timeout: 5000
