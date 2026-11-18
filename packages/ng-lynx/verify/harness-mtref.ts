@@ -28,9 +28,9 @@ import {
 
 // Authored as if in a Main-Thread module. `defineMainThreadRef` has no
 // worklet-runtime dependency (SET_REF is pure bookkeeping — see
-// worklet-apply.ts's module doc), but `defineWorklet` registers via
-// `registerWorkletInternal`, which only exists after `installMockPapi()` —
-// matching the real bundle, where the worklet-runtime always loads before
+// worklet-apply.ts's module doc), but `defineWorklet` registers with the worklet
+// runtime, which `installMockPapi()` installs — matching the real bundle, where
+// the worklet runtime always loads before
 // user worklet modules (see plugin/src/index.ts). So the actual registration
 // is deferred into `main()`, after `installMockPapi()`; only the ref (handle)
 // needs to exist this early, for the component class below to reference it.

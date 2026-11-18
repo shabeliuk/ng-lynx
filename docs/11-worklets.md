@@ -326,7 +326,7 @@ Writes flush in a microtask, so several in one worklet become one commit.
 | --- | --- |
 | `querySelector`, `querySelectorAll` | Search the whole page. Needs `enableCSSSelector`. |
 | `requestAnimationFrame`, `cancelAnimationFrame` | Never fires in the web preview, whose Main Thread is a hidden iframe. `lynxTween` runs in both. |
-| `getTextInfo(text, { fontSize })` | Measure text without rendering it. |
+| `getTextInfo(text, { fontSize })` | Measure text without rendering it. On a device only: the web preview has none, and it throws there. |
 | `globalProps` | The host's global props. |
 | `stopExposure`, `resumeExposure` | Exposure. |
 | `getSessionStorageItem`, `setSessionStorageItem`, `subscribeSessionStorage`, `unsubscribeSessionStorage` | Session storage. |
@@ -342,26 +342,14 @@ storage, exposure and `requestAnimationFrame` members have only run against the 
 
 ## How it works
 
-This integrates with **Lynx's real worklet runtime** — it doesn't reimplement
-worklet dispatch from scratch. `pluginAngularLynx` bundles
-`@lynx-js/react/worklet-runtime` (a framework-agnostic module) into the Main-Thread entry, ahead of
-the PAPI executor and any `mainThreadModules`. That module installs three
-globals: `registerWorkletInternal` (generic storage —
-`lynxWorkletImpl._workletMap[id] = fn`), `runWorklet` (the native engine's
-real entry point when a worklet-bound event fires), and `lynxWorkletImpl`
-itself.
-
-**Why a regular dependency on `@lynx-js/react`, in an Angular package?** It's
-the only place Lynx ships this — there's no standalone `@lynx-js/worklet-runtime`
-package today, and the worklet-runtime subpath itself has zero React in it
-(confirmed by reading it: a self-contained module touching only `lynx`/
-`globalThis`/`SystemInfo`). Vendoring it instead would mean manually tracking
-upstream engine-compatibility fixes with no signal of when they land — worse
-than depending on the real thing. It's a plain `dependency` (not a peer), same
-as `@lynx-js/template-webpack-plugin` and the other Lynx packaging tools this
-plugin already uses internally — your app never imports from it directly. The
-~10 KB it adds is **only bundled when `mainThreadModules` is non-empty**
-(`plugin/src/index.ts`), so apps that don't use worklets don't pay for it.
+The engine runs a worklet by calling `runWorklet` on the Main Thread. That function
+comes from ng-lynx's **worklet runtime**, which `pluginAngularLynx` bundles into the
+Main-Thread entry after the PAPI executor and before your `mainThreadModules`, and
+only when there are some. It also puts `lynx`'s timers on `globalThis` and adds the
+main-thread `lynx.querySelector`. Up to 0.1.0-rc.0 this was `@lynx-js/react`'s
+runtime; ng-lynx now has its own, with the same engine contract.
+[42 — The worklet runtime](42-worklet-runtime.md) has the contract, what the runtime
+does with each event, and what it leaves out.
 
 - `[lynxMainThread]` emits a `SET_WORKLET_EVENT` op carrying `{ _wkltId,
   _bgCallbackId, _params }` (op code `11`); `[lynxMainThreadRef]` emits `SET_REF`
@@ -374,21 +362,18 @@ plugin already uses internally — your app never imports from it directly. The
   shape the engine's `typeof`-based dispatch actually requires (a `string` is
   a cross-thread sign; an `object` routes to the worklet runtime; **a function
   is neither and is silently a no-op** — see the bug note below).
-- `registerWorklet`/`defineWorklet` register a small dispatcher function via
-  `registerWorkletInternal`. When the event fires, the real `runWorklet`
-  resolves it from `lynxWorkletImpl._workletMap` and calls it with `this`
-  bound to a copy of `ctx` — so the dispatcher recovers `_elId` /
+- `registerWorklet`/`defineWorklet` register a small dispatcher function with
+  the runtime. When the event fires, `runWorklet` finds it by `ctx._wkltId` and
+  calls it with `this` bound to a copy of `ctx` — so the dispatcher recovers `_elId` /
   `_bgCallbackId` from `this` and builds the `WorkletContext` your worklet
   function actually receives (`setStyle`/`setAttribute` wrap the bound element
   directly via the same MT mutators every other imperative API in this
   package uses; there's no Background ops batch for a pure MT mutation —
   asserted by `verify:worklet`).
 - `runOnBackground` hops back to the BG through the bridge the background
-  bootstrap installs (`entry-background.ts`) — ng-lynx's own mechanism,
-  independent of the real runtime's own (much more involved) cross-thread
-  closure system, which this package doesn't need since worklets here are
-  always plain, explicitly-authored top-level functions with no captured
-  component-scope state.
+  bootstrap installs (`entry-background.ts`). ReactLynx's cross-thread closure
+  system isn't needed: worklets here are always plain, explicitly-authored
+  top-level functions with no captured component-scope state.
 
 ### Bug history: an earlier version of this was a no-op on a real engine
 
@@ -427,7 +412,8 @@ web preview to surface.
 
 ### Bug history: wrong bundle import order broke the whole app on-device
 
-After both fixes above, the native build failed entirely —
+This was with `@lynx-js/react`'s runtime, which ng-lynx no longer uses. After both
+fixes above, the native build failed entirely —
 `TypeError: processData is not a function`, thrown from `main-thread.js`
 before any UI rendered. The plugin bundled the Main-Thread entry as
 `[workletRuntime, entryMain, …]`. The worklet-runtime's top-level code reads
@@ -487,5 +473,8 @@ exercises this path.
 - **Values cross as JSON.** `ctx.params` and the arguments of `runOnMainThread` and
   `runOnBackground` can hold refs, handles and JSON-serializable values, not arbitrary
   objects.
-- **Use `ctx.element` for the bound element.** `ctx.event.currentTarget` is the worklet
-  runtime's own object, and its methods haven't been run on a device.
+- **`ctx.element` is the bound element.** `ctx.event.currentTarget` is the same
+  element, and `ctx.event.target` the one the event started on: both are
+  `MainThreadElement`s that also carry the `id`, `uid` and `dataset` the engine sent.
+  Up to 0.1.0-rc.0 they were `@lynx-js/react`'s element objects, without `setStyle`
+  or those fields.

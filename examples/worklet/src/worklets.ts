@@ -100,7 +100,16 @@ export const checkElementApi = defineMainThreadFunction(async function checkElem
     `names ${box.getAttributeNames().includes('checked-by')}`,
     `items ${box.querySelectorAll('.api-item').length}`,
     `scrollTo ${String(scrolled)}`,
-    `text width ${mainThreadLynx.getTextInfo('Lynx', { fontSize: '14px' }).width > 0}`,
+    `text width ${textWidthMeasured()}`,
     `border ${box.getComputedStyleProperty('border-top-width')}`,
   ].join(', ');
 });
+
+/** `getTextInfo` exists on a device only; the web preview has no text measurement. */
+function textWidthMeasured(): string {
+  try {
+    return String(mainThreadLynx.getTextInfo('Lynx', { fontSize: '14px' }).width > 0);
+  } catch {
+    return 'unavailable';
+  }
+}

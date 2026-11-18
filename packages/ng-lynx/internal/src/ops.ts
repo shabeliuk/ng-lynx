@@ -337,7 +337,7 @@ export const PAGE_ROOT_ID = 1;
  * data })`; the Background Thread receives via
  * `lynx.getCoreContext().addEventListener(type, …)` — confirmed against
  * `@lynx-js/web-core`'s real `LynxCrossThreadContext` (the same generic
- * cross-thread pub/sub primitive the worklet-runtime itself uses for
+ * cross-thread pub/sub primitive ReactLynx uses for
  * `Lynx.Worklet.runWorkletCtx`). Not a `globalThis` property: BG and MT don't
  * share one on a real engine — confirmed on-device (an earlier version of this
  * bridge assumed they did, and silently did nothing as a result).

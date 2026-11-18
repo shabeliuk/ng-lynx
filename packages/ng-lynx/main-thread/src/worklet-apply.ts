@@ -9,38 +9,27 @@
  * Background Thread.
  *
  * @remarks
- * **This integrates with Lynx's real worklet runtime — it is not a from-scratch
- * mechanism.** An earlier version of this file passed a raw JS function as
- * `__AddEvent`'s 4th argument; that's silently a no-op on a real engine (web or
- * native): `__AddEvent` only routes a `string` (cross-thread sign →
- * `publishEvent`) or an `object` (→ the native worklet runtime) — never a
- * function. Confirmed by reading both `@lynx-js/web-core`'s real `__AddEvent`
- * (the `typeof` dispatch) and `@lynx-js/react`'s real worklet-runtime
- * (`runtime/worklet-runtime/main.js`, bundled into the Main-Thread entry by
- * `pluginAngularLynx` — see `plugin/src/index.ts`).
- *
- * The real runtime's contract (traced directly from that source):
+ * The engine runs a worklet through ng-lynx's worklet runtime
+ * (`worklet-runtime/`, docs/42-worklet-runtime.md):
  *   1. `__AddEvent(el, type, name, { type: 'worklet', value: ctx })`, where
- *      `ctx` carries `_wkltId` (and `_workletType: 'main-thread'`).
- *   2. On fire, the native side round-trips back into JS and calls
- *      `globalThis.runWorklet(ctx, [nativeEvent])`, which resolves
- *      `lynxWorkletImpl._workletMap[ctx._wkltId]`, **binds it to a copy of
- *      `ctx` as `this`**, and calls it with the event as the argument.
- *   3. `globalThis.registerWorkletInternal(type, id, fn)` is just
- *      `lynxWorkletImpl._workletMap[id] = fn` — generic storage. The
- *      surrounding machinery (`_c`/`_jsFn` closure capture, the SWC
- *      `'main thread'` extraction transform) only matters for inline closures
- *      that capture component-scope variables; our explicit, hand-authored
- *      top-level functions don't need any of it.
+ *      `ctx` carries `_wkltId` (and `_workletType: 'main-thread'`). A function
+ *      as the 4th argument is silently a no-op on both engines: `__AddEvent`
+ *      routes a `string` (a cross-thread sign) or an `object` (a worklet), never
+ *      a function. An earlier version of this file passed one.
+ *   2. When the event fires, the engine calls `runWorklet(ctx, [event])`, which
+ *      finds the function registered under `ctx._wkltId`, **binds it to a copy
+ *      of `ctx` as `this`**, makes the event's elements live, and calls it.
+ *   3. {@link registerWorklet} stores a dispatcher under the id: the registry
+ *      is the runtime's, in this same bundle.
  *
  * `ctx` is **our own data** beyond the two required keys, so it carries the
  * bound element's BG id (`_elId`) and the Background-callback sign
  * (`_bgCallbackId`) — recovered via `this` inside the registered dispatcher —
  * to build the same ergonomic {@link WorkletContext} (`setStyle`/`setAttribute`/
- * `runOnBackground`) this package has always exposed publicly. The real
- * runtime has no equivalent shortcut for "mutate the element the event fired
- * on" — ReactLynx users reach for an explicit ref even for that — so this
- * remains a deliberate ergonomic improvement, not a compatibility shim.
+ * `runOnBackground`) this package has always exposed publicly. ReactLynx has no
+ * equivalent shortcut for "mutate the element the event fired on" (its users
+ * reach for an explicit ref even for that), so this is a deliberate ergonomic
+ * improvement, not a compatibility shim.
  *
  * Main-thread refs (`defineMainThreadRef` / `[lynxMainThreadRef]` / `SET_REF`
  * below) needed **no changes** for this fix: `applySetRef` never calls
@@ -57,7 +46,6 @@ import {
   type MainThreadFunctionHandle,
   type MainThreadRef,
   type MainThreadRefHandle,
-  PAGE_ROOT_ID,
   RUN_ON_BACKGROUND_EVENT,
   type ToMainThread,
   type WorkletHandle,
@@ -65,8 +53,17 @@ import {
 
 import { type LynxDataProcessorDefinition, registerDataProcessors } from './data-processors.js';
 import { elements } from './element-registry.js';
+import {
+  type MainThreadElement,
+  MainThreadElementImpl,
+  queryPage,
+  queryPageAll,
+} from './worklet-runtime/element.js';
+import { isWorkletRuntimeInstalled, registerWorkletFunction } from './worklet-runtime/registry.js';
+import type { WorkletFunction } from './worklet-runtime/types.js';
 
 export type { LynxDataProcessor, LynxDataProcessorDefinition } from './data-processors.js';
+export type { MainThreadAnimation, MainThreadAnimationOptions, MainThreadElement } from './worklet-runtime/element.js';
 
 export {
   bindWorklet,
@@ -87,11 +84,11 @@ interface WorkletRef {
 }
 
 /**
- * The wire shape `__AddEvent`'s real worklet path expects as its 4th
- * argument's `value`. `_wkltId` and `_workletType` are what the engine itself
- * requires; `_elId` / `_bgCallbackId` are ng-lynx's own extra fields,
+ * The wire shape `__AddEvent`'s worklet path expects as its 4th argument's
+ * `value`. `_wkltId` is what the runtime resolves; `_workletType` is what Lynx's
+ * tooling has always sent. `_elId` / `_bgCallbackId` are ng-lynx's own fields,
  * recovered via `this` inside the registered dispatcher (see
- * {@link makeDispatcher}) — the real runtime tolerates arbitrary extra keys.
+ * {@link makeDispatcher}).
  */
 interface WireWorkletCtx {
   _wkltId: string;
@@ -137,17 +134,10 @@ function setGestureState(
 }
 
 /**
- * `registerWorkletInternal` from `@lynx-js/react`'s worklet-runtime, bundled
- * into the Main-Thread entry by `pluginAngularLynx` (see `plugin/src/index.ts`).
- * Declared loosely here rather than imported — it's a `globalThis` side effect
- * of that bundled module, not something this file imports directly.
+ * The element an event carries as `target`/`currentTarget`: a {@link MainThreadElement},
+ * with the fields the engine sent alongside it.
  */
-declare const registerWorkletInternal:
-  | ((type: string, id: string, fn: (this: WireWorkletCtx, ...args: unknown[]) => unknown) => void)
-  | undefined;
-
-/** The element an event carries as `target`/`currentTarget`: Lynx's `MainThread.Element`. */
-export type MainThreadEventTarget = Omit<MainThreadElement, 'setStyle' | 'getComputedStyleProperty'> & {
+export type MainThreadEventTarget = MainThreadElement & {
   readonly dataset?: Record<string, unknown>;
   readonly id?: string;
   readonly uid?: number;
@@ -275,12 +265,10 @@ export interface WorkletContext<E = MainThreadEvent, P = unknown> {
 export type Worklet<E = MainThreadEvent, P = unknown> = (ctx: WorkletContext<E, P>) => void;
 
 /**
- * Build the function actually handed to `registerWorkletInternal`. The real
- * runtime calls this with `this` bound to a **copy of the wire ctx** (see the
- * module doc) — so `this._elId` / `this._bgCallbackId` recover what
- * `applySetWorkletEvent` stashed there, letting us build the same
- * {@link WorkletContext} the public API has always exposed, regardless of how
- * the real runtime resolved and invoked this function.
+ * Build the function the registry stores. `runWorklet` calls it with `this` bound
+ * to a **copy of the wire ctx**, the same copy every time for one binding (see the
+ * module doc), so `this._elId` / `this._bgCallbackId` recover what
+ * `applySetWorkletEvent` stashed there and `this._liveParams` lasts between events.
  */
 function makeDispatcher(fn: Worklet<never, never>): (this: WireWorkletCtx, event: unknown, gesture: unknown) => void {
   return function (event, gesture): void {
@@ -338,9 +326,8 @@ class WorkletContextImpl implements WorkletContext<unknown, unknown> {
     // silently did nothing). Send via the real cross-thread event channel
     // instead: `lynx.getJSContext().dispatchEvent({type, data})` here is
     // received by the Background Thread's
-    // `lynx.getCoreContext().addEventListener(type, …)` (entry-background.ts)
-    // — the same generic pub/sub primitive the worklet-runtime itself uses
-    // internally. Confirmed against `@lynx-js/web-core`'s real
+    // `lynx.getCoreContext().addEventListener(type, …)` (entry-background.ts),
+    // a generic pub/sub primitive. Confirmed against `@lynx-js/web-core`'s real
     // `LynxCrossThreadContext`.
     lynx?.getJSContext?.()?.dispatchEvent({
       type: RUN_ON_BACKGROUND_EVENT,
@@ -375,10 +362,8 @@ function resolveIdAndFn<F extends { name: string }>(idOrFn: string | F, maybeFn:
 }
 
 /**
- * Register a main-thread worklet, via the real worklet-runtime's
- * `registerWorkletInternal` (`lynxWorkletImpl._workletMap[id] = …` — generic
- * storage, see the module doc). Call this from a module included in the
- * Main-Thread bundle.
+ * Register a main-thread worklet with the worklet runtime. Call this from a
+ * module included in the Main-Thread bundle.
  *
  * The id is derived from `fn.name` — give it a name
  * (`function pressFadeMT(ctx) { ... }`, not an anonymous arrow — see
@@ -393,25 +378,25 @@ export function registerWorklet<E = MainThreadEvent, P = unknown>(fn: Worklet<E,
 export function registerWorklet<E = MainThreadEvent, P = unknown>(id: string, fn: Worklet<E, P>): void;
 export function registerWorklet(idOrFn: string | Worklet<never, never>, maybeFn?: Worklet<never, never>): void {
   const { id, fn } = resolveIdAndFn(idOrFn, maybeFn);
-  if (typeof registerWorkletInternal === 'undefined') {
+  if (!isWorkletRuntimeInstalled()) {
     // Expected and harmless if this is the Background Thread's copy of a
     // worklet module: importing a typed `WorkletHandle` reference for a
     // template binding (`import { pressFade } from './worklets.js'`) pulls
-    // the whole module into the BG bundle too, where the worklet-runtime was
-    // never bundled (by design — see plugin/src/index.ts) and never will be.
+    // the whole module into the BG bundle too, where the runtime is never
+    // installed (by design — see plugin/src/index.ts).
     // `__FlushElementTree` (a Main-Thread-only PAPI global) distinguishes a
     // genuine misconfiguration — the runtime missing on the *actual* Main
     // Thread — from this normal case, so only the former warns.
     if (__DEV__ && typeof __FlushElementTree !== 'undefined') {
       console.warn(
-        `[ng-lynx] registerWorklet('${id}') called before the worklet-runtime loaded — `
+        `[ng-lynx] registerWorklet('${id}') called before the worklet runtime was installed — `
           + 'is the Main-Thread entry missing it? pluginAngularLynx bundles it automatically; '
-          + 'a custom build setup needs to include `@lynx-js/react/worklet-runtime` itself.',
+          + "a custom build imports 'ng-lynx/worklet-runtime' before its worklet modules.",
       );
     }
     return;
   }
-  registerWorkletInternal('main-thread', id, makeDispatcher(fn));
+  registerWorkletFunction(id, makeDispatcher(fn) as unknown as WorkletFunction);
 }
 
 /**
@@ -448,91 +433,6 @@ export function defineWorklet(idOrFn: string | Worklet<never, never>, maybeFn?: 
   return { _wkltId: id };
 }
 
-/** Returned by {@link MainThreadElement.animate}. @public */
-export interface MainThreadAnimation {
-  cancel(): void;
-  pause(): void;
-  play(): void;
-}
-
-/** Options for {@link MainThreadElement.animate}: a duration in ms, or these. @public */
-export interface MainThreadAnimationOptions {
-  name?: string;
-  duration?: number;
-  delay?: number;
-  iterations?: number;
-  direction?: 'normal' | 'reverse' | 'alternate' | 'alternate-reverse';
-  easing?: string;
-  fill?: 'none' | 'forwards' | 'backwards' | 'both';
-}
-
-/**
- * An element on the Main Thread: Lynx's `MainThread.Element`
- * (https://lynxjs.org/api/lynx-api/main-thread/main-thread-element), plus
- * {@link MainThreadElement.setStyle}. Used by `ctx`, by refs and by
- * {@link mainThreadLynx}. Reads and writes are synchronous.
- *
- * An inline style set here lasts until a `[style.x]` binding on the same element
- * next changes, because the Background Thread writes its whole inline style.
- *
- * @public
- */
-export interface MainThreadElement {
-  /** Replace the element's whole inline style with a CSS string. */
-  setStyle(css: string): void;
-  /** Set one inline style property, keeping the others. */
-  setStyleProperty(name: string, value: string): void;
-  /** Set several inline style properties, keeping the others. */
-  setStyleProperties(styles: Record<string, string>): void;
-  /** Set an attribute on the element (synchronous, on the MT). */
-  setAttribute(key: string, value: unknown): void;
-  /** Read an attribute, `undefined` if the element doesn't have it. */
-  getAttribute(name: string): unknown;
-  getAttributeNames(): string[];
-  /** The first descendant matching a CSS selector. Needs `enableCSSSelector`. */
-  querySelector(selector: string): MainThreadElement | null;
-  /** Every descendant matching a CSS selector. Needs `enableCSSSelector`. */
-  querySelectorAll(selector: string): MainThreadElement[];
-  /** Call a UI method, such as `scrollTo` on a `<scroll-view>`. Rejects if it fails. */
-  invoke(method: string, params?: Record<string, unknown>): Promise<unknown>;
-  /** Run a native animation. `options` is a duration in ms, or {@link MainThreadAnimationOptions}. */
-  animate(keyframes: Record<string, number | string>[], options?: number | MainThreadAnimationOptions): MainThreadAnimation;
-  /**
-   * Read a single resolved (computed) style value off the element,
-   * synchronously on the MT — e.g. `getComputedStyleProperty('opacity')`. The
-   * read counterpart to `setStyle`, handy for a worklet that animates *from*
-   * the current value. Returns the value as a string (as the engine reports
-   * it).
-   */
-  getComputedStyleProperty(name: string): string;
-}
-
-/**
- * Defer to a microtask, coalescing same-tick mutations into one flush — module
- * scoped (not per element), since `__FlushElementTree` commits *all* pending
- * changes regardless of which element (or none) it's called with.
- *
- * Required, not just an optimization: the worklet that's mutating the element
- * is itself running inside a call from the native engine into its WASM
- * context (web target) — calling `__FlushElementTree` synchronously from in
- * there re-enters that same context while it's still on the stack, and
- * wasm-bindgen's borrow guard panics ("recursive use of an object detected
- * which would lead to unsafe aliasing in rust"). Confirmed via the web
- * preview's console. A microtask runs after the current call stack (including
- * that WASM frame) has unwound. Mirrors `@lynx-js/react`'s real
- * `Element.flushElementTree` (`runtime/worklet-runtime/main.js`), which defers
- * the exact same way.
- */
-let flushScheduled = false;
-function scheduleFlush(): void {
-  if (flushScheduled) return;
-  flushScheduled = true;
-  Promise.resolve().then(() => {
-    flushScheduled = false;
-    __FlushElementTree();
-  });
-}
-
 // ---------------------------------------------------------------------------
 // lynxAnimate — a tiny declarative tween over the existing worklet machinery.
 //
@@ -542,11 +442,9 @@ function scheduleFlush(): void {
 // involvement.
 //
 // **Not `requestAnimationFrame`, despite it existing here too** — a real bug
-// found by testing this live, not assumed: `@lynx-js/react`'s bundled
-// worklet-runtime (`pluginAngularLynx` bundles it into every Main-Thread
-// entry — see docs/11-worklets.md) does install a real `requestAnimationFrame`
-// on both targets, confirmed by reading `runtime/lib/worklet-runtime/api/
-// lynxApi.js`. But on the web preview, `@lynx-js/web-core` runs the Main
+// found by testing this live, not assumed: the worklet runtime puts `lynx`'s
+// real `requestAnimationFrame` on `globalThis` on both targets
+// (worklet-runtime/api-env.ts). But on the web preview, `@lynx-js/web-core` runs the Main
 // Thread inside a **`display: none` iframe** (confirmed via its
 // `contentWindow.document.visibilityState === 'hidden'`) — and browsers never
 // fire `requestAnimationFrame` callbacks for a hidden document. The callback
@@ -672,83 +570,6 @@ export function lynxTween(options: LynxTweenOptions): LynxAnimationHandle {
   };
 }
 
-const ANIMATION_START = 0;
-const ANIMATION_PLAY = 1;
-const ANIMATION_PAUSE = 2;
-const ANIMATION_CANCEL = 3;
-let nextAnimationId = 0;
-
-/**
- * Same calls as the `Element` class in `@lynx-js/react`'s worklet-runtime
- * (Apache-2.0, The Lynx Authors), which isn't exported. Writes defer their flush:
- * see {@link scheduleFlush}.
- */
-class MainThreadElementImpl implements MainThreadElement {
-  constructor(private readonly el: LynxElement) {}
-
-  setStyle(css: string): void {
-    __SetInlineStyles(this.el, css);
-    scheduleFlush();
-  }
-
-  setStyleProperty(name: string, value: string): void {
-    __AddInlineStyle(this.el, name, value);
-    scheduleFlush();
-  }
-
-  setStyleProperties(styles: Record<string, string>): void {
-    for (const name of Object.keys(styles)) __AddInlineStyle(this.el, name, styles[name]!);
-    scheduleFlush();
-  }
-
-  setAttribute(key: string, value: unknown): void {
-    __SetAttribute(this.el, key, value);
-    scheduleFlush();
-  }
-
-  getAttribute(name: string): unknown {
-    return __GetAttributeByName(this.el, name);
-  }
-
-  getAttributeNames(): string[] {
-    return __GetAttributeNames(this.el);
-  }
-
-  getComputedStyleProperty(name: string): string {
-    return __GetComputedStyleByKey(this.el, name);
-  }
-
-  querySelector(selector: string): MainThreadElement | null {
-    const found = __QuerySelector(this.el, selector, {});
-    return found ? new MainThreadElementImpl(found) : null;
-  }
-
-  querySelectorAll(selector: string): MainThreadElement[] {
-    return __QuerySelectorAll(this.el, selector, {}).map((found) => new MainThreadElementImpl(found));
-  }
-
-  invoke(method: string, params: Record<string, unknown> = {}): Promise<unknown> {
-    return new Promise((resolve, reject) => {
-      __InvokeUIMethod(this.el, method, params, (result) => {
-        if (result.code === 0) resolve(result.data);
-        else reject(new Error(`UI method ${method}: ${JSON.stringify(result)}`));
-      });
-      scheduleFlush();
-    });
-  }
-
-  animate(keyframes: Record<string, number | string>[], options?: number | MainThreadAnimationOptions): MainThreadAnimation {
-    const el = this.el;
-    const id = `__ng-main-thread-animation-${nextAnimationId++}`;
-    __ElementAnimate(el, [ANIMATION_START, id, keyframes, typeof options === 'number' ? { duration: options } : (options ?? {})]);
-    return {
-      cancel: () => void __ElementAnimate(el, [ANIMATION_CANCEL, id]),
-      pause: () => void __ElementAnimate(el, [ANIMATION_PAUSE, id]),
-      play: () => void __ElementAnimate(el, [ANIMATION_PLAY, id]),
-    };
-  }
-}
-
 /**
  * The main-thread `lynx` API, for a Main-Thread module
  * (https://lynxjs.org/api/lynx-api/main-thread). The queries search the whole page,
@@ -759,13 +580,11 @@ class MainThreadElementImpl implements MainThreadElement {
 export const mainThreadLynx = {
   /** The first element in the page matching a CSS selector. Needs `enableCSSSelector`. */
   querySelector(selector: string): MainThreadElement | null {
-    const page = elements.get(PAGE_ROOT_ID);
-    return page === undefined ? null : new MainThreadElementImpl(page).querySelector(selector);
+    return queryPage(selector);
   },
   /** Every element in the page matching a CSS selector. Needs `enableCSSSelector`. */
   querySelectorAll(selector: string): MainThreadElement[] {
-    const page = elements.get(PAGE_ROOT_ID);
-    return page === undefined ? [] : new MainThreadElementImpl(page).querySelectorAll(selector);
+    return queryPageAll(selector);
   },
   /**
    * Runs before the next frame. It never fires in the web preview, whose Main
@@ -778,9 +597,15 @@ export const mainThreadLynx = {
   cancelAnimationFrame(handle: number): void {
     lynx?.cancelAnimationFrame?.(handle);
   },
-  /** Measure text without rendering it. `fontSize` is required. */
+  /**
+   * Measure text without rendering it. `fontSize` is required. On a device only:
+   * the web preview's Main Thread has no `getTextInfo`, and this throws there.
+   */
   getTextInfo(text: string, info: { fontSize: string; fontFamily?: string; maxWidth?: string; maxLine?: number }): { width: number; content?: string[] } {
-    return lynx!.getTextInfo!(text, info);
+    if (typeof lynx?.getTextInfo !== 'function') {
+      throw new Error("ng-lynx: mainThreadLynx.getTextInfo isn't available on this engine (the web preview has none).");
+    }
+    return lynx.getTextInfo(text, info);
   },
   /** The host's global props, as `lynxGlobalProps()` gives them on the Background Thread. */
   get globalProps(): Record<string, unknown> {
@@ -1084,9 +909,8 @@ export function applySetWorkletEvent(
 
 /**
  * Reset the main-thread-ref registry — for testing / hot reload. Worklet
- * registrations themselves now live in `lynxWorkletImpl._workletMap` (owned
- * by the real worklet-runtime, not this module), and re-registering the same
- * id just overwrites the old entry — nothing to clear on our side.
+ * registrations live in the worklet runtime's registry, and re-registering the
+ * same id overwrites the old entry: nothing to clear here.
  */
 export function resetWorkletState(): void {
   refRegistry().clear();

@@ -96,12 +96,12 @@ Demoed in `examples/worklet` (the "Fade card" button); verified by
 ### Why `setTimeout`, not `requestAnimationFrame` — a real bug found live
 
 The obvious design reused `requestAnimationFrame`/`cancelAnimationFrame` — and
-both genuinely exist on the Main Thread on *both* targets: `@lynx-js/react`'s
-bundled worklet-runtime (`pluginAngularLynx` bundles it into every
-Main-Thread entry — see [11 — Worklets](11-worklets.md)) installs a real
-`requestAnimationFrame` reading through to `lynx.requestAnimationFrame`
-(native) or `@lynx-js/web-core`'s own Main-Thread global surface (confirmed
-present in its compiled bundle) on web.
+both genuinely exist on the Main Thread on *both* targets: the worklet
+runtime (`pluginAngularLynx` bundles it into every Main-Thread entry with
+worklets — see [42 — The worklet runtime](42-worklet-runtime.md)) puts
+`lynx.requestAnimationFrame` on `globalThis`, and `lynx` has it natively and on
+`@lynx-js/web-core`'s Main-Thread global surface (confirmed present in its
+compiled bundle) on web.
 
 But clicking the live demo showed nothing happening at all — no error, the
 card just never faded. Tracing it down (inspecting the web preview's actual

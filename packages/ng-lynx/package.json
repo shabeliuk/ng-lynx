@@ -28,6 +28,7 @@
     "./runtime/*/entry-background.*",
     "./runtime/*/es-polyfills.*",
     "./main-thread/*/entry-main.*",
+    "./main-thread/*/worklet-runtime/init.*",
     "./testing/*/index.*",
     "*.css"
   ],
@@ -83,6 +84,11 @@
       "import": "./main-thread/dist/worklet-apply.js",
       "default": "./main-thread/dist/worklet-apply.js"
     },
+    "./worklet-runtime": {
+      "types": "./main-thread/dist/worklet-runtime/init.d.ts",
+      "import": "./main-thread/dist/worklet-runtime/init.js",
+      "default": "./main-thread/dist/worklet-runtime/init.js"
+    },
     "./plugin": {
       "types": "./plugin/dist/index.d.ts",
       "import": "./plugin/dist/index.js",
@@ -97,6 +103,11 @@
       "types": "./runtime/dist/internal.d.ts",
       "import": "./runtime/dist/internal.js",
       "default": "./runtime/dist/internal.js"
+    },
+    "./internal/worklet-runtime": {
+      "types": "./main-thread/dist/worklet-runtime/index.d.ts",
+      "import": "./main-thread/dist/worklet-runtime/index.js",
+      "default": "./main-thread/dist/worklet-runtime/index.js"
     },
     "./package.json": "./package.json"
   },
@@ -194,11 +205,11 @@
     "verify:virtual-list-idle": "node verify/build.mjs harness-virtual-list-idle.ts",
     "verify:wireproto-intern": "node verify/build.mjs harness-intern.ts",
     "verify:wireproto-measure": "node verify/build.mjs harness-wireproto-measure.ts",
-    "verify:worklet": "node verify/build.mjs harness-worklet.ts"
+    "verify:worklet": "node verify/build.mjs harness-worklet.ts",
+    "verify:worklet-runtime": "node verify/build.mjs harness-worklet-runtime.ts"
   },
   "dependencies": {
     "@babel/core": "^7.29.13",
-    "@lynx-js/react": "^0.129.3",
     "@lynx-js/runtime-wrapper-webpack-plugin": "^0.2.6",
     "@lynx-js/template-webpack-plugin": "^0.16.8",
     "@lynx-js/types": "^4.4.2",

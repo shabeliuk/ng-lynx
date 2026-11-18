@@ -40,7 +40,7 @@ import {
 // register worklets from a module the plugin lists in `mainThreadModules`,
 // loaded *after* the worklet-runtime (see plugin/src/index.ts) — so this
 // harness registers from inside `main()`, after `installMockPapi()`, to match
-// that real load order (the mock installs `registerWorkletInternal` there).
+// that real load order (the mock installs the worklet runtime there).
 function registerHarnessWorklet(): void {
   registerWorklet('onPressMT', (ctx) => {
     // Mutate the element synchronously on the Main Thread (gesture-rate).
@@ -49,6 +49,13 @@ function registerHarnessWorklet(): void {
     const opacity = ctx.getComputedStyleProperty('opacity');
     // Hand values back to the Background Thread.
     ctx.runOnBackground({ pressed: true, opacity });
+  });
+  // Through the whole stack, the event reaches the worklet as the runtime made
+  // it: a live currentTarget, and stopPropagation feeding the engine's bits.
+  registerWorklet('onHoldMT', (ctx) => {
+    ctx.event.currentTarget.setStyle('opacity: 0.25');
+    ctx.event.stopPropagation?.();
+    ctx.runOnBackground({ uid: ctx.event.currentTarget.uid, event: ctx.event.type });
   });
 }
 
@@ -61,7 +68,7 @@ function registerHarnessWorklet(): void {
   template: `
     <view
       class="target"
-      [lynxMainThread]="{ tap: 'onPressMT' }"
+      [lynxMainThread]="{ tap: 'onPressMT', longpress: 'onHoldMT' }"
       (mainThreadCallback)="onMessage($event)"
     ></view>
     <text class="log">{{ log() }}</text>
@@ -124,6 +131,17 @@ async function main(): Promise<void> {
     findText(page, 'bg:{"pressed":true,"opacity":"0.5"}') != null,
     'ctx.runOnBackground reached the BG via (mainThreadCallback), carrying the '
       + 'value read back by ctx.getComputedStyleProperty("opacity")',
+  );
+
+  console.log('\n=== Assertions: the event, as the worklet runtime hands it over ===');
+  const result = fireWorklet(target, 'longpress', { type: 'longpress', detail: {} }) as { eventReturnResult?: number };
+  assert(target.style === 'opacity: 0.25', 'ctx.event.currentTarget is a live element: setStyle reached the bound element');
+  assert(result?.eventReturnResult === 1, 'ctx.event.stopPropagation() came back to the engine as bit 0x1');
+  await tick();
+  await tick();
+  assert(
+    findText(page, `bg:{"uid":${target.uid},"event":"longpress"}`) != null,
+    "the target's uid and the event's type survive the trip to the Background Thread",
   );
 
   console.log('\n✅ Worklet works — MT execution + runOnBackground round-trip.\n');

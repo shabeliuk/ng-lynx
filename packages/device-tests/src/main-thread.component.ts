@@ -2,11 +2,14 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { LynxMainThread, runOnMainThread } from 'ng-lynx';
 import { LYNX_ELEMENTS } from 'ng-lynx/elements';
 
-import { addOnMainThread, countTap } from './worklets.js';
+import { addOnMainThread, countTap, stopTap } from './worklets.js';
 
 import { BackButtonComponent } from './back-button.component.js';
 
-/** A worklet bound to a tap, and a call across to the Main Thread and back. */
+/**
+ * A worklet bound to a tap, a call across to the Main Thread and back, and a
+ * worklet that stops its tap from reaching the box around it.
+ */
 @Component({
   selector: 'app-main-thread',
   standalone: true,
@@ -29,13 +32,31 @@ import { BackButtonComponent } from './back-button.component.js';
         <text class="button-label">Call main thread</text>
       </view>
       <text class="line" [flatten]="false">Result: {{ result() }}</text>
+      <view class="stop-outer" [flatten]="false" (tap)="outerTaps.set(outerTaps() + 1)">
+        <text class="line" [flatten]="false">Outer area</text>
+        <view
+          class="button"
+          [flatten]="false"
+          accessibility-label="Stop on main thread"
+          data-role="stopper"
+          [lynxMainThread]="{ tap: stopTap }"
+          (mainThreadCallback)="stopReport.set($event)"
+        >
+          <text class="button-label">Stop on main thread</text>
+        </view>
+      </view>
+      <text class="line" [flatten]="false">Outer taps: {{ outerTaps() }}</text>
+      <text class="line" [flatten]="false">Stop: {{ stopReport() }}</text>
     </view>
   `,
 })
 export class MainThreadComponent {
   protected readonly countTap = countTap;
+  protected readonly stopTap = stopTap;
   protected readonly taps = signal(0);
   protected readonly result = signal('none');
+  protected readonly outerTaps = signal(0);
+  protected readonly stopReport = signal<unknown>('none');
 
   protected call(): void {
     runOnMainThread(addOnMainThread)(40, 2).then(

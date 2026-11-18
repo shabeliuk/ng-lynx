@@ -15,6 +15,8 @@ const aliasMap = {
   'ng-lynx/internal/runtime': resolve(pkg, 'runtime/src/internal.ts'),
   'ng-lynx/main-thread': resolve(pkg, 'main-thread/src/entry-main.ts'),
   'ng-lynx/worklet': resolve(pkg, 'main-thread/src/worklet-apply.ts'),
+  'ng-lynx/worklet-runtime': resolve(pkg, 'main-thread/src/worklet-runtime/init.ts'),
+  'ng-lynx/internal/worklet-runtime': resolve(pkg, 'main-thread/src/worklet-runtime/index.ts'),
   'ng-lynx/entry-background': resolve(pkg, 'runtime/src/entry-background.ts'),
   'ng-lynx/forms': resolve(pkg, 'runtime/src/forms-public.ts'),
   'ng-lynx/elements': resolve(pkg, 'runtime/src/elements.ts'),

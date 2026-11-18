@@ -109,7 +109,7 @@ A flow passing on screen isn't enough, so `run.mjs` also fails the run on:
 | `route-param` | Router navigation with a param | Angular 22's router skipping every navigation |
 | `list` | Scrolling a native list far enough to recycle cells, both ways | Cells appended again on each request |
 | `input` | Typing on the native keyboard, Return firing `(confirm)`, and, on Android, typing into the middle of an `[(ngModel)]` field | `(confirm)` needing `confirm-type` on Android; the cursor jumping to the end. iOS has no key to move the cursor with |
-| `main-thread` | A worklet on a tap, `runOnBackground`, `runOnMainThread` | Worklets not reaching the engine |
+| `main-thread` | A worklet on a tap, `runOnBackground`, `runOnMainThread`; a worklet whose `stopPropagation()` keeps its tap from the box around it, reporting a live `currentTarget` with its `dataset` and `uid` | Worklets not reaching the engine; the worklet runtime's event result or event targets breaking (docs/42) |
 | `gesture` | A native pan, dragged twice | The detector stopping after the first drag on Android |
 | `gesture-lab` | Tap and long-press detectors, a tap that waits for a long press, `ctx.gesture.fail()` and `end()` in a pan, and a fling after a fast swipe | `fail()`/`end()` throwing `not a function` |
 | `assets` | An image through `lynxAssetUrl()`, with no lazy chunk in the build, and two images imported as modules: one emitted as a file, one inlined as a `data:` URL | Asset URLs staying relative |

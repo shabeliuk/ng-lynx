@@ -18,8 +18,7 @@ These install from npm with their own licences. None of them is copied into the
 |---|---|---|
 | `@angular/*` (`core`, `compiler`, `common`, `forms`, `router`, `localize`, `compiler-cli`), `@ngtools/webpack`, `@angular-devkit/*` | MIT | The framework, and the AOT compile. Peer dependencies |
 | `@lynx-js/rspeedy`, `@lynx-js/template-webpack-plugin`, `@lynx-js/runtime-wrapper-webpack-plugin`, other `@lynx-js/*` build tools | Apache-2.0 | The build |
-| `@lynx-js/react` | Apache-2.0 | Only its worklet runtime, in apps with `mainThreadModules` |
-| `@lynx-js/genui` | Apache-2.0 | `ng-lynx/genui`. Optional peer |
+| `@lynx-js/genui` | Apache-2.0 | `ng-lynx/genui`. Optional peer, which needs `@lynx-js/react` as a peer of its own |
 | `@openuidev/lang-core` | MIT | `ng-lynx/openui`. Optional peer |
 | `typescript` | Apache-2.0 | Peer dependency |
 | `tslib` | 0BSD | Helpers used by compiled code |
