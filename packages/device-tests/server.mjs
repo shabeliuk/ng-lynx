@@ -7,6 +7,10 @@ import path from 'node:path';
 /**
  * For lynxEventSource: one unnamed event, two named `tick` ones, then the line
  * stays open. Shared by run.mjs's server and `npm run dev` (lynx.config.ts).
+ *
+ * The last event ends in `✓`, sent in two writes 300 ms apart that cut the
+ * character's three bytes after the second, so the device decodes a chunk
+ * that ends mid-character.
  */
 export function sendServerEvents(res) {
   res.writeHead(200, {
@@ -16,7 +20,10 @@ export function sendServerEvents(res) {
   });
   res.write('data: hello\n\n');
   res.write('event: tick\nid: 1\ndata: tick 1\n\n');
-  res.write('event: tick\nid: 2\ndata: tick 2\n\n');
+  const last = Buffer.from('event: tick\nid: 2\ndata: tick 2 ✓\n\n');
+  const cut = last.indexOf(Buffer.from('✓')) + 2;
+  res.write(last.subarray(0, cut));
+  setTimeout(() => res.destroyed || res.write(last.subarray(cut)), 300);
 }
 
 export function serve(root, port) {

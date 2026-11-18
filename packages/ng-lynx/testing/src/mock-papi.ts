@@ -237,7 +237,7 @@ export function installMockPapi(): void {
   const defines = globalThis as Record<string, unknown>;
   defines['ngDevMode'] = false;
   defines['__DEV__'] ??= false;
-  defines['__ENABLE_SELECTOR_QUERIES__'] ??= true;
+  defines['__ENABLE_SELECTOR_QUERIES__'] ??= 'lazy';
   defines['__HAS_FIRST_SCREEN__'] ??= false;
   globalListeners.clear();
   // Deliberately NOT cleared here (unlike globalListeners/ioObserved/etc.
@@ -489,7 +489,10 @@ export function installMockPapi(): void {
     createIntersectionObserver: (_component: unknown, _options?: unknown) => {
       const registered: { selector: string; cb: (r: unknown) => void }[] = [];
       const observer: any = {
-        relativeTo: () => observer,
+        relativeTo(selector: string) {
+          g.__IO_RELATIVE_TO__ = selector;
+          return observer;
+        },
         relativeToViewport: () => observer,
         relativeToScreen: () => observer,
         observe(selector: string, cb: (r: unknown) => void) {

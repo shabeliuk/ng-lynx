@@ -32,7 +32,7 @@ appId: ${APP_ID}
     timeout: 5000
 - tapOn: Connect SSE
 - extendedWaitUntil:
-    visible: 'SSE: 3 events, last tick: tick 2'
+    visible: 'SSE: 3 events, last tick: tick 2 ✓'
     timeout: 10000
 - takeScreenshot: platform
 - tapOn: Reload with data

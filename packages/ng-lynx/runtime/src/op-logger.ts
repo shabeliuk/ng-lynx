@@ -21,7 +21,7 @@
  * works in any build when explicitly enabled and can be driven by tests. When
  * off, the cost per flush is a single boolean check.
  */
-import { decodeOps, OP } from 'ng-lynx/internal/ops';
+import { coalesceOps, decodeOps, OP } from 'ng-lynx/internal/ops';
 
 /** Reverse map: op code → name, built once from the OP table. */
 const OP_NAME: Record<number, string> = Object.fromEntries(
@@ -88,14 +88,14 @@ function formatOp(code: number, args: unknown[]): string {
 }
 
 /**
- * Log one flush's ops. Called by `flushOps` after coalescing. A no-op (single
+ * Log one flush's ops, coalesced. Called by `flushOps`. A no-op (single
  * boolean check) when logging is disabled.
  *
  * @internal
  */
 export function logFlush(flat: unknown[]): void {
   if (!sink) return;
-  const records = decodeOps(flat);
+  const records = decodeOps(coalesceOps(flat));
   sink(`[ng-lynx] flush (${records.length} ops)`);
   for (const { code, args } of records) sink(`  ${formatOp(code, args)}`);
 }

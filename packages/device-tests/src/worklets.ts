@@ -1,9 +1,11 @@
 // Runs on the Main Thread: listed in `mainThreadModules` in lynx.config.ts.
 import {
+  type BackgroundFunctionHandle,
   defineMainThreadFunction,
   defineMainThreadRef,
   defineWorklet,
   mainThreadLynx,
+  runOnBackground,
   type MainThreadGestureEvent,
   type WorkletContext,
 } from 'ng-lynx/worklet';
@@ -77,3 +79,56 @@ function recordUpdateMT(ctx: WorkletContext<MainThreadGestureEvent, PhaseParams>
   ctx.runOnBackground(`${ctx.params.label}~${JSON.stringify(ctx.event.params)}`);
 }
 export const recordUpdate = defineWorklet(recordUpdateMT);
+
+// The timing screen: how many frames the Main Thread draws while its list
+// scrolls. A touch starts counting `requestAnimationFrame` callbacks, and
+// 600 ms with no scroll event ends it.
+export interface FlingResult {
+  /** Frames between the touch and the last scroll event. */
+  frames: number;
+  ms: number;
+  /** The longest gap between two frames. */
+  longest: number;
+  scrolls: number;
+}
+type FlingParams = { report: BackgroundFunctionHandle<[FlingResult], void> };
+
+const fling = { running: false, start: 0, last: 0, frames: 0, longest: 0, scrolls: 0, lastScroll: 0, atLastScroll: { frames: 0, longest: 0 } };
+let flingReport: BackgroundFunctionHandle<[FlingResult], void> | undefined;
+
+function flingFrameMT(): void {
+  const now = Date.now();
+  if (fling.last) fling.longest = Math.max(fling.longest, now - fling.last);
+  fling.last = now;
+  fling.frames++;
+  const quietFor = now - (fling.lastScroll || fling.start);
+  if (quietFor < 600) {
+    mainThreadLynx.requestAnimationFrame(flingFrameMT);
+    return;
+  }
+  fling.running = false;
+  if (fling.scrolls > 0 && flingReport) {
+    void runOnBackground(flingReport)({
+      frames: fling.atLastScroll.frames,
+      ms: fling.lastScroll - fling.start,
+      longest: fling.atLastScroll.longest,
+      scrolls: fling.scrolls,
+    });
+  }
+}
+
+function flingTouchMT(ctx: WorkletContext<unknown, FlingParams>): void {
+  flingReport = ctx.params.report;
+  if (fling.running) return;
+  Object.assign(fling, { running: true, start: Date.now(), last: 0, frames: 0, longest: 0, scrolls: 0, lastScroll: 0 });
+  mainThreadLynx.requestAnimationFrame(flingFrameMT);
+}
+export const flingTouch = defineWorklet(flingTouchMT);
+
+function flingScrollMT(): void {
+  if (!fling.running) return;
+  fling.scrolls++;
+  fling.lastScroll = Date.now();
+  fling.atLastScroll = { frames: fling.frames, longest: fling.longest };
+}
+export const flingScroll = defineWorklet(flingScrollMT);

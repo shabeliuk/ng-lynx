@@ -104,44 +104,13 @@ export function encodeOps(records: OpRecord[]): unknown[] {
 }
 
 /**
- * The coalescing "slot" for an op whose value is absolute (only the last write
- * in a batch is observable on the Main Thread), or `null` for ops whose order /
- * identity must be preserved (create / insert / remove / events).
- */
-function coalesceKey(r: OpRecord): string | null {
-  switch (r.code) {
-    case OP.SET_CLASS:
-      return `class:${r.args[0]}`;
-    case OP.SET_STYLE:
-      return `style:${r.args[0]}`;
-    case OP.SET_TEXT:
-      return `text:${r.args[0]}`;
-    case OP.SET_ATTR:
-    case OP.REMOVE_ATTR:
-      return `attr:${r.args[0]}:${r.args[1]}`;
-    default:
-      return null;
-  }
-}
-
-/**
  * Drop redundant absolute "set" ops within a batch, keeping only the last write
  * to each (element, slot) in its original position. Create/insert/remove/event
  * ops are never touched. Safe because the Main Thread never reads back an
  * intermediate attribute/class/style/text value.
  */
 export function coalesceOps(flat: unknown[]): unknown[] {
-  const records = decodeOps(flat);
-  const lastIndex = new Map<string, number>();
-  records.forEach((r, idx) => {
-    const k = coalesceKey(r);
-    if (k) lastIndex.set(k, idx);
-  });
-  const kept = records.filter((r, idx) => {
-    const k = coalesceKey(r);
-    return k === null || lastIndex.get(k) === idx;
-  });
-  return encodeOps(kept);
+  return encodeBatch(flat, true, false);
 }
 
 // ---------------------------------------------------------------------------
@@ -178,6 +147,12 @@ const INTERNABLE_ARGS: Partial<Record<number, readonly number[]>> = {
   [OP.SET_REF]: [1], // refId
 };
 
+/** {@link INTERNABLE_ARGS} as a bitmask per op code: bit `n` is argument `n`. */
+const INTERNABLE_MASK: number[] = [];
+for (const [code, slots] of Object.entries(INTERNABLE_ARGS)) {
+  INTERNABLE_MASK[Number(code)] = slots!.reduce((mask, slot) => mask | (1 << slot), 0);
+}
+
 /**
  * Build a string table for values that repeat **more than once** across
  * internable slots in this batch, and rewrite those occurrences (only) into
@@ -195,48 +170,122 @@ const INTERNABLE_ARGS: Partial<Record<number, readonly number[]>> = {
  * case, which rarely has anything worth deduping.
  */
 export function internStrings(flat: unknown[]): unknown[] {
-  const records = decodeOps(flat);
+  return encodeBatch(flat, false, true);
+}
 
-  const counts = new Map<string, number>();
-  for (const r of records) {
-    const slots = INTERNABLE_ARGS[r.code];
-    if (!slots) continue;
-    for (const idx of slots) {
-      const v = r.args[idx];
-      if (typeof v === 'string') counts.set(v, (counts.get(v) ?? 0) + 1);
+/**
+ * Get a batch ready for the wire: {@link coalesceOps}, then
+ * {@link internStrings}, with the same result as calling the two in turn.
+ *
+ * It walks the flat array by index rather than decoding it into records, and
+ * allocates only the output: a batch's encoding used to cost about 11 times its
+ * `JSON.stringify`, on every flush. Returns `flat` itself when there's nothing
+ * to drop or dedupe, the common case for a small update.
+ */
+export function encodeBatch(flat: unknown[], coalesce = true, intern = true): unknown[] {
+  const length = flat.length;
+
+  // Pass 1: the offset of the last write to each slot. Keyed by element id, and
+  // by attribute name under it, so no key strings are built.
+  let lastClass: Map<unknown, number> | undefined;
+  let lastStyle: Map<unknown, number> | undefined;
+  let lastText: Map<unknown, number> | undefined;
+  let lastAttr: Map<unknown, Map<unknown, number>> | undefined;
+  if (coalesce) {
+    for (let i = 0; i < length; i += 1 + (OP_ARITY[flat[i] as number] ?? 0)) {
+      switch (flat[i]) {
+        case OP.SET_CLASS:
+          (lastClass ??= new Map()).set(flat[i + 1], i);
+          break;
+        case OP.SET_STYLE:
+          (lastStyle ??= new Map()).set(flat[i + 1], i);
+          break;
+        case OP.SET_TEXT:
+          (lastText ??= new Map()).set(flat[i + 1], i);
+          break;
+        case OP.SET_ATTR:
+        case OP.REMOVE_ATTR: {
+          lastAttr ??= new Map();
+          let byKey = lastAttr.get(flat[i + 1]);
+          if (!byKey) lastAttr.set(flat[i + 1], (byKey = new Map()));
+          byKey.set(flat[i + 2], i);
+          break;
+        }
+      }
     }
   }
+  const superseded = (i: number): boolean => {
+    switch (flat[i]) {
+      case OP.SET_CLASS:
+        return lastClass !== undefined && lastClass.get(flat[i + 1]) !== i;
+      case OP.SET_STYLE:
+        return lastStyle !== undefined && lastStyle.get(flat[i + 1]) !== i;
+      case OP.SET_TEXT:
+        return lastText !== undefined && lastText.get(flat[i + 1]) !== i;
+      case OP.SET_ATTR:
+      case OP.REMOVE_ATTR:
+        return lastAttr !== undefined && lastAttr.get(flat[i + 1])!.get(flat[i + 2]) !== i;
+      default:
+        return false;
+    }
+  };
 
+  // Pass 2: count the strings in internable slots of the ops that survive, and
+  // note which ops were superseded so pass 3 needn't ask again.
+  let gone: Uint8Array | undefined;
+  let counts: Map<string, number> | undefined;
   let hasRepeats = false;
-  for (const n of counts.values()) {
-    if (n > 1) {
-      hasRepeats = true;
-      break;
+  for (let i = 0; i < length; i += 1 + (OP_ARITY[flat[i] as number] ?? 0)) {
+    if (coalesce && superseded(i)) {
+      (gone ??= new Uint8Array(length))[i] = 1;
+      continue;
+    }
+    if (!intern) continue;
+    const mask = INTERNABLE_MASK[flat[i] as number];
+    if (!mask) continue;
+    for (let slot = 0; mask >> slot; slot++) {
+      if (!((mask >> slot) & 1)) continue;
+      const v = flat[i + 1 + slot];
+      if (typeof v !== 'string') continue;
+      const n = ((counts ??= new Map()).get(v) ?? 0) + 1;
+      counts.set(v, n);
+      if (n > 1) hasRepeats = true;
     }
   }
-  if (!hasRepeats) return flat;
+  if (!gone && !hasRepeats) return flat;
 
+  // Pass 3: copy the surviving ops, swapping each repeated string for its index
+  // in a table built in first-appearance order. The first-screen snapshot needs
+  // the same ops to give the same table, byte for byte.
+  const out: unknown[] = [];
   const table: string[] = [];
   const indexOf = new Map<string, number>();
-  const interned = records.map((r): OpRecord => {
-    const slots = INTERNABLE_ARGS[r.code];
-    if (!slots) return r;
-    const args = r.args.slice();
-    for (const idx of slots) {
-      const v = args[idx];
-      if (typeof v !== 'string' || (counts.get(v) ?? 0) < 2) continue;
-      let tableIndex = indexOf.get(v);
-      if (tableIndex === undefined) {
-        tableIndex = table.length;
-        table.push(v);
-        indexOf.set(v, tableIndex);
-      }
-      args[idx] = tableIndex;
+  for (let i = 0; i < length; ) {
+    const code = flat[i] as number;
+    const end = i + 1 + (OP_ARITY[code] ?? 0);
+    if (gone && gone[i]) {
+      i = end;
+      continue;
     }
-    return { code: r.code, args };
-  });
-
-  return [table, encodeOps(interned)];
+    const mask = hasRepeats ? INTERNABLE_MASK[code] ?? 0 : 0;
+    out.push(code);
+    for (let a = i + 1; a < end; a++) {
+      const v = flat[a];
+      if (mask & (1 << (a - i - 1)) && typeof v === 'string' && counts!.get(v)! > 1) {
+        let index = indexOf.get(v);
+        if (index === undefined) {
+          index = table.length;
+          table.push(v);
+          indexOf.set(v, index);
+        }
+        out.push(index);
+      } else {
+        out.push(v);
+      }
+    }
+    i = end;
+  }
+  return hasRepeats ? [table, out] : out;
 }
 
 /**
@@ -254,17 +303,20 @@ export function internStrings(flat: unknown[]): unknown[] {
  */
 export function resolveInterned(parsed: unknown[]): unknown[] {
   if (parsed.length === 0 || typeof parsed[0] === 'number') return parsed;
-  const [table, flat] = parsed as [string[], unknown[]];
-  const records = decodeOps(flat);
-  for (const r of records) {
-    const slots = INTERNABLE_ARGS[r.code];
-    if (!slots) continue;
-    for (const idx of slots) {
-      const v = r.args[idx];
-      if (typeof v === 'number') r.args[idx] = table[v];
+  const [table, interned] = parsed as [string[], unknown[]];
+  const flat = interned.slice();
+  for (let i = 0; i < flat.length; ) {
+    const code = flat[i] as number;
+    const slots = INTERNABLE_ARGS[code];
+    if (slots) {
+      for (const slot of slots) {
+        const v = flat[i + 1 + slot];
+        if (typeof v === 'number') flat[i + 1 + slot] = table[v];
+      }
     }
+    i += 1 + (OP_ARITY[code] ?? 0);
   }
-  return encodeOps(records);
+  return flat;
 }
 
 /** anchorId sentinel meaning "append at the end" (no reference sibling). */

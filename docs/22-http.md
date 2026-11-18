@@ -31,7 +31,7 @@ request touches:
 | --- | --- |
 | global `fetch` | Provided by the Lynx runtime (BG thread); dev warning at boot if absent. |
 | `AbortController` (cancellation) | **Polyfilled** by entry-background.ts if missing (PrimJS has no `AbortController`). |
-| `TextDecoder` (body decoding) | **Polyfilled** (UTF-8, one-shot) if missing. |
+| `TextDecoder` (body decoding) | **Polyfilled** (UTF-8, the WHATWG decoder, `stream: true` included) if missing. Neither JavaScriptCore on iOS nor PrimJS on Android has one (Explorer 4.2), so the polyfill is what runs. |
 | `response.headers` / `status` / `statusText` | Standard fetch surface. |
 | `response.body` **as a ReadableStream** | ⚠ the one to check on-device — see below. |
 

@@ -92,11 +92,9 @@ await esbuild.build({
     // so `'lazy'` round-trips as a quoted literal instead of a bare
     // (undefined) identifier.
     __ENABLE_SELECTOR_QUERIES__: JSON.stringify(
-      process.env.ENABLE_SELECTOR_QUERIES === undefined
-        ? true
-        : process.env.ENABLE_SELECTOR_QUERIES === 'lazy'
-          ? 'lazy'
-          : process.env.ENABLE_SELECTOR_QUERIES !== 'false',
+      process.env.ENABLE_SELECTOR_QUERIES === undefined || process.env.ENABLE_SELECTOR_QUERIES === 'lazy'
+        ? 'lazy'
+        : process.env.ENABLE_SELECTOR_QUERIES !== 'false',
     ),
     // `true` is the honest value: a capture run only happens for an app that
     // configures a first screen, and it makes the capture exercise the same

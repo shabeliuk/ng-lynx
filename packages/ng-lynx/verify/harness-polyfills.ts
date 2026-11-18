@@ -129,6 +129,43 @@ async function main(): Promise<void> {
   );
   assert(decoder.decode() === '', 'TextDecoder tolerates a missing argument');
 
+  // Streaming: `lynxEventSource()` decodes each network chunk with
+  // `{ stream: true }`, and a chunk can end in the middle of a character.
+  type StreamTD = new () => { decode(b?: Uint8Array, o?: { stream?: boolean }): string };
+  const text = 'Hi ✓ 😀 Привіт, ще трохи тексту ✓✓ 😀😀 end';
+  const encoded = new TextEncoder().encode(text);
+  let everySplitWhole = true;
+  for (let cut = 0; cut <= encoded.length; cut++) {
+    const streaming = new (TextDecoderPoly as unknown as StreamTD)();
+    const joined =
+      streaming.decode(encoded.subarray(0, cut), { stream: true })
+      + streaming.decode(encoded.subarray(cut), { stream: true })
+      + streaming.decode();
+    if (joined !== text) everySplitWhole = false;
+  }
+  assert(everySplitWhole, 'with { stream: true }, a character split between two chunks at any byte stays whole');
+  const byteByByte = new (TextDecoderPoly as unknown as StreamTD)();
+  let oneAtATime = '';
+  for (const byte of encoded) oneAtATime += byteByByte.decode(new Uint8Array([byte]), { stream: true });
+  assert(oneAtATime + byteByByte.decode() === text, 'with { stream: true }, one byte per chunk decodes the same text');
+  const cutShort = new (TextDecoderPoly as unknown as StreamTD)();
+  cutShort.decode(new Uint8Array([0xe2, 0x9c]), { stream: true });
+  assert(cutShort.decode() === '\ufffd', 'a stream that ends mid-character ends in U+FFFD');
+  // Malformed input gives the same U+FFFDs as Node's own decoder, which follows
+  // the same standard.
+  const NativeTD = realTextDecoder as new () => { decode(b: Uint8Array): string };
+  let seed = 11;
+  const random = (n: number): number => (seed = (seed * 1103515245 + 12345) % 2147483648) % n;
+  let matchesNative = true;
+  for (let t = 0; t < 3000 && matchesNative; t++) {
+    const sample = new Uint8Array(random(12));
+    for (let k = 0; k < sample.length; k++) sample[k] = [random(256), 0x80 + random(64), 0xe0 + random(21)][random(3)]!;
+    if (new TextDecoderPoly!().decode(sample) !== new NativeTD().decode(sample)) matchesNative = false;
+  }
+  assert(matchesNative, "3,000 random byte strings, valid and not, decode as Node's TextDecoder does");
+  const big = 'ab✓😀'.repeat(20000);
+  assert(new TextDecoderPoly!().decode(new TextEncoder().encode(big)) === big, 'a 200 kB body decodes whole');
+
   type AC = new () => {
     signal: {
       aborted: boolean;

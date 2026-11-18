@@ -116,7 +116,31 @@ A flow passing on screen isn't enough, so `run.mjs` also fails the run on:
 | `page-exit` | Leaving the page | `(null) is not a function`, LynxError 20100 |
 | `host-data` | Init data from the host, through a data processor | `lynxInitData()` empty on every native engine |
 | `attributes` | `(longpress)`, `initial-scroll-index`, `default-value`, `<markdown>` drawing and `<filter-image>` loading (iOS only: Explorer 4.2.0's Android APK crashes on the first and lacks the second, see [18](18-typed-templates.md)), and the engine accepting the other typed attributes and events | Attributes the engine rejects |
-| `platform` | `lynxSelectRoot()`, `lynxSelectUniqueID()`, `lynxEventSource()` with the line held open, and `reload()` with new init data | Lynx's `EventSource` delivering nothing on iOS; `removeComponents is not a function` on reload |
+| `platform` | `lynxSelectRoot()`, `lynxSelectUniqueID()`, `lynxEventSource()` with the line held open and a `✓` split between two network chunks, and `reload()` with new init data | Lynx's `EventSource` delivering nothing on iOS; `removeComponents is not a function` on reload; a split character decoding as `���` |
+| `timing` | Each measurement on the timing screen completes: boot, 50 updates, 1,000 rows, a fling | The timing screen breaking. Its numbers are for a phone: see below |
+
+**The timing screen** ("Open timing") shows numbers to take from a real phone:
+
+- **Boot:** from the app's script starting, before Angular evaluates, to Angular ready, and to the first
+  batch applied on the Main Thread. The engine's own start is before that, and invisible to JavaScript.
+- **Updates:** 50 changes of one text binding, each timed from the change until the Main Thread has
+  applied it (`whenFlushed()`). The median, p95 and max.
+- **Rows:** 1,000 rows, a view and a text each, rendered and applied, then removed.
+- **Fling:** scroll the list at the bottom. Frames per second on the Main Thread
+  (`requestAnimationFrame`) from the touch to the last scroll event, and the longest frame.
+
+"Applied" means the Main Thread ran the batch and called `__FlushElementTree`; the paint after it can't
+be seen from JavaScript. On the iOS simulator and the Android emulator (2026-11-18) they were:
+
+| | iOS simulator | Android emulator |
+|---|---|---|
+| Boot, to first batch applied | 52 ms | 174 ms |
+| Update, median / p95 | 3 / 7 ms | 17 / 39 ms |
+| 1,000 rows rendered / removed | 789 / 474 ms | 270 / 89 ms |
+| Fling | 60 fps, longest frame 19 ms | 42 fps, longest frame 42 ms |
+
+Simulators and emulators share the Mac's CPU and say little about a phone. Run it on one, release
+build of Explorer if you can, and put those numbers here.
 
 **To try the screens by hand**, on a phone or a simulator: `npm run dev` in `packages/device-tests`,
 then scan the printed code with Lynx Explorer. The dev server also serves the `/sse` stream the

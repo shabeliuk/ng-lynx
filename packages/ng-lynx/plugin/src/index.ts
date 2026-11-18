@@ -145,7 +145,8 @@ export interface PluginAngularLynxOptions {
    * docs/10-element-queries.md).
    *
    * Three modes:
-   * - `true` (default) — every element gets the attribute natively at
+   * - `'lazy'` (default) — see below.
+   * - `true` — every element gets the attribute natively at
    *   `CREATE` time, synchronously, on the Main Thread. Queries always
    *   resolve immediately.
    * - `false` — no element ever gets it. Every selector query becomes a
@@ -162,9 +163,10 @@ export interface PluginAngularLynxOptions {
    *   hit on an element's first query for skipping the native call on
    *   elements that turn out to never be queried. `lynxSelectAll(...)`
    *   (a whole-tree CSS-selector query, not `ng-ref`-based) is unaffected by
-   *   any of these three modes.
+   *   any of these three modes. The default since 0.1.0-rc.1: most elements
+   *   are never queried, so each one used to pay a native call for nothing.
    *
-   * @defaultValue true
+   * @defaultValue 'lazy'
    */
   enableSelectorQueries?: boolean | 'lazy';
   /**
@@ -498,7 +500,7 @@ export function pluginAngularLynx(
     enableCSSInvalidation = true,
     engineVersion,
     targetSdkVersion: legacyTargetSdkVersion,
-    enableSelectorQueries = true,
+    enableSelectorQueries = 'lazy',
     enableNewGesture,
     enableAccessibilityElement,
     defaultDisplayLinear,

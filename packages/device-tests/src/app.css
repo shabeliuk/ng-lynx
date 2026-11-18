@@ -137,3 +137,33 @@
   margin-top: 4px;
   margin-bottom: 10px;
 }
+
+/* The timing screen: rows render into a clipped box, so 1,000 of them don't move the
+   rest of the page; the fling list takes the remaining height. */
+.timing-probe {
+  font-size: 1px;
+  color: #0b1021;
+}
+
+.timing-rows {
+  height: 24px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.timing-row {
+  height: 44px;
+  justify-content: center;
+  border-bottom-width: 1px;
+  border-color: #26304a;
+}
+
+.timing-row-label {
+  font-size: 15px;
+  color: #c0c8d8;
+}
+
+.timing-scroller {
+  flex: 1;
+  min-height: 200px;
+}

@@ -114,9 +114,9 @@ list — repeats the same string over and over: the `CREATE` type (`"view"`,
 500-row flat tree, **~18% of the serialized payload** is string *values* that
 appear more than once (measured — `npm run verify:wireproto-measure`).
 
-`internStrings` (`internal/src/ops.ts`) is a second encoding pass, applied in
-`flush.ts` right before `JSON.stringify`, that deduplicates those repeats into
-a shared table. When a batch has anything worth deduping, the wire `data`
+`internStrings` (`internal/src/ops.ts`) deduplicates those repeats into a
+shared table. `flush.ts` runs it together with coalescing, as `encodeBatch`, in
+one walk over the batch right before `JSON.stringify`. When a batch has anything worth deduping, the wire `data`
 becomes a two-element tuple:
 
 ```jsonc

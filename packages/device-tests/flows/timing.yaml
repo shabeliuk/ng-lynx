@@ -1,0 +1,34 @@
+# The timing screen runs each measurement and shows a number. This flow checks
+# that every one completes; the numbers themselves come from a phone, not from
+# the simulator or the emulator. See docs/41-device-testing.md.
+appId: ${APP_ID}
+---
+- runFlow:
+    file: shared/open.yaml
+    env:
+      BUNDLE: main
+      READY: 'Count: 0'
+- scrollUntilVisible:
+    element: Open timing
+    direction: DOWN
+    timeout: 10000
+- tapOn: Open timing
+- extendedWaitUntil:
+    visible: 'Boot: script start to Angular ready \d+ ms, to first batch applied \d+ ms'
+    timeout: 5000
+- tapOn: Measure updates
+- extendedWaitUntil:
+    visible: 'Updates: median .+, p95 .+, max .+ \(50 updates\)'
+    timeout: 30000
+- tapOn: Render 1,000 rows
+- extendedWaitUntil:
+    visible: 'Rows: rendered and applied in .+, removed in .+'
+    timeout: 30000
+- swipe:
+    from: Fling list
+    direction: UP
+    duration: 150
+- extendedWaitUntil:
+    visible: 'Fling: \d+ fps over .+, longest frame .+, \d+ scroll events'
+    timeout: 10000
+- takeScreenshot: timing
