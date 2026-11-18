@@ -66,18 +66,15 @@ The dev server prints three URLs:
     (PrimJS polyfills + event bootstrap), plus `@angular/compiler` under JIT,
     prepended to your app code (Angular + `LynxRenderer2`).
   - **Main thread** (`angular:main-thread`): `ng-lynx/main-thread` (the
-    PAPI executor) + `@lynx-js/react/worklet-runtime` (Lynx's real worklet
-    runtime — `[lynxMainThread]` is a no-op without it, see
-    [11 — Worklets](11-worklets.md)) + any `mainThreadModules` (worklet
-    registrations), **in that exact order**. The executor must load first: its
-    top-level code sets `globalThis.SystemInfo` from `lynx.SystemInfo`, and the
-    worklet-runtime's own top-level code unconditionally reads the bare global
-    `SystemInfo` — confirmed on-device that the reverse order throws during
-    the worklet-runtime's module evaluation, aborting the whole script before
-    `renderPage`/`processData` ever get assigned. The worklet runtime (~10 KB)
-    is only resolved and bundled when `mainThreadModules` is non-empty — its
-    only documented use is worklet registration modules, so an app that never
-    sets it doesn't pay for a feature it doesn't use.
+    PAPI executor) + ng-lynx's worklet runtime (`ng-lynx/worklet-runtime`:
+    `[lynxMainThread]` and gesture callbacks never run without it, see
+    [42 — The worklet runtime](42-worklet-runtime.md)) + any `mainThreadModules`
+    (worklet registrations), **in that order**. The executor's top-level code
+    sets `globalThis.SystemInfo` and assigns `renderPage`/`processData`, and the
+    worklet modules call `registerWorklet`, which needs the runtime in place.
+    The runtime (about 4 kB minified) is only bundled when `mainThreadModules`
+    is non-empty — its only documented use is worklet registration modules, so
+    an app that never sets it doesn't pay for a feature it doesn't use.
 - Marks the main-thread asset `lynx:main-thread: true` and forces its startup so
   the MT bundle actually executes (`AngularMarkMainThreadPlugin`).
 - Packs both with `@lynx-js/template-webpack-plugin`, wraps the background bundle

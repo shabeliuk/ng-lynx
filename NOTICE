@@ -18,9 +18,10 @@ projects ship are reproduced here as they require.
 
    The Generative UI renderers in runtime/src/genui/ are ported from @lynx-js/genui,
    from ReactLynx to Angular. Parts of chart-utils.ts and datetime-utils.ts are close
-   to the originals. main-thread/src/worklet-apply.ts makes the same engine calls as
-   the worklet runtime in @lynx-js/react, and runtime/src/gesture.ts uses its gesture
-   type codes.
+   to the originals. The worklet runtime in main-thread/src/worklet-runtime/ is new
+   code that implements the same engine contract as the one in @lynx-js/react, which
+   was its reference, and its element class makes the same engine calls.
+   runtime/src/gesture.ts uses @lynx-js/react's gesture type codes.
 
    Lynx Examples
    https://github.com/lynx-family/lynx-examples

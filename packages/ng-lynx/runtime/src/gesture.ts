@@ -46,7 +46,7 @@ import { toWorkletRef, type WorkletHandle, type WorkletRef } from './worklet.js'
 
 /**
  * Numeric gesture-type codes the native `__SetGestureDetector` PAPI expects —
- * mirrors `GestureTypeInner` in `@lynx-js/react`'s bundled worklet-runtime
+ * mirrors `GestureTypeInner` in `@lynx-js/react`
  * (`runtime/lib/snapshot/gesture/types.js`: `PAN: 0, FLING: 1, DEFAULT: 2, TAP:
  * 3, LONGPRESS: 4, ROTATION: 5, PINCH: 6, NATIVE: 7`). `COMPOSED` (`-1`, a
  * nested AND-group of sub-gestures) is deliberately not exposed here — every

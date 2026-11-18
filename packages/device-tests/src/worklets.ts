@@ -24,6 +24,19 @@ function countTapMT(ctx: WorkletContext): void {
 }
 export const countTap = defineWorklet(countTapMT);
 
+/**
+ * Stops the tap at the inner box, so the outer box's Background `(tap)` never gets
+ * it, and reports what the event carried: `<stopPropagation's type> <dataset.role>
+ * <uid's type>`. `currentTarget` is a live element: it fades.
+ */
+function stopTapMT(ctx: WorkletContext): void {
+  ctx.event.stopPropagation?.();
+  const box = ctx.event.currentTarget;
+  box.setStyle('opacity: 0.7');
+  ctx.runOnBackground(`${typeof ctx.event.stopPropagation} ${String(box.dataset?.['role'])} ${typeof box.uid}`);
+}
+export const stopTap = defineWorklet(stopTapMT);
+
 export const addOnMainThread = defineMainThreadFunction(async function addOnMainThreadMT(a: number, b: number) {
   return a + b;
 });

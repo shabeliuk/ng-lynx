@@ -205,6 +205,7 @@ scripts/         # CI helpers
 **Tooling & internals**
 
 - [05 — Build integration](docs/05-build-integration.md)
+- [42 — The worklet runtime](docs/42-worklet-runtime.md)
 - [19 — Testing](docs/19-testing.md)
 - [20 — First-screen snapshot](docs/20-first-screen.md)
 - [26 — Debugging](docs/26-debugging.md)

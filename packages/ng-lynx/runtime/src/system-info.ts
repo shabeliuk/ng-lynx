@@ -7,8 +7,7 @@
  * runs) — so a bare `globalThis.SystemInfo` read is correct on the
  * Background Thread, no manual forwarding needed on ng-lynx's part
  * (unlike `SystemInfo` in `main-thread/src/entry-main.ts`, which forwards it
- * only because the worklet-runtime module's own top-level code reads it
- * before anything else does).
+ * for Main-Thread code that reads the bare global).
  *
  * Wrapped behind an `InjectionToken` (same shape as `injectNativeModule` /
  * `LYNX_NATIVE_MODULES`) so app code gets a typed value and tests can

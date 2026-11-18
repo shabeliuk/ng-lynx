@@ -19,6 +19,22 @@ release may change the API; experimental features may change in any release.
 - Bundles are about 10 kB smaller: `ng-lynx` now declares its `sideEffects`.
 - A commit that changes no native element tells the engine so (`emptyPatch`), as
   ReactLynx does.
+- ng-lynx no longer depends on `@lynx-js/react`, a 24 MB install with a Preact fork and
+  an `@types/react` peer. It used only its Main-Thread worklet runtime, and now has its
+  own: the same engine contract, about 4 kB instead of 13 kB minified, with its own
+  tests. See docs/42-worklet-runtime.md. `ng-lynx/genui` users still install
+  `@lynx-js/react`, as `@lynx-js/genui`'s own peer.
+- In a worklet, `ctx.event.target` and `ctx.event.currentTarget` are `MainThreadElement`s,
+  with `setStyle` and `getComputedStyleProperty`, and keep the `id`, `uid` and `dataset`
+  the engine sent. Printing an event or sending it to the Background Thread no longer
+  reaches the native element.
+- `mainThreadLynx.getTextInfo` says the engine has no text measurement, on the web
+  preview, instead of `lynx.getTextInfo is not a function`.
+
+### Added
+
+- `ng-lynx/worklet-runtime`, for a build that doesn't use `pluginAngularLynx`: import it
+  first among the Main-Thread modules.
 
 ### Fixed
 

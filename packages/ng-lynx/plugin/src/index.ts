@@ -353,20 +353,6 @@ function pickDeclaredEnvironments<T extends Record<string, unknown>>(config: unk
   return Object.fromEntries(Object.entries(environments).filter(([name]) => name in declared)) as Partial<T>;
 }
 
-/**
- * `@lynx-js/react`'s main-thread worklet runtime. 0.128 renamed the entry to
- * `worklet-runtime/init` and 0.129 dropped the old `worklet-runtime` export.
- * Both install the same globals (`lynxWorkletImpl`, `registerWorkletInternal`)
- * when evaluated, so either works here.
- */
-function resolveWorkletRuntime(): string {
-  try {
-    return require.resolve('@lynx-js/react/worklet-runtime/init');
-  } catch {
-    return require.resolve('@lynx-js/react/worklet-runtime');
-  }
-}
-
 /** `LynxTemplatePlugin`'s own default, and ReactLynx's. */
 const DEFAULT_TARGET_SDK_VERSION = '3.2';
 
@@ -1383,19 +1369,16 @@ function applyEntry(
     const esPolyfills = path.resolve(angularLynxRoot, 'runtime/dist/es-polyfills.js');
     const entryBackground = path.resolve(angularLynxRoot, 'runtime/dist/entry-background.js');
     const entryMain = path.resolve(angularLynxRoot, 'main-thread/dist/entry-main.js');
-    // The real Lynx worklet runtime (globalThis.lynxWorkletImpl /
-    // registerWorkletInternal / runWorklet) — `[lynxMainThread]` worklets are
-    // a no-op without it (see worklet-apply.ts's module doc for why).
-    // Resolved from this *package's* node_modules (a dependency of
-    // ng-lynx, not of the app), same as the other Lynx packaging plugins
-    // imported at the top of this file. Mirrors vue-lynx's plugin exactly.
+    // ng-lynx's worklet runtime (`runWorklet`, the worklet registry, timers on
+    // `globalThis`): `[lynxMainThread]` worklets and gesture callbacks never run
+    // without it. See docs/42-worklet-runtime.md.
     //
-    // Only resolved/bundled when `mainThreadModules` is non-empty — that's the
-    // only documented use for the option (worklet registration modules), so an
-    // empty list is a reliable signal the app doesn't use worklets at all.
-    // Adds ~10 KB; apps that never touch `[lynxMainThread]` shouldn't pay for
-    // it.
-    const workletRuntime = opts.mainThreadModules.length > 0 ? resolveWorkletRuntime() : undefined;
+    // Only bundled when `mainThreadModules` is non-empty — that's the only
+    // documented use for the option (worklet registration modules), so an
+    // empty list is a reliable signal the app doesn't use worklets at all, and
+    // an app that never touches `[lynxMainThread]` doesn't pay for it.
+    const workletRuntime =
+      opts.mainThreadModules.length > 0 ? path.resolve(angularLynxRoot, 'main-thread/dist/worklet-runtime/init.js') : undefined;
 
     for (const [entryName, entryPoint] of Object.entries(entries)) {
       const imports: string[] = [];
@@ -1414,14 +1397,12 @@ function applyEntry(
 
       // Main-Thread bundle: the PAPI executor first — its top-level code sets
       // `globalThis.SystemInfo` from `lynx.SystemInfo` (guarded; works whether
-      // or not `lynx` is ready yet). The worklet runtime's own top-level code
-      // unconditionally reads the bare global `SystemInfo` (its internal
-      // version-check helper), so it must load *after* entryMain — confirmed
-      // on-device: the reverse order threw during the worklet-runtime's
-      // module evaluation, which aborted the whole script before `renderPage`/
-      // `processData` ever got assigned ("processData is not a function").
-      // Mirrors vue-lynx's exact order. Worklet modules load last (they call
-      // registerWorklet, which needs the runtime already in place).
+      // or not `lynx` is ready yet) and assigns `renderPage`/`processData`, so
+      // nothing that loads after it can stop those being set. Then the worklet
+      // runtime, then the worklet modules (they call registerWorklet, which
+      // needs the runtime already in place). With `@lynx-js/react`'s runtime
+      // the order mattered more: its top-level code read the bare `SystemInfo`
+      // global, and loading it first aborted the script (docs/11-worklets.md).
       // A dynamic-component bundle gets a no-op Main-Thread part instead:
       // its host already owns the executor and the page, and re-registering
       // `renderPage`/`ngPatchUpdate` from a loaded bundle would clobber the

@@ -6,10 +6,10 @@
  * `__AddEvent`), a gesture detector has its own dedicated registration call.
  * The gesture's callbacks are ordinary worklets (`{ _wkltId, _workletType:
  * 'main-thread' }` — the same shape `[lynxMainThread]` sends), so no new
- * Main-Thread dispatch mechanism is needed: whatever invokes a gesture-phase
- * callback (the native engine, at gesture-recognition time) resolves it from
- * `lynxWorkletImpl._workletMap` exactly like `runWorklet` already does for a
- * tapped `[lynxMainThread]` binding — see `worklet-apply.ts`'s module doc.
+ * Main-Thread dispatch mechanism is needed: the native engine calls
+ * `runWorklet(callback, [event, gestureManager], { source: 2 })` for each phase,
+ * which resolves it exactly as it does a tapped `[lynxMainThread]` binding — see
+ * `worklet-apply.ts`'s module doc and docs/42-worklet-runtime.md.
  *
  * @remarks
  * The web preview has only no-op detectors (web-core 0.26), so gestures fire on

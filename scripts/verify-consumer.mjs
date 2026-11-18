@@ -82,6 +82,30 @@ step('static asset import builds (the quick start imports images)', () => {
   run('npm run build', app);
 });
 
+// ng-lynx has its own worklet runtime (docs/42-worklet-runtime.md): an app with
+// `mainThreadModules` builds from the tarball alone, without `@lynx-js/react`.
+step('worklets build without @lynx-js/react', () => {
+  const app = path.join(work, 'minimal');
+  let installed = true;
+  try {
+    statSync(path.join(app, 'node_modules/@lynx-js/react'));
+  } catch {
+    installed = false;
+  }
+  if (installed) throw new Error('@lynx-js/react was installed: something still depends on it');
+  writeFileSync(
+    path.join(app, 'src/worklets.ts'),
+    "import { defineWorklet, type WorkletContext } from 'ng-lynx/worklet';\n\n"
+      + "function dimMT(ctx: WorkletContext): void {\n  ctx.event.currentTarget.setStyle('opacity: 0.5');\n}\n"
+      + 'export const dim = defineWorklet(dimMT);\n',
+  );
+  const config = path.join(app, 'lynx.config.ts');
+  const source = readFileSync(config, 'utf8');
+  if (!source.includes('pluginAngularLynx({\n')) throw new Error('lynx.config.ts no longer has `pluginAngularLynx({`');
+  writeFileSync(config, source.replace('pluginAngularLynx({\n', "pluginAngularLynx({\n      mainThreadModules: ['./src/worklets.ts'],\n"));
+  run('npm run build', app);
+});
+
 step('the Vitest quick start from docs/19-testing.md passes', () => {
   const app = path.join(work, 'vitest');
   mkdirSync(app);

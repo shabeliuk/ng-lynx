@@ -1,5 +1,5 @@
 # A worklet bound to a tap reports back with runOnBackground, and runOnMainThread
-# returns a value across the threads.
+# returns a value across the threads. A third worklet stops its tap from bubbling.
 appId: ${APP_ID}
 ---
 - runFlow:
@@ -23,4 +23,15 @@ appId: ${APP_ID}
 - extendedWaitUntil:
     visible: 'Result: 42'
     timeout: 5000
+# The worklet stops the tap, so the outer box's (tap) doesn't count it, and reports
+# a live currentTarget with its dataset and uid.
+- tapOn: Stop on main thread
+- extendedWaitUntil:
+    visible: 'Stop: function stopper number'
+    timeout: 5000
+- tapOn: Outer area
+- extendedWaitUntil:
+    visible: 'Outer taps: 1'
+    timeout: 5000
+- assertNotVisible: 'Outer taps: 2'
 - takeScreenshot: main-thread

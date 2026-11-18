@@ -830,9 +830,6 @@ importers:
       '@babel/core':
         specifier: ^7.29.13
         version: 7.29.13(supports-color@8.1.1)
-      '@lynx-js/react':
-        specifier: ^0.129.3
-        version: 0.129.3(@lynx-js/types@4.4.2)(@types/react@19.3.0)
       '@lynx-js/runtime-wrapper-webpack-plugin':
         specifier: ^0.2.6
         version: 0.2.6

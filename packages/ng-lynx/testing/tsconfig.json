@@ -8,7 +8,8 @@
     "paths": {
       "ng-lynx": ["../runtime/dist/index.d.ts"],
       "ng-lynx/internal/runtime": ["../runtime/dist/internal.d.ts"],
-      "ng-lynx/internal/ops": ["../internal/src/ops.ts"]
+      "ng-lynx/internal/ops": ["../internal/src/ops.ts"],
+      "ng-lynx/internal/worklet-runtime": ["../main-thread/dist/worklet-runtime/index.d.ts"]
     }
   },
   "references": [{ "path": "../internal" }],

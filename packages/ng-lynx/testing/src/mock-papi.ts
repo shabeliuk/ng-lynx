@@ -12,6 +12,7 @@
  * `ng-lynx/testing` instead of calling these directly.
  */
 import { resolveInterned } from 'ng-lynx/internal/ops';
+import { clearWorklets, installWorkletRuntime } from 'ng-lynx/internal/worklet-runtime';
 
 export interface MockEl {
   uid: number;
@@ -23,7 +24,7 @@ export interface MockEl {
   /** What `__AddDataset` stored: `event.target.dataset` on a real engine. */
   dataset?: Record<string, unknown>;
   // sign is a string for BG handlers, a function for main-thread worklet handlers.
-  events: Record<string, { type: string; sign: string | ((e: unknown) => void) }>;
+  events: Record<string, { type: string; sign: string | ((e: unknown) => unknown) }>;
   children: MockEl[];
   parent?: MockEl;
   /** For <list>: native item callbacks + synthetic list id. */
@@ -723,8 +724,8 @@ export function installMockPapi(): void {
   };
   g.__SetCSSId = () => {};
   // Mirrors the real engine's typeof-based dispatch (confirmed against
-  // @lynx-js/web-core's actual __AddEvent and @lynx-js/react's worklet-runtime
-  // source): a `string` is a cross-thread sign, an object `{type:'worklet',
+  // @lynx-js/web-core's actual __AddEvent and the engine's touch_event_handler.cc):
+  // a `string` is a cross-thread sign, an object `{type:'worklet',
   // value}` routes to the worklet runtime, anything else (notably a raw
   // function — what an earlier, broken version of worklet-apply.ts passed) is
   // NOT a real PAPI shape and registers no listener, exactly like a real
@@ -741,7 +742,22 @@ export function installMockPapi(): void {
       && (handler as { type?: string }).type === 'worklet'
     ) {
       const value = (handler as { value: unknown }).value;
-      el.events[name] = { type, sign: (event: unknown) => g.runWorklet(value, [event]) };
+      // As the native engine calls it: the event carries the element it's bound
+      // to as `currentTarget` (and `target`, unless the harness gave one), with
+      // the native element under `elementRefptr`, and `source: 1` asks for the
+      // stopPropagation bits back.
+      el.events[name] = {
+        type,
+        sign: (event: unknown) => {
+          if (event && typeof event === 'object') {
+            const ev = event as Record<string, unknown>;
+            const self = { id: el.attrs['id'], uid: el.uid, dataset: el.dataset ?? {}, elementRefptr: el };
+            ev['currentTarget'] ??= self;
+            ev['target'] ??= { ...self };
+          }
+          return g.runWorklet(value, [event], { source: 1 });
+        },
+      };
     }
     // Anything else (e.g. a function) — silently no-op, matching the engine.
   };
@@ -790,19 +806,12 @@ export function installMockPapi(): void {
   // where browsers never fire rAF callbacks at all — see worklet-apply.ts's
   // module doc for the full story.)
 
-  // --- Minimal real worklet-runtime mock (mirrors @lynx-js/react's actual
-  // runtime/worklet-runtime/main.js): registerWorkletInternal just stores the
-  // function by id; runWorklet resolves it and calls it with `this` bound to
-  // a copy of the ctx object (the same calling convention worklet-apply.ts's
-  // makeDispatcher relies on). ---
-  g.lynxWorkletImpl = { _workletMap: {} };
-  g.registerWorkletInternal = (_type: string, id: string, fn: (...a: unknown[]) => unknown) => {
-    g.lynxWorkletImpl._workletMap[id] = fn;
-  };
-  g.runWorklet = (ctx: { _wkltId: string }, params: unknown[]) => {
-    const fn = g.lynxWorkletImpl._workletMap[ctx._wkltId];
-    return fn?.call({ ...ctx }, ...params);
-  };
+  // ng-lynx's own worklet runtime (main-thread/src/worklet-runtime), the one a
+  // real Main-Thread bundle installs: `runWorklet`, the registration globals,
+  // timers from `lynx` (this mock's has none, so Node's stay) and
+  // `lynx.querySelector`. Each harness registers its worklets afresh.
+  installWorkletRuntime();
+  clearWorklets();
 }
 
 export function getPage(): MockEl {
@@ -855,20 +864,21 @@ export function opsSince(mark: number): unknown[] {
 }
 
 /**
- * Simulate the native runtime firing a main-thread worklet event: invokes the
- * function handler that `__AddEvent` stored (worklet handlers are functions,
- * unlike BG event signs which are strings).
+ * Simulate the native engine firing a main-thread worklet event: runs the
+ * handler `__AddEvent` stored, which calls `runWorklet` the way the engine does.
+ * Returns what `runWorklet` returned: `{ returnValue, eventReturnResult }`, or
+ * `undefined` if nothing is bound to `name`.
  */
-export function fireWorklet(el: MockEl, name: string, event: unknown): void {
+export function fireWorklet(el: MockEl, name: string, event: unknown): unknown {
   const handler = el.events[name]?.sign as unknown;
-  if (typeof handler === 'function') (handler as (e: unknown) => void)(event);
+  return typeof handler === 'function' ? (handler as (e: unknown) => unknown)(event) : undefined;
 }
 
 /**
  * Simulate the native gesture engine invoking one phase of a registered
  * gesture (e.g. `onStart`) — resolves the worklet ref `__SetGestureDetector`
  * was given and runs it through the same real worklet dispatch `fireWorklet`
- * ultimately relies on (`g.runWorklet`/`_workletMap`).
+ * ultimately relies on (`g.runWorklet`), with `source: 2` as the engine passes.
  */
 export function fireGestureCallback(el: MockEl, gestureId: number, name: string, event: unknown): void {
   const callback = el.gestures?.[gestureId]?.config.callbacks.find((c) => c.name === name)?.callback;
@@ -886,7 +896,7 @@ export function fireGestureCallback(el: MockEl, gestureId: number, name: string,
       return { consumedX: deltaX, consumedY: deltaY, unconsumedX: 0, unconsumedY: 0 };
     },
   };
-  g.runWorklet(callback as { _wkltId: string }, [event, lepusGesture]);
+  g.runWorklet(callback as { _wkltId: string }, [event, lepusGesture], { source: 2 });
 }
 
 /**
