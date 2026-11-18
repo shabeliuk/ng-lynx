@@ -93,21 +93,22 @@ export class DeferHoverComponent {}
   selector: 'app-root',
   standalone: true,
   schemas: [NO_ERRORS_SCHEMA],
-  template: `<view class="target" #target><text>{{ state() }}</text></view>`,
+  template: `<scroll-view class="scroller" #scroller><view class="target" #target><text>{{ state() }}</text></view></scroll-view>`,
 })
 export class ServiceComponent {
+  @ViewChild('scroller', { read: ElementRef }) scroller!: ElementRef;
   // `@ViewChild` (decorator) rather than `viewChild()` (initializer): the JIT
   // verify build doesn't wire up initializer queries — see docs/19-testing.md.
   @ViewChild('target', { read: ElementRef }) target!: ElementRef;
   private readonly visibility = inject(LynxIntersectionObserver);
   readonly state = signal('hidden');
-  observe(): () => void {
+  observe(withinScroller = false): () => void {
     return this.visibility.observe(
       this.target.nativeElement,
       (e) => {
         this.state.set(e.isIntersecting ? `visible@${e.intersectionRatio}` : 'hidden');
       },
-      { thresholds: [0.5] },
+      { thresholds: [0.5], ...(withinScroller ? { relativeTo: this.scroller.nativeElement } : {}) },
     );
   }
 }
@@ -248,6 +249,16 @@ async function testService(): Promise<void> {
 
   dispose();
   assert(observedSelectors().length === 0, 'dispose() disconnected the observer');
+
+  // `relativeTo` finds the ancestor by id as well: its `[ng-ref-N]` attribute
+  // doesn't exist under the default `enableSelectorQueries: 'lazy'`.
+  const disposeWithin = cmp.observe(true);
+  await tick();
+  const ancestor = (globalThis as Record<string, unknown>).__IO_RELATIVE_TO__ as string | undefined;
+  assert(ancestor?.startsWith('#') === true, `relativeTo() got the ancestor's id (got ${ancestor})`);
+  assert(findByClass(page, 'scroller')?.attrs['id'] === ancestor!.slice(1), 'the ancestor was given that id');
+  assert(observedSelectors().length === 1, 'the target is observed relative to it');
+  disposeWithin();
   app.destroy();
 }
 

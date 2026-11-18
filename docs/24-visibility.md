@@ -89,6 +89,12 @@ scroll into view" until scrolled to, then loads. `verify:defer` now asserts
 the `#id` form and that the element carries the id; its mock accepts any
 selector, which is how the old form passed there.
 
+`relativeTo` gets the same treatment: the ancestor is passed as `#id` too. It
+used to be its `[ng-ref-{id}]` selector, and since 0.1.0-rc.1 that attribute
+only exists once the element has been queried
+([10](10-element-queries.md#when-elements-get-their-selector--enableselectorqueries)),
+so an observer relative to a scroll-view would have found no ancestor.
+
 On-device it's the same API with the same id rule, and it works there too:
 on Lynx Explorer 4.1 (iOS simulator), the same router card loads when
 scrolled into view.

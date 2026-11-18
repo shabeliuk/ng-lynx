@@ -40,13 +40,13 @@ const aliasPlugin = {
 const entry = process.argv[2] ?? 'harness.ts';
 const outfile = resolve(here, 'out.mjs');
 
-// Mirrors `enableSelectorQueries` (plugin/src/index.ts) — default on, a
+// Mirrors `enableSelectorQueries` (plugin/src/index.ts) — default `'lazy'`. A
 // harness that needs the opt-out path sets `ENABLE_SELECTOR_QUERIES=false`,
-// or the lazy path sets `ENABLE_SELECTOR_QUERIES=lazy`. `define`'s value is
+// or the eager path sets `ENABLE_SELECTOR_QUERIES=true`. `define`'s value is
 // injected as raw source text, so `true`/`false` pass through as literal
 // booleans, but `lazy` must be quoted here or it substitutes the bare
 // (undefined) identifier `lazy` instead of the string `'lazy'`.
-const enableSelectorQueriesEnv = process.env.ENABLE_SELECTOR_QUERIES ?? 'true';
+const enableSelectorQueriesEnv = process.env.ENABLE_SELECTOR_QUERIES ?? 'lazy';
 const enableSelectorQueries =
   enableSelectorQueriesEnv === 'lazy' ? '"lazy"' : enableSelectorQueriesEnv;
 

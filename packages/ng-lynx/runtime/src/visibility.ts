@@ -332,14 +332,14 @@ export class LynxIntersectionObserver implements OnDestroy {
       thresholds: options.thresholds ?? [0],
       initialRatio: 0,
     });
-    if (options.relativeTo?.selector) {
-      native.relativeTo(options.relativeTo.selector, options.margins);
-    } else {
-      native.relativeToViewport(options.margins);
-    }
+    // The ancestor is found by `#id` too, which works whatever
+    // `enableSelectorQueries` is: its `[ng-ref-N]` attribute may not exist.
+    const relativeTo = options.relativeTo?.selector ? (options.relativeTo as DomObserverTarget) : undefined;
     let disposed = false;
-    void observableSelector(element).then((selector) => {
+    void Promise.all([observableSelector(element), relativeTo && observableSelector(relativeTo)]).then(([selector, ancestor]) => {
       if (disposed) return;
+      if (ancestor) native.relativeTo(ancestor, options.margins);
+      else native.relativeToViewport(options.margins);
       native.observe(selector, (result) => {
         callback({
           isIntersecting: result.isIntersecting,

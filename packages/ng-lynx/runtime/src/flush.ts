@@ -18,7 +18,7 @@
  * `queuePostFlushCb`. We use a microtask instead so the runtime stays decoupled
  * from Angular's scheduler internals.
  */
-import { coalesceOps, internStrings, PATCH_METHOD } from 'ng-lynx/internal/ops';
+import { encodeBatch, PATCH_METHOD } from 'ng-lynx/internal/ops';
 
 import { logFlush } from './op-logger.js';
 import { takeOps } from './ops.js';
@@ -126,22 +126,18 @@ export function flushOps(): void {
   materializePendingStyleClass();
   const raw = takeOps();
   if (raw.length === 0 || stopped) return;
-  // Drop redundant same-target set ops accumulated during this batch.
-  const ops = coalesceOps(raw);
-
-  // Dev op-stream logging (no-op unless enabled via enableLynxOpLogging) —
-  // logs the real, human-readable values, so it must see `ops` (pre-interning),
-  // not the wire-compressed form.
-  logFlush(ops);
+  // Dev op-stream logging (no-op unless enabled via enableLynxOpLogging). It
+  // logs the coalesced batch with its real values, before strings are interned.
+  logFlush(raw);
 
   // Mark this batch in flight BEFORE sending so any `whenFlushed()` called
   // after this point queues behind it instead of resolving immediately.
   inFlightCount++;
 
-  // Dedupe repeated string values (CREATE types, class lists, attr keys, …)
-  // into a shared table — a no-op (byte-for-byte unchanged) unless something
-  // in this batch actually repeats. See internal/src/ops.ts.
-  const wireOps = internStrings(ops);
+  // Drop redundant same-target set ops, and dedupe repeated strings (CREATE
+  // types, class lists, attr keys, …) into a shared table, in one walk over
+  // the batch. Unchanged when there's neither. See internal/src/ops.ts.
+  const wireOps = encodeBatch(raw);
 
   const app = lynx?.getNativeApp?.();
   app?.callLepusMethod?.(PATCH_METHOD, { data: JSON.stringify(wireOps), epoch: SESSION_EPOCH }, () => {

@@ -7,6 +7,32 @@ release may change the API; experimental features may change in any release.
 
 ## [Unreleased]
 
+### Changed
+
+- `enableSelectorQueries` now defaults to `'lazy'`: an element gets its `[ng-ref-{id}]`
+  attribute on its first query, instead of every element paying a native call at
+  creation. The first query on an element waits one extra round trip to the Main
+  Thread. Set `enableSelectorQueries: true` for the old behaviour.
+- Encoding a batch for the Main Thread is about 3 times faster: coalescing and the
+  string table run in one walk over the batch, and the Main Thread resolves the table
+  in place.
+- Bundles are about 10 kB smaller: `ng-lynx` now declares its `sideEffects`.
+- A commit that changes no native element tells the engine so (`emptyPatch`), as
+  ReactLynx does.
+
+### Fixed
+
+- `lynxEventSource()` turned a character split between two network chunks into
+  `U+FFFD`s, on both platforms: neither engine has a `TextDecoder`, and the polyfill
+  ignored `stream: true`. The polyfill is now the WHATWG UTF-8 decoder, and about 3.5
+  times faster on large bodies.
+- `LynxIntersectionObserver`'s `relativeTo` finds the ancestor by id, so it works with
+  lazy selector queries.
+- A lazy route whose chunk failed to load, on a dropped network, stayed broken until the
+  app restarted: Lynx's chunk-loading runtime kept the rejected promise, so every later
+  navigation failed at once without a request. `pluginAngularLynx` patches the runtime
+  so the next navigation fetches the chunk again.
+
 ## [0.1.0-rc.0]
 
 The first release candidate.

@@ -24,6 +24,13 @@
     "access": "public",
     "provenance": true
   },
+  "sideEffects": [
+    "./runtime/*/entry-background.*",
+    "./runtime/*/es-polyfills.*",
+    "./main-thread/*/entry-main.*",
+    "./testing/*/index.*",
+    "*.css"
+  ],
   "exports": {
     ".": {
       "types": "./runtime/dist/index.d.ts",
@@ -127,7 +134,7 @@
     "verify:page-destroy": "node verify/build.mjs harness-page-destroy.ts",
     "verify:asset-url": "node verify/build.mjs harness-asset-url.ts",
     "verify:asset-url-build": "node verify/asset-url-build.mjs",
-    "verify:coalesce": "node verify/build.mjs harness-coalesce.ts",
+    "verify:coalesce": "ENABLE_SELECTOR_QUERIES=true node verify/build.mjs harness-coalesce.ts",
     "verify:data-processors": "node verify/build.mjs harness-data-processors.ts",
     "verify:event-collision": "VERIFY_DEV=true node verify/build.mjs harness-event-collision.ts",
     "verify:event-source": "node verify/build.mjs harness-event-source.ts",
@@ -159,7 +166,7 @@
     "verify:ifr": "node verify/build.mjs harness-ifr.ts",
     "verify:lazy-chunks": "node verify/lazy-chunks.mjs",
     "verify:list": "node verify/build.mjs harness-list.ts",
-    "verify:list-scroll": "node verify/build.mjs harness-list-scroll.ts",
+    "verify:list-scroll": "ENABLE_SELECTOR_QUERIES=true node verify/build.mjs harness-list-scroll.ts",
     "verify:mtref": "node verify/build.mjs harness-mtref.ts",
     "verify:main-thread-api": "node verify/build.mjs harness-main-thread-api.ts",
     "verify:native-modules": "node verify/build.mjs harness-native-modules.ts",
@@ -171,7 +178,7 @@
     "verify:polyfills": "node verify/build.mjs harness-polyfills.ts",
     "verify:primitives": "node verify/build.mjs harness-primitives.ts",
     "verify:projection": "node verify/build.mjs harness-projection.ts",
-    "verify:query": "node verify/build.mjs harness-query.ts",
+    "verify:query": "ENABLE_SELECTOR_QUERIES=true node verify/build.mjs harness-query.ts",
     "verify:raf": "node verify/build.mjs harness-raf.ts",
     "verify:replay-epoch": "node verify/build.mjs harness-replay-epoch.ts",
     "verify:router": "node verify/build.mjs harness-router.ts",
@@ -180,7 +187,7 @@
     "verify:selector-lazy": "ENABLE_SELECTOR_QUERIES=lazy node verify/build.mjs harness-selector-lazy.ts",
     "verify:selector-opt-out": "ENABLE_SELECTOR_QUERIES=false node verify/build.mjs harness-selector-opt-out.ts",
     "verify:self": "node verify/build.mjs harness-self.ts",
-    "verify:style": "node verify/build.mjs harness-style-flush.ts",
+    "verify:style": "ENABLE_SELECTOR_QUERIES=true node verify/build.mjs harness-style-flush.ts",
     "verify:testing": "node verify/build.mjs harness-testing.ts",
     "verify:video": "node verify/build.mjs harness-video.ts",
     "verify:virtual-for": "node verify/build.mjs harness-virtual-for.ts",

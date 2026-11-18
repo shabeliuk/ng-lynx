@@ -54,5 +54,7 @@ export class HomeComponent {
     { label: 'Open gesture lab', path: '/gesture-lab' },
     { label: 'Open attributes', path: '/attributes' },
     { label: 'Open platform', path: '/platform' },
+    { label: 'Open timing', path: '/timing' },
+    { label: 'Open network', path: '/network' },
   ];
 }

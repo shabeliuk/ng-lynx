@@ -145,7 +145,8 @@ export interface PluginAngularLynxOptions {
    * docs/10-element-queries.md).
    *
    * Three modes:
-   * - `true` (default) — every element gets the attribute natively at
+   * - `'lazy'` (default) — see below.
+   * - `true` — every element gets the attribute natively at
    *   `CREATE` time, synchronously, on the Main Thread. Queries always
    *   resolve immediately.
    * - `false` — no element ever gets it. Every selector query becomes a
@@ -162,9 +163,10 @@ export interface PluginAngularLynxOptions {
    *   hit on an element's first query for skipping the native call on
    *   elements that turn out to never be queried. `lynxSelectAll(...)`
    *   (a whole-tree CSS-selector query, not `ng-ref`-based) is unaffected by
-   *   any of these three modes.
+   *   any of these three modes. The default since 0.1.0-rc.1: most elements
+   *   are never queried, so each one used to pay a native call for nothing.
    *
-   * @defaultValue true
+   * @defaultValue 'lazy'
    */
   enableSelectorQueries?: boolean | 'lazy';
   /**
@@ -498,7 +500,7 @@ export function pluginAngularLynx(
     enableCSSInvalidation = true,
     engineVersion,
     targetSdkVersion: legacyTargetSdkVersion,
-    enableSelectorQueries = true,
+    enableSelectorQueries = 'lazy',
     enableNewGesture,
     enableAccessibilityElement,
     defaultDisplayLinear,
@@ -1604,6 +1606,13 @@ function applyEntry(
 
 const PLUGIN_ASYNC_CHUNKS = 'lynx:angular-async-chunks';
 
+/** The failure branch of the runtime's `lynx.requireModuleAsync` callback. */
+const CHUNK_LOAD_FAILURE = /if \(err\) \{(\s*)reject\(err\);/;
+
+type RuntimeModuleHook = {
+  tap(name: string, cb: (module: { name?: string; source?: { source: Buffer | string } }) => void): void;
+};
+
 interface WpChunkGroup {
   name?: string | null;
   chunks: { id?: string | number | null }[];
@@ -1629,6 +1638,24 @@ class AngularLynxAsyncChunkPlugin {
       ).getLynxTemplatePluginHooks(compilation);
       // Opt every *named* async chunk group out of lazy-bundle treatment.
       hooks.asyncChunkName.tap(PLUGIN_ASYNC_CHUNKS, () => '');
+
+      // Lynx's chunk-loading runtime keeps a chunk that failed to load as "loading"
+      // for good: its `installedChunks` entry holds the rejected promise, so every
+      // later `import()` of it fails at once, without a request, until the app
+      // restarts. A lazy route that met a dropped network stayed broken after the
+      // network came back. Clear the entry before rejecting, so the next `import()`
+      // asks again. Found on Explorer 4.2 with `@lynx-js/chunk-loading-webpack-plugin`
+      // 0.4.3; the patch does nothing if the runtime's text changes.
+      (compilation as { hooks: { runtimeModule?: RuntimeModuleHook } }).hooks.runtimeModule?.tap(
+        PLUGIN_ASYNC_CHUNKS,
+        (module) => {
+          const source = module.source?.source;
+          if (!source || module.name?.toLowerCase() !== 'lynx chunk loading') return;
+          const text = source.toString();
+          const patched = text.replace(CHUNK_LOAD_FAILURE, 'if (err) {$1installedChunks[chunkId] = undefined;$1reject(err);');
+          if (patched !== text) module.source!.source = Buffer.from(patched);
+        },
+      );
 
       const c = compilation as {
         chunkGroups: WpChunkGroup[];

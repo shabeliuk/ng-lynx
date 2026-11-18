@@ -274,53 +274,100 @@ if (typeof (g as { Node?: unknown }).Node === 'undefined') {
 // that PrimJS may not ship. Guarded, so engines that provide them natively
 // (and the web preview's worker) are untouched.
 //
-//   - TextDecoder: UTF-8 only, one-shot decode with U+FFFD replacement. The
-//     `stream` option is accepted but partial multi-byte sequences are not
-//     buffered across calls — FetchBackend only streams for progress events;
-//     final bodies are decoded in one shot, which this handles correctly.
+//   - TextDecoder: UTF-8 only, with U+FFFD replacement. With `stream: true`
+//     a character split between two chunks is kept whole, as
+//     `lynxEventSource()` needs.
 //   - AbortController/AbortSignal: enough surface for FetchBackend's
 //     cancellation path (`signal.aborted`, abort listeners, `throwIfAborted`).
 //     A fetch implementation that ignores `signal` degrades to
 //     non-cancellable requests rather than crashing.
 // ---------------------------------------------------------------------------
 if (typeof (g as { TextDecoder?: unknown }).TextDecoder === 'undefined') {
+  // The WHATWG Encoding standard's UTF-8 decoder. Its state carries over between
+  // `decode(chunk, { stream: true })` calls, so a character split between two
+  // chunks stays whole.
   g['TextDecoder'] = class TextDecoderPolyfill {
     readonly encoding = 'utf-8';
-    decode(input?: ArrayBufferView | ArrayBuffer, _options?: { stream?: boolean }): string {
-      if (!input) return '';
+    private codePoint = 0;
+    private seen = 0;
+    private needed = 0;
+    private lower = 0x80;
+    private upper = 0xbf;
+    decode(input?: ArrayBufferView | ArrayBuffer, options?: { stream?: boolean }): string {
       const bytes =
-        input instanceof Uint8Array
-          ? input
-          : ArrayBuffer.isView(input)
-            ? new Uint8Array(input.buffer, input.byteOffset, input.byteLength)
-            : new Uint8Array(input);
-      const n = bytes.length;
+        !input
+          ? new Uint8Array(0)
+          : input instanceof Uint8Array
+            ? input
+            : ArrayBuffer.isView(input)
+              ? new Uint8Array(input.buffer, input.byteOffset, input.byteLength)
+              : new Uint8Array(input);
+      // UTF-16 code units, turned into a string a chunk at a time: one
+      // `String.fromCodePoint` per character was slow on large responses.
+      const units: number[] = [];
       let out = '';
-      let i = 0;
-      const cont = (k: number): boolean => k < n && (bytes[k]! & 0xc0) === 0x80;
-      while (i < n) {
-        const b0 = bytes[i++]!;
-        let cp = 0xfffd; // replacement char for anything malformed
-        if (b0 < 0x80) {
-          cp = b0;
-        } else if (b0 >= 0xc2 && b0 < 0xe0 && cont(i)) {
-          cp = ((b0 & 0x1f) << 6) | (bytes[i++]! & 0x3f);
-        } else if (b0 >= 0xe0 && b0 < 0xf0 && cont(i) && cont(i + 1)) {
-          cp = ((b0 & 0x0f) << 12) | ((bytes[i]! & 0x3f) << 6) | (bytes[i + 1]! & 0x3f);
-          i += 2;
-          if (cp >= 0xd800 && cp <= 0xdfff) cp = 0xfffd; // lone surrogates are invalid
-        } else if (b0 >= 0xf0 && b0 < 0xf5 && cont(i) && cont(i + 1) && cont(i + 2)) {
-          cp =
-            ((b0 & 0x07) << 18)
-            | ((bytes[i]! & 0x3f) << 12)
-            | ((bytes[i + 1]! & 0x3f) << 6)
-            | (bytes[i + 2]! & 0x3f);
-          i += 3;
-          if (cp > 0x10ffff) cp = 0xfffd;
+      const emit = (cp: number): void => {
+        if (cp > 0xffff) {
+          cp -= 0x10000;
+          units.push(0xd800 + (cp >> 10), 0xdc00 + (cp & 0x3ff));
+        } else {
+          units.push(cp);
         }
-        out += String.fromCodePoint(cp);
+        if (units.length >= 8192) {
+          out += String.fromCharCode.apply(null, units);
+          units.length = 0;
+        }
+      };
+      for (let i = 0; i < bytes.length; i++) {
+        const byte = bytes[i]!;
+        if (this.needed === 0) {
+          if (byte <= 0x7f) {
+            emit(byte);
+          } else if (byte >= 0xc2 && byte <= 0xdf) {
+            this.needed = 1;
+            this.codePoint = byte & 0x1f;
+          } else if (byte >= 0xe0 && byte <= 0xef) {
+            if (byte === 0xe0) this.lower = 0xa0;
+            if (byte === 0xed) this.upper = 0x9f;
+            this.needed = 2;
+            this.codePoint = byte & 0xf;
+          } else if (byte >= 0xf0 && byte <= 0xf4) {
+            if (byte === 0xf0) this.lower = 0x90;
+            if (byte === 0xf4) this.upper = 0x8f;
+            this.needed = 3;
+            this.codePoint = byte & 0x7;
+          } else {
+            emit(0xfffd);
+          }
+          continue;
+        }
+        if (byte < this.lower || byte > this.upper) {
+          // The sequence so far becomes one U+FFFD, and this byte starts afresh.
+          this.reset();
+          emit(0xfffd);
+          i--;
+          continue;
+        }
+        this.lower = 0x80;
+        this.upper = 0xbf;
+        this.codePoint = (this.codePoint << 6) | (byte & 0x3f);
+        if (++this.seen === this.needed) {
+          emit(this.codePoint);
+          this.reset();
+        }
       }
-      return out;
+      if (this.needed !== 0 && !options?.stream) {
+        this.reset();
+        emit(0xfffd);
+      }
+      return out + String.fromCharCode.apply(null, units);
+    }
+    private reset(): void {
+      this.codePoint = 0;
+      this.seen = 0;
+      this.needed = 0;
+      this.lower = 0x80;
+      this.upper = 0xbf;
     }
   };
 }

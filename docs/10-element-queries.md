@@ -164,9 +164,24 @@ onRowTap(event: LynxTouchEvent): void {
 Both ran on the iOS simulator (Explorer 4.2, 2026-11-09) in the device-tests
 `platform` flow.
 
+## When elements get their selector — `enableSelectorQueries`
+
+Every method above targets the element by an `[ng-ref-{id}]` attribute.
+`enableSelectorQueries` decides when it's set:
+
+| Value | The attribute is set | Cost |
+|---|---|---|
+| `'lazy'` (the default) | On the element's first query | One extra Main-Thread round trip on that first query; nothing for elements never queried |
+| `true` | On every element, at `CREATE` | One native `__SetAttribute` call per element, queried or not |
+| `false` | Never | Every query matches nothing |
+
+Before 0.1.0-rc.1 the default was `true`. Most elements are never queried, so
+each one paid a native call for nothing; set `true` to get the old behaviour,
+for example when a first query mustn't wait a round trip.
+
 ## Opting out — `enableSelectorQueries: false`
 
-The `[ng-ref-{id}]` attribute every method above targets costs one extra
+In `true` mode, the attribute costs one extra
 native `__SetAttribute` call per element on the Main Thread (set in
 `ops-apply.ts`'s `CREATE` handler) — not a wire-protocol cost, since it's
 never a Background-Thread-emitted op. An app that provably never calls
@@ -190,16 +205,11 @@ and asserts both: no `ng-ref-` attribute anywhere, and normal rendering/
 
 ## Deferring per-element — `enableSelectorQueries: 'lazy'`
 
-A middle ground between `true` (every element pays the native call) and
+The default. A middle ground between `true` (every element pays the native call) and
 `false` (no element ever can be queried): with `'lazy'`, `CREATE` skips the
 native call entirely, and an element only gets its `ng-ref-{id}` attribute
 the **first time it's actually queried** — worthwhile for a tree where most
 elements are never queried but a few (e.g. one measured slider track) are.
-
-```ts
-// lynx.config.ts
-pluginAngularLynx({ enableSelectorQueries: 'lazy' });
-```
 
 This used to be considered unimplementable: `fields`/`invoke`/
 `setNativeProps`/`path` call `lynx.createSelectorQuery()` **directly and

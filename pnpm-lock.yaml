@@ -799,6 +799,9 @@ importers:
       '@angular/core':
         specifier: 21.2.26
         version: 21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)
+      '@angular/forms':
+        specifier: 21.2.26
+        version: 21.2.26(@angular/common@21.2.26(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(@angular/platform-browser@21.2.26(@angular/common@21.2.26(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)))(rxjs@7.8.2)
       '@angular/router':
         specifier: 21.2.26
         version: 21.2.26(@angular/common@21.2.26(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(@angular/platform-browser@21.2.26(@angular/common@21.2.26(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2)))(rxjs@7.8.2)
@@ -7959,7 +7962,7 @@ snapshots:
       mime-db: 1.54.0
       minimizer-webpack-plugin: 5.14.0(cssnano@7.1.9(postcss@8.5.33))(csso@5.0.5)(esbuild@0.28.2)(postcss@8.5.33)(svgo@4.1.0)(webpack@5.112.2(cssnano@7.1.9(postcss@8.5.33))(csso@5.0.5)(esbuild@0.28.2)(postcss@8.5.33)(svgo@4.1.0))
       schema-utils: 4.8.3(webpack@5.112.2(cssnano@7.1.9(postcss@8.5.33))(csso@5.0.5)(esbuild@0.28.2)(postcss@8.5.33)(svgo@4.1.0))
-      tapable: 2.3.3
+      tapable: 2.3.4
       watchpack: 2.6.4
       webpack-sources: 3.7.0
     transitivePeerDependencies:

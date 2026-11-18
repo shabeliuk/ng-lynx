@@ -79,8 +79,11 @@ triggers, both calling the idempotent `flushOps()`:
    microtask.
 
 `flushOps()` drains the buffer, **coalesces** it, JSON-stringifies it, and calls
-`callLepusMethod('ngPatchUpdate', { data }, ack)`. Coalescing (`coalesceOps` in
-`internal/ops.ts`) drops redundant same-target "set" ops — `SET_CLASS`,
+`callLepusMethod('ngPatchUpdate', { data }, ack)`. Coalescing, and the [string
+table](04-wire-protocol.md#string-table), happen in one walk over the flat array
+(`encodeBatch` in `internal/ops.ts`), with no per-op objects: as two separate
+decode and re-encode passes they cost about 11 times the `JSON.stringify` of a
+12,000-op batch, and now about 4 times. Coalescing drops redundant same-target "set" ops — `SET_CLASS`,
 `SET_STYLE`, `SET_TEXT`, `SET_ATTR`/`REMOVE_ATTR` — keeping only the last write
 to each (element, slot). It's safe because the Main Thread never reads back an
 intermediate value, and it noticeably shrinks the payload when Angular toggles

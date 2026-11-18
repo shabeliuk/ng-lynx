@@ -1,6 +1,7 @@
 # In a production build with no lazy chunks, lynxAssetUrl() once left every asset URL
 # relative. The image's own load event reports here; run.mjs also checks the server
-# saw the request.
+# saw the request. Two images imported as modules load too: one emitted as a file,
+# one inlined as a data: URL.
 appId: ${APP_ID}
 ---
 - runFlow:
@@ -10,5 +11,11 @@ appId: ${APP_ID}
       READY: Assets page
 - extendedWaitUntil:
     visible: Image loaded
+    timeout: 10000
+- extendedWaitUntil:
+    visible: Imported file loaded
+    timeout: 10000
+- extendedWaitUntil:
+    visible: Inlined image loaded
     timeout: 10000
 - takeScreenshot: assets

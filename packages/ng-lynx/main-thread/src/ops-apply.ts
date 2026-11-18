@@ -135,9 +135,14 @@ export function applyOps(rawOps: unknown[], epoch?: string): void {
   // batch has applied (see the OP.DESTROY case for why).
   const destroyedThisBatch: number[] = [];
 
+  // Whether any op reaches the native tree. Only DESTROY and SET_REF don't:
+  // they change this thread's own registries.
+  let changed = false;
+
   let i = 0;
   while (i < len) {
     const code = ops[i++] as number;
+    if (code !== OP.DESTROY && code !== OP.SET_REF) changed = true;
 
     switch (code) {
       case OP.CREATE: {
@@ -342,8 +347,11 @@ export function applyOps(rawOps: unknown[], epoch?: string): void {
   // Announce any newly-inserted list items before committing.
   flushListUpdates();
 
-  // Commit the whole batch to the native layer in one shot.
-  __FlushElementTree();
+  // Commit the whole batch to the native layer in one shot. With nothing to
+  // commit, `emptyPatch` lets the engine end its pipeline early, as ReactLynx
+  // does; an engine that doesn't know the option ignores it.
+  if (changed) __FlushElementTree();
+  else __FlushElementTree(elements.get(PAGE_ROOT_ID), { emptyPatch: true });
 }
 
 /** Reset module state — for testing / hot reload. */
