@@ -1,8 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 
+import { backgroundFunction, bindWorklet, LynxMainThread, LynxMainThreadRef, mainThreadRef, type ToMainThread } from 'ng-lynx';
 import { LYNX_ELEMENTS } from 'ng-lynx/elements';
+import type { MainThreadElement } from 'ng-lynx/worklet';
 
-import { lockDrag, unlockDrag } from '../drag-lock.service.js';
+import { pageScroll } from '../page-lock.js';
+import { sheetEnd, sheetMove, sheetStart, type SheetState } from './sheet.mt.js';
 
 /**
  * A recreation of `@lynx-js/lynx-ui`'s `<SheetRoot>`/`<Sheet…>` primitives
@@ -11,25 +14,25 @@ import { lockDrag, unlockDrag } from '../drag-lock.service.js';
  * ng-lynx. A single snap point (open/closed) rather than the real
  * component's `snapPoints` array, to keep the demo focused.
  *
- * The panel is a `position: fixed` overlay (the same technique
- * `LynxSelect`/`LynxDatePicker`'s dialogs use — see docs/09-forms.md — Lynx has
- * no native `<dialog>`/portal, so a fixed-position view *is* the modal
- * layer). Drag-to-close is touch-driven, same portability note as the other
- * demos in this gallery.
+ * The panel is a `position: fixed` overlay, the same technique
+ * `LynxSelect`/`LynxDatePicker`'s dialogs use (docs/09-forms.md): Lynx has no
+ * native `<dialog>` or portal, so a fixed view *is* the modal layer.
  *
- * `position: fixed` only changes paint position, not the DOM/event tree —
- * this component still mounts inside `app.component.ts`'s `.app-scroll`, so
- * the handle's touch listeners are `catch`-prefixed for the same reason as
- * every other demo here (see draggable-demo's doc comment) — and, like every
- * other demo, `catch` alone wasn't enough on a real device, so `onStart`/
- * `onEnd` also call `lockDrag()`/`unlockDrag()` (`drag-lock.service.ts`),
- * which is what actually gates `.app-scroll`'s `[enable-scroll]`.
+ * **The drag runs on the Main Thread** (`sheet.mt.ts`): touch worklets on the
+ * handle move the panel with `setStyleProperty` and spring it back with
+ * `lynxTween`, so Angular never binds its `transform`. A release far enough
+ * down calls `close()` through a `backgroundFunction`. Each opening is a new
+ * panel, so it starts at the top again.
+ *
+ * `position: fixed` changes where the panel paints, not where it sits in the
+ * tree: it's still inside `app.component.ts`'s `.app-scroll`, so the drag stops
+ * the page scrolling too (`page-lock.ts`).
  */
 @Component({
   selector: 'sheet-demo',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LYNX_ELEMENTS],
+  imports: [LYNX_ELEMENTS, LynxMainThread, LynxMainThreadRef],
   template: `
     <view class="demo-card">
       <text class="demo-title">Sheet</text>
@@ -42,17 +45,8 @@ import { lockDrag, unlockDrag } from '../drag-lock.service.js';
 
     @if (show()) {
       <view class="sheet-backdrop" (tap.self)="close()">
-        <view
-          class="sheet-panel"
-          [style.transform]="panelTransform()"
-          [class.sheet-panel-animated]="!dragging()"
-        >
-          <view
-            class="sheet-handle-row"
-            (catchtouchstart)="onStart($event)"
-            (catchtouchmove)="onMove($event)"
-            (catchtouchend)="onEnd()"
-          >
+        <view class="sheet-panel" [lynxMainThreadRef]="panel">
+          <view class="sheet-handle-row" [lynxMainThread]="touchEvents">
             <view class="sheet-handle"></view>
           </view>
           <text class="sheet-panel-title">Sheet content</text>
@@ -69,48 +63,35 @@ import { lockDrag, unlockDrag } from '../drag-lock.service.js';
 })
 export class SheetDemoComponent {
   protected readonly show = signal(false);
-  protected readonly dragging = signal(false);
 
-  private readonly dragY = signal(0);
-  protected readonly panelTransform = computed(() => `translateY(${Math.max(0, this.dragY())}px)`);
+  protected readonly panel = mainThreadRef<MainThreadElement | null>();
+  private readonly startY = mainThreadRef<number | null>(null);
+  private readonly dragY = mainThreadRef(0);
+  private readonly spring = mainThreadRef<SheetState['spring']['current']>(null);
+  private readonly onClose = backgroundFunction(() => this.close());
 
-  private startPointerY = 0;
+  private readonly state: ToMainThread<SheetState> = {
+    page: pageScroll,
+    panel: this.panel,
+    startY: this.startY,
+    dragY: this.dragY,
+    spring: this.spring,
+    closeAt: 80,
+    onClose: this.onClose,
+  };
+
+  protected readonly touchEvents = {
+    touchstart: bindWorklet(sheetStart, this.state),
+    touchmove: bindWorklet(sheetMove, this.state),
+    touchend: bindWorklet(sheetEnd, this.state),
+    touchcancel: bindWorklet(sheetEnd, this.state),
+  };
 
   protected open(): void {
-    this.dragY.set(0);
     this.show.set(true);
   }
 
   protected close(): void {
     this.show.set(false);
-    this.dragY.set(0);
-  }
-
-  protected onStart(event: { detail?: { y?: number } }): void {
-    const y = event.detail?.y;
-    if (typeof y !== 'number') return;
-    this.dragging.set(true);
-    lockDrag();
-    this.startPointerY = y;
-  }
-
-  protected onMove(event: { detail?: { y?: number } }): void {
-    if (!this.dragging()) return;
-    const y = event.detail?.y;
-    if (typeof y !== 'number') return;
-    // Only downward drag moves the sheet — clamped at 0 (rubber-band-free,
-    // matching the real component's "drag toward the closed edge" model.
-    this.dragY.set(Math.max(0, y - this.startPointerY));
-  }
-
-  protected onEnd(): void {
-    if (!this.dragging()) return;
-    this.dragging.set(false);
-    unlockDrag();
-    if (this.dragY() > 80) {
-      this.close();
-    } else {
-      this.dragY.set(0);
-    }
   }
 }

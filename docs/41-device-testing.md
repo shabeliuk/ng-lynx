@@ -340,7 +340,9 @@ first frame. On a real iPhone, Autoplay had done nothing at first: Reload didn't
 source, and the toggle only set an attribute Lynx doesn't have. Fixed and confirmed there.
 
 **`ui-gallery`.** Draggable, Swiper, Sheet, SwipeAction and Sortable with a finger: the page
-doesn't scroll underneath. FeedList's pull and load-more.
+doesn't scroll underneath. FeedList's pull and load-more. Since 2026-11-20 the five drags run on
+the Main Thread ([docs/37](37-ui-gallery.md)): each was dragged on the iOS simulator and the
+Android emulator, but the real-iPhone ✅ above is for the earlier, Background-Thread version.
 
 **`accessibility`.** VoiceOver and TalkBack: heading, avatar label, divider skipped, progress
 bar and value, Follow button and changing label, message row's custom actions, stepper

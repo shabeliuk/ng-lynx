@@ -1,56 +1,48 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 
-import { lynxAssetUrl } from 'ng-lynx';
-import { LYNX_ELEMENTS, type LynxImageErrorEvent } from 'ng-lynx/elements';
+import {
+  backgroundFunction,
+  bindWorklet,
+  injectSystemInfo,
+  LynxMainThread,
+  LynxMainThreadRef,
+  lynxAssetUrl,
+  mainThreadRef,
+  runOnMainThread,
+  type ToMainThread,
+} from 'ng-lynx';
+import { LYNX_ELEMENTS, type LynxImageErrorEvent, type LynxLayoutChangeEvent } from 'ng-lynx/elements';
+import type { MainThreadElement } from 'ng-lynx/worklet';
 
-import { lockDrag, unlockDrag } from '../drag-lock.service.js';
+import { pageScroll } from '../page-lock.js';
+import { swiperEnd, swiperGoTo, swiperMove, swiperStart, type SwiperState } from './swiper.mt.js';
 
 /**
  * A recreation of `@lynx-js/lynx-ui`'s `<Swiper>` primitive
- * (https://lynxjs.org/next/ui/components/swiper.html) — a paged, draggable
- * carousel with pagination dots — for ng-lynx.
+ * (https://lynxjs.org/next/ui/components/swiper.html), a paged, draggable
+ * carousel with pagination dots, for ng-lynx.
  *
- * Same portability trade-off as the Draggable demo: drag is driven by plain
- * `(catchtouchstart)`/`(catchtouchmove)`/`(catchtouchend)` rather than the
- * native gesture detector, so it works in the web preview too (see
- * draggable-demo's doc). `catch` alone does not stop the ancestor
- * `.app-scroll` from also scrolling during a drag here — confirmed on a real
- * device, same finding as draggable-demo — so `onStart`/`onEnd` also call
- * `lockDrag()`/`unlockDrag()` (`drag-lock.service.ts`), which is what
- * `app.component.ts` actually gates `.app-scroll`'s `[enable-scroll]` on.
+ * **The drag runs on the Main Thread** (`swiper.mt.ts`): touch worklets on the
+ * viewport move the track with `setStyleProperty` and snap it with `lynxTween`,
+ * so Angular never binds its `transform`. The page it settles on comes back
+ * through a `backgroundFunction`, for the dots; a dot or autoplay asks for a
+ * page with `runOnMainThread(swiperGoTo)`, which waits for a drag to finish.
+ * `examples/product-detail`'s swiper, from the official tutorial, works the
+ * same way.
  *
- * The touch listeners are bound to the **static viewport container**, not the
- * moving track, for the same reason as Draggable: a stable coordinate frame.
- * The track's CSS `transition` is toggled off during an active drag (so it
- * tracks the finger 1:1) and on for the snap after release (so releasing
- * settles smoothly instead of jumping) — mirroring the real component's
- * `duration` prop.
+ * The worklets are bound to the **static viewport**, not the moving track, and
+ * use the touch's page position, so every reading is in one frame. The drag
+ * stops the page scrolling until it ends (`page-lock.ts`).
  *
- * **No measured pixel width.** The natural design reads the viewport's pixel
- * width via `ShadowElement.fields({ size: true })` and computes
- * `translateX(-activeIndex * width + dragOffset)`. Found live in the real
- * dual-thread web preview: `fields()`'s callback never fires there — the
- * Main-Thread handler calls `nativeApp.getFields(...)`, and
- * `@lynx-js/web-core@0.21`'s `nativeApp` has no `getFields` method at all
- * (`TypeError: nativeApp.getFields is not a function`), for *both*
- * single-element `select()` and multi-element `selectAll()` reads — the
- * project's docs previously only flagged the multi-element case (see
- * docs/10-element-queries.md); this demo is what surfaced that the
- * single-element read is equally affected on the web preview. Rather than
- * depend on a read that can't work here, the base (non-dragging) position is
- * expressed as a CSS **percentage** instead: each `.swiper-slide` is
- * `flex-shrink: 0; width: 100%` (of the track), so the slides overflow the
- * track's own box rather than inflating it — the track's own border-box
- * stays exactly one viewport-width wide no matter how many slides it holds.
- * `transform: translateX()` percentages resolve against the *transformed
- * element's own* border-box (not its content), so `translateX(-100%)` is
- * exactly one viewport-width of travel — `-100% * activeIndex` lands on
- * slide `activeIndex` with no JS measurement at all. `calc()` lets that
- * percentage base and the live pixel drag offset combine in one `transform`.
- * The only remaining pixel quantity is the drag-to-advance threshold, which
- * doesn't need to be measured either — a fixed distance (see
- * `DRAG_THRESHOLD_PX`) is how most touch carousels do it regardless of
- * screen size.
+ * **No measured position.** Each `.swiper-slide` is `flex-shrink: 0; width:
+ * 100%` of the track, so the slides overflow the track rather than widen it:
+ * the track stays one viewport wide, and `translateX(-100%)` moves exactly one
+ * page. The worklets keep the position in pages and write it as a percentage.
+ * Only turning the finger's pixels into pages needs the viewport's width, which
+ * `(layoutchange)` gives; until it comes, the screen's width less the margins.
+ * (`fields()` can't measure it: the web preview has no `getFields`, see
+ * docs/10-element-queries.md.) The threshold for turning a page is a fixed
+ * distance, as in most carousels.
  */
 const DRAG_THRESHOLD_PX = 60;
 
@@ -58,7 +50,7 @@ const DRAG_THRESHOLD_PX = 60;
   selector: 'swiper-demo',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LYNX_ELEMENTS],
+  imports: [LYNX_ELEMENTS, LynxMainThread, LynxMainThreadRef],
   template: `
     <view class="demo-card">
       <text class="demo-title">Swiper</text>
@@ -72,13 +64,8 @@ const DRAG_THRESHOLD_PX = 60;
         <text class="demo-toggle-label">Autoplay: {{ autoPlay() ? 'On' : 'Off' }}</text>
       </view>
 
-      <view
-        class="swiper-viewport"
-        (catchtouchstart)="onStart($event)"
-        (catchtouchmove)="onMove($event)"
-        (catchtouchend)="onEnd()"
-      >
-        <view class="swiper-track" [class.swiper-track-animated]="!dragging()" [style.transform]="trackTransform()">
+      <view class="swiper-viewport" [lynxMainThread]="touchEvents()" (layoutchange)="onLayout($event)">
+        <view class="swiper-track" [lynxMainThreadRef]="track">
           @for (slide of slides; track slide.id) {
             <view class="swiper-slide">
               @if (slide.image) {
@@ -205,59 +192,55 @@ export class SwiperDemoComponent {
   });
 
   protected readonly activeIndex = signal(0);
-  protected readonly dragging = signal(false);
   protected readonly autoPlay = signal(false);
 
-  private readonly dragOffset = signal(0);
-  protected readonly trackTransform = computed(() => {
-    const basePercent = -100 * this.activeIndex();
-    return `translateX(calc(${basePercent}% + ${this.dragOffset()}px))`;
+  private readonly systemInfo = injectSystemInfo();
+  /** `.app-scroll-content`'s and `.demo-card`'s padding and border, until `(layoutchange)`. */
+  private readonly width = signal(this.systemInfo.pixelWidth / this.systemInfo.pixelRatio - 74);
+
+  protected readonly track = mainThreadRef<MainThreadElement | null>();
+  private readonly start = mainThreadRef<SwiperState['start']['current']>(null);
+  private readonly pos = mainThreadRef(0);
+  private readonly snap = mainThreadRef<SwiperState['snap']['current']>(null);
+  private readonly onPage = backgroundFunction((index: number) => this.activeIndex.set(index));
+
+  private readonly state = computed<ToMainThread<SwiperState>>(() => ({
+    page: pageScroll,
+    track: this.track,
+    start: this.start,
+    pos: this.pos,
+    snap: this.snap,
+    count: this.slides.length,
+    width: this.width(),
+    threshold: DRAG_THRESHOLD_PX,
+    onPage: this.onPage,
+  }));
+
+  protected readonly touchEvents = computed(() => {
+    const state = this.state();
+    return {
+      touchstart: bindWorklet(swiperStart, state),
+      touchmove: bindWorklet(swiperMove, state),
+      touchend: bindWorklet(swiperEnd, state),
+      touchcancel: bindWorklet(swiperEnd, state),
+    };
   });
 
-  private startPointerX = 0;
-  private autoPlayHandle: ReturnType<typeof setInterval> | undefined;
+  private readonly autoPlayHandle = setInterval(() => {
+    // Advance one slide every 2s while on. `swiperGoTo` skips it mid-drag.
+    if (this.autoPlay()) this.goTo((this.activeIndex() + 1) % this.slides.length);
+  }, 2000);
 
   ngOnDestroy(): void {
     clearInterval(this.autoPlayHandle);
   }
 
-  constructor() {
-    // Autoplay: advance one slide every 2s while enabled, paused while dragging.
-    this.autoPlayHandle = setInterval(() => {
-      if (!this.autoPlay() || this.dragging()) return;
-      this.goTo((this.activeIndex() + 1) % this.slides.length);
-    }, 2000);
-  }
-
-  protected onStart(event: { detail?: { x?: number } }): void {
-    const x = event.detail?.x;
-    if (typeof x !== 'number') return;
-    this.dragging.set(true);
-    lockDrag();
-    this.startPointerX = x;
-  }
-
-  protected onMove(event: { detail?: { x?: number } }): void {
-    if (!this.dragging()) return;
-    const x = event.detail?.x;
-    if (typeof x !== 'number') return;
-    this.dragOffset.set(x - this.startPointerX);
-  }
-
-  protected onEnd(): void {
-    if (!this.dragging()) return;
-    this.dragging.set(false);
-    unlockDrag();
-    const offset = this.dragOffset();
-    let next = this.activeIndex();
-    if (offset <= -DRAG_THRESHOLD_PX) next = Math.min(this.slides.length - 1, next + 1);
-    else if (offset >= DRAG_THRESHOLD_PX) next = Math.max(0, next - 1);
-    this.activeIndex.set(next);
-    this.dragOffset.set(0);
+  protected onLayout(event: LynxLayoutChangeEvent): void {
+    const width = event.detail?.width;
+    if (typeof width === 'number' && width > 0) this.width.set(width);
   }
 
   protected goTo(index: number): void {
-    this.activeIndex.set(index);
-    this.dragOffset.set(0);
+    void runOnMainThread(swiperGoTo)(this.state(), index);
   }
 }

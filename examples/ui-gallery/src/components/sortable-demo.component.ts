@@ -1,116 +1,103 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 
+import { backgroundFunction, bindWorklet, LynxMainThread, LynxMainThreadRef, mainThreadRef, type ToMainThread } from 'ng-lynx';
 import { LYNX_ELEMENTS } from 'ng-lynx/elements';
+import type { MainThreadElement } from 'ng-lynx/worklet';
 
-import { lockDrag, unlockDrag } from '../drag-lock.service.js';
+import { pageScroll } from '../page-lock.js';
+import { sortableEnd, sortableMove, sortableStart, type SortableState } from './sortable.mt.js';
 
+/** `.sortable-item`'s height in `app.css`. */
 const ITEM_HEIGHT = 52;
 
 /**
  * A recreation of `@lynx-js/lynx-ui`'s `<SortableRoot>`/`<SortableItem>`
- * primitives (https://lynxjs.org/next/ui/components/sortable.html) — drag a
- * handle to reorder a list — for ng-lynx. Built directly on the same
- * touch-driven approach as Draggable (the real component composes `Draggable`
- * internally too).
+ * primitives (https://lynxjs.org/next/ui/components/sortable.html), drag a
+ * handle to reorder a list, for ng-lynx.
  *
- * The algorithm: `startIndex` and the drag's start pointer Y are fixed for
- * the whole gesture. On every move, `desiredIndex` is recomputed from scratch
- * (`startIndex + round(totalDy / itemHeight)`, clamped) — whenever it differs
- * from the item's current position, the array is reordered and the dragged
- * item's *visual* offset is reduced by exactly the distance just "consumed"
- * by that reorder. That keeps the dragged item tracking the finger smoothly
- * while the list underneath reorders in discrete, item-height steps — the
- * standard drag-to-reorder technique.
+ * **The drag runs on the Main Thread** (`sortable.mt.ts`). Each item is placed
+ * absolutely in a slot, `translateY(slot * 52px)`, so a reorder moves
+ * transforms and never the elements themselves. While the finger is down the
+ * worklets keep their own copy of the order: the dragged item follows the
+ * finger, and each item it passes steps into its new slot. On release the new
+ * order comes back through a `backgroundFunction`, and Angular's bindings write
+ * the same slots the worklets already set. So nothing waits for the Background
+ * Thread mid-drag, and nothing jumps when it catches up, as it would if the
+ * array were reordered under the finger.
  *
- * The handle's touch listeners are `catch`-prefixed, not bubbling `bind` —
- * see draggable-demo's doc comment for why: on a real device this list sits
- * inside `.app-scroll`, and reordering vertically also scrolled the whole
- * page underneath it at the same time without `catch`. `catch` alone wasn't
- * enough there either, so `onStart`/`onEnd` also call
- * `lockDrag()`/`unlockDrag()` (`drag-lock.service.ts`), which is what
- * actually gates `.app-scroll`'s `[enable-scroll]`.
+ * The worklets are bound to each item's handle, with the item's id as a
+ * `bindWorklet` param. The drag stops the page scrolling until it ends
+ * (`page-lock.ts`).
  */
 @Component({
   selector: 'sortable-demo',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LYNX_ELEMENTS],
+  imports: [LYNX_ELEMENTS, LynxMainThread, LynxMainThreadRef],
   template: `
     <view class="demo-card">
       <text class="demo-title">Sortable</text>
       <text class="demo-desc">Drag a handle (≡) to reorder the list.</text>
 
-      <view class="sortable-list">
-        @for (item of items(); track item.id; let i = $index) {
+      <view class="sortable-list" [style.height.px]="items.length * itemHeight">
+        @for (item of items; track item.id) {
           <view
             class="sortable-item"
-            [class.sortable-item-dragging]="draggingId() === item.id"
-            [style.transform]="draggingId() === item.id ? 'translateY(' + visualOffset() + 'px)' : ''"
+            [lynxMainThreadRef]="item.ref"
+            [style.transform]="'translateY(' + slotOf()[item.id]! * itemHeight + 'px)'"
           >
-            <view
-              class="sortable-handle"
-              (catchtouchstart)="onStart(item.id, i, $event)"
-              (catchtouchmove)="onMove($event)"
-              (catchtouchend)="onEnd()"
-            >
+            <view class="sortable-handle" [lynxMainThread]="handleEvents()[item.id]!">
               <text class="sortable-handle-icon">≡</text>
             </view>
             <text class="sortable-item-label">{{ item.label }}</text>
           </view>
         }
       </view>
+      <text class="demo-desc">Order: {{ orderLabel() }}</text>
     </view>
   `,
 })
 export class SortableDemoComponent {
-  protected readonly items = signal(
-    Array.from({ length: 5 }, (_, i) => ({ id: i + 1, label: `Item ${i + 1}` })),
-  );
+  protected readonly itemHeight = ITEM_HEIGHT;
+  protected readonly items = Array.from({ length: 5 }, (_, i) => ({
+    id: i + 1,
+    label: `Item ${i + 1}`,
+    ref: mainThreadRef<MainThreadElement | null>(),
+  }));
 
-  protected readonly draggingId = signal<number | null>(null);
-  protected readonly visualOffset = signal(0);
+  /** The ids in slot order, as of the last drop. */
+  private readonly order = signal(this.items.map((item) => item.id));
+  protected readonly slotOf = computed(() => Object.fromEntries(this.order().map((id, slot) => [id, slot])));
+  protected readonly orderLabel = computed(() => this.order().join(' '));
 
-  private startPointerY = 0;
-  private startIndex = 0;
-  private currentIndex = 0;
+  private readonly mtOrder = mainThreadRef(this.order());
+  private readonly drag = mainThreadRef<SortableState['drag']['current']>(null);
+  private readonly drop = mainThreadRef<SortableState['drop']['current']>(null);
+  private readonly onReorder = backgroundFunction((ids: number[]) => this.order.set(ids));
 
-  protected onStart(id: number, index: number, event: { detail?: { y?: number } }): void {
-    const y = event.detail?.y;
-    if (typeof y !== 'number') return;
-    this.draggingId.set(id);
-    lockDrag();
-    this.startPointerY = y;
-    this.startIndex = index;
-    this.currentIndex = index;
-    this.visualOffset.set(0);
-  }
-
-  protected onMove(event: { detail?: { y?: number } }): void {
-    if (this.draggingId() === null) return;
-    const y = event.detail?.y;
-    if (typeof y !== 'number') return;
-    const totalDy = y - this.startPointerY;
-    const len = this.items().length;
-    const desiredIndex = Math.min(len - 1, Math.max(0, this.startIndex + Math.round(totalDy / ITEM_HEIGHT)));
-
-    if (desiredIndex !== this.currentIndex) {
-      this.items.update((items) => {
-        const next = items.slice();
-        const [moved] = next.splice(this.currentIndex, 1);
-        next.splice(desiredIndex, 0, moved);
-        return next;
-      });
-      this.currentIndex = desiredIndex;
-    }
-
-    // The remainder beyond the item-heights already consumed by reordering.
-    this.visualOffset.set(totalDy - (this.currentIndex - this.startIndex) * ITEM_HEIGHT);
-  }
-
-  protected onEnd(): void {
-    if (this.draggingId() === null) return;
-    this.draggingId.set(null);
-    unlockDrag();
-    this.visualOffset.set(0);
-  }
+  protected readonly handleEvents = computed(() => {
+    const shared: Omit<ToMainThread<SortableState>, 'id'> = {
+      page: pageScroll,
+      items: Object.fromEntries(this.items.map((item) => [item.id, item.ref])),
+      order: this.mtOrder,
+      drag: this.drag,
+      drop: this.drop,
+      itemHeight: ITEM_HEIGHT,
+      onReorder: this.onReorder,
+    };
+    return Object.fromEntries(
+      this.items.map((item) => {
+        const state = { ...shared, id: item.id };
+        return [
+          item.id,
+          {
+            touchstart: bindWorklet(sortableStart, state),
+            touchmove: bindWorklet(sortableMove, state),
+            touchend: bindWorklet(sortableEnd, state),
+            touchcancel: bindWorklet(sortableEnd, state),
+          },
+        ];
+      }),
+    );
+  });
 }

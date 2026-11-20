@@ -36,6 +36,9 @@ release may change the API; experimental features may change in any release.
   (`mainThreadModules`): the thumb follows the finger without a round trip to the
   Background Thread on each move, and the model hears only of values that change. It
   is marked touched when the finger lifts. Without the runtime it works as before.
+- `examples/ui-gallery`'s Draggable, Swiper, Sheet, SwipeAction and Sortable drag on the Main
+  Thread, with worklets, as `examples/product-detail` does, instead of a round trip to the
+  Background Thread on each move. The page stops scrolling on the touch that starts a drag.
 - `ng add ng-lynx` writes `lynx/lynx.config.mts`, so Node no longer warns that the config
   "doesn't parse as CommonJS" in an Angular CLI workspace. A `"type": "module"` workspace
   still gets `lynx.config.ts`.
