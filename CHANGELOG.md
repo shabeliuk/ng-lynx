@@ -28,6 +28,11 @@ release may change the API; experimental features may change in any release.
   with `setStyle` and `getComputedStyleProperty`, and keep the `id`, `uid` and `dataset`
   the engine sent. Printing an event or sending it to the Background Thread no longer
   reaches the native element.
+- `ng add ng-lynx` writes `lynx/lynx.config.mts`, so Node no longer warns that the config
+  "doesn't parse as CommonJS" in an Angular CLI workspace. A `"type": "module"` workspace
+  still gets `lynx.config.ts`.
+- `loadDynamicComponent`'s error starts with the engine's own reason, such as "The network
+  connection was lost", before the raw result.
 - `mainThreadLynx.getTextInfo` says the engine has no text measurement, on the web
   preview, instead of `lynx.getTextInfo is not a function`.
 
@@ -35,9 +40,23 @@ release may change the API; experimental features may change in any release.
 
 - `ng-lynx/worklet-runtime`, for a build that doesn't use `pluginAngularLynx`: import it
   first among the Main-Thread modules.
+- `@experimental` in the types on gestures, dynamic components, GenUI and
+  `<title-bar-view>`, so editors show it. These were already experimental in the README.
+- docs/43-stability.md: what 1.0 promises, what's experimental, and the supported Angular,
+  TypeScript, Node and engine versions.
 
 ### Fixed
 
+- The `ng-lynx/forms/theme.css` default theme had no rules for the option list that
+  `<lynx-select>`, `<lynx-date-picker>` and `<lynx-time-picker>` open, so the options were
+  black on the dark sheet, and its backdrop wasn't fixed, so the sheet opened inside the
+  form. Both are styled now.
+- `<lynx-select>` shows its placeholder for a value of `''` that no option has, as
+  `FormControl('')` and `name = ''` start, instead of an empty trigger.
+- `create-ng-lynx` and `ng add`: the page background now fills the screen; the `router`
+  template's nav is a row, as meant; the `forms` template imports the default theme, so
+  its select, checkbox and toggle are visible, and its placeholder is readable. Found by
+  running each template from npm on the iOS simulator and the Android emulator.
 - `lynxEventSource()` turned a character split between two network chunks into
   `U+FFFD`s, on both platforms: neither engine has a `TextDecoder`, and the polyfill
   ignored `stream: true`. The polyfill is now the WHATWG UTF-8 decoder, and about 3.5

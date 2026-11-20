@@ -82,7 +82,11 @@ function isFieldMap(value: unknown): value is Record<string, FieldEntry> {
   );
 }
 
-/** Legacy (non-plan) action shape produced by generated `Action(...)` props. */
+/**
+ * Legacy (non-plan) action shape produced by generated `Action(...)` props.
+ *
+ * @experimental
+ */
 export interface OpenUiLegacyAction {
   type?: string;
   params?: Record<string, unknown>;
@@ -90,7 +94,11 @@ export interface OpenUiLegacyAction {
   context?: unknown;
 }
 
-/** Accepts either a plain `{ toolName: (args) => Promise<result> }` map or a `ToolProvider`. */
+/**
+ * Accepts either a plain `{ toolName: (args) => Promise<result> }` map or a `ToolProvider`.
+ *
+ * @experimental
+ */
 export type OpenUiToolProviderInput =
   | ToolProvider
   | Record<string, (args: Record<string, unknown>) => Promise<unknown>>;
@@ -108,6 +116,7 @@ function normalizeToolProvider(input: OpenUiToolProviderInput | null | undefined
   };
 }
 
+/** @experimental */
 export class OpenUiState {
   /** Raw form-state record; components read via {@link getFieldValue}. */
   readonly formState = signal<FormState>({});

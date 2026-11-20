@@ -18,7 +18,11 @@
  */
 import { BUILTIN_NAMES, BUILTINS } from '@openuidev/lang-core';
 
-/** Register the genui OpenUI builtins (`@Append`) in lang-core. Idempotent. */
+/**
+ * Register the genui OpenUI builtins (`@Append`) in lang-core. Idempotent.
+ *
+ * @experimental
+ */
 export function registerOpenUiBuiltins(): void {
   BUILTINS['Append'] ??= {
     name: 'Append',

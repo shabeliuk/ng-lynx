@@ -120,7 +120,8 @@ What has been run where is in [41 — Device testing](docs/41-device-testing.md)
 | Testing & tooling | `renderLynxComponent` under Vitest, `create-ng-lynx`, `ng add` | [19](docs/19-testing.md), [21](docs/21-scaffolding.md) |
 
 **Experimental in 1.0:** native gestures, dynamic components, GenUI, HarmonyOS and the
-desktop-only elements. They work, but their API may still change.
+desktop-only elements. They work, but their API may still change; their types say
+`@experimental`. What 1.0 promises is in [43 — Stability](docs/43-stability.md).
 
 Angular 21 and 22 are supported, on Node 22.12 or later. 66 headless harnesses
 (`npm run verify:all`) drive the real runtime against a mock engine, and
@@ -206,6 +207,7 @@ scripts/         # CI helpers
 
 - [05 — Build integration](docs/05-build-integration.md)
 - [42 — The worklet runtime](docs/42-worklet-runtime.md)
+- [43 — Stability and supported versions](docs/43-stability.md)
 - [19 — Testing](docs/19-testing.md)
 - [20 — First-screen snapshot](docs/20-first-screen.md)
 - [26 — Debugging](docs/26-debugging.md)

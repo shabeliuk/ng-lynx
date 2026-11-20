@@ -153,7 +153,7 @@ const registeredModules = new Map<string, unknown>();
 // has already fetched and cached" (see runtime/src/dynamic-component.ts).
 // `QueryComponent` mirrors the real `{code: 0, detail: {schema}}` success
 // shape confirmed against lynx-family/lynx's own `lynx.ts`/`appManager.ts`
-// for anything registered, or `{code: 1}` (failure) for anything not.
+// for anything registered, or the failure iOS Explorer 4.2 sends for anything not.
 const dynamicComponentExports = new Map<string, unknown>();
 
 /**
@@ -290,13 +290,14 @@ export function installMockPapi(): void {
     // Mirrors the real success shape confirmed against lynx-family/lynx's own
     // `js_libraries/lynx-core/src/lynx/lynx.ts` — `{ code: 0, data: {...},
     // detail: { schema } }` — for a `source` a harness has registered via
-    // `registerDynamicComponent(schema, exports)`; `{ code: 1 }` (failure)
-    // otherwise, since nothing here has fetched it.
+    // `registerDynamicComponent(schema, exports)`; otherwise the failure iOS
+    // Explorer 4.2 sends for a dropped connection (code 160101, `error_msg`),
+    // since nothing here has fetched it.
     QueryComponent: (
       source: string,
       callback: (result: {
         code: number;
-        data?: { url: string; sync?: boolean; error_message?: string; mode?: string };
+        data?: { url: string; sync?: boolean; error_msg?: string; error_message?: string; mode?: string };
         detail?: { schema: string; cache?: boolean; errMsg?: string };
       }) => void,
     ) => {
@@ -307,7 +308,12 @@ export function installMockPapi(): void {
           detail: { schema: source, cache: false, errMsg: '' },
         });
       } else {
-        callback({ code: 1, detail: { schema: source, cache: false, errMsg: 'not registered' } });
+        const message = 'Load lazy bundle failed, the error message is: not registered.';
+        callback({
+          code: 160101,
+          data: { url: source, sync: false, error_msg: message, mode: 'normal' },
+          detail: { schema: source, cache: false, errMsg: message },
+        });
       }
     },
     getNativeApp: () => ({

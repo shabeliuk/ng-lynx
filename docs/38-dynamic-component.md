@@ -174,6 +174,12 @@ first four bytes, `This`, read as a number. An empty 404 body is `template
 binary is empty`, and the web preview says `Invalid Magic Header`.
 `loadDynamicComponent` now starts its error with what these mean.
 
+**On a bad network the engine does say so.** A cut connection fails with code 160101 and
+`Load lazy bundle failed, the error message is: …` (iOS: "The network connection was lost";
+Android: "unexpected end of stream"), and `loadDynamicComponent`'s error starts with that. The
+failure isn't cached: calling it again fetches the bundle again, so a retry button is enough
+(iOS simulator and Android emulator, Explorer 4.2, 2026-11-19).
+
 ## Producing a loadable bundle
 
 The consuming half above needs something to load. `pluginAngularLynx` builds

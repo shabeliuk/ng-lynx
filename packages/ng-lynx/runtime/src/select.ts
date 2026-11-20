@@ -117,6 +117,14 @@ export class LynxSelect implements ControlValueAccessor {
   private onChange: (value: unknown) => void = () => {};
   private onTouchedFn: () => void = () => {};
 
+  /**
+   * `null`, or `''` when no option has that value: `FormControl('')` and a
+   * `name = ''` field both start a select at `''`, and should show the placeholder.
+   */
+  private isUnset(value: string | null): boolean {
+    return value == null || (value === '' && !this.options.some((o) => o.value === ''));
+  }
+
   private labelOf(value: string): string {
     return this.options.find((o) => o.value === value)?.label ?? value;
   }
@@ -127,7 +135,7 @@ export class LynxSelect implements ControlValueAccessor {
       return values.length ? values.map((v) => this.labelOf(v)).join(', ') : this.placeholder;
     }
     const value = this.selectedOne();
-    return value == null ? this.placeholder : this.labelOf(value);
+    return this.isUnset(value) ? this.placeholder : this.labelOf(value as string);
   }
 
   /** Values to highlight in the option column — one for single-select, several for multi. */

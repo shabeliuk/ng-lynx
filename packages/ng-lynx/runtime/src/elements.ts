@@ -957,7 +957,11 @@ export class LynxRefresh extends LynxStandardElement {
 @Directive({ selector: 'refresh-header', standalone: true })
 export class LynxRefreshHeader extends LynxStandardElement {}
 
-/** Typed `<title-bar-view>` — customizes the draggable window-chrome region. Clay Windows/macOS only, no web/mobile support at all. @public */
+/**
+ * Typed `<title-bar-view>` — customizes the draggable window-chrome region. Clay Windows/macOS only, no web/mobile support at all.
+ *
+ * @experimental
+ */
 @Directive({ selector: 'title-bar-view', standalone: true })
 export class LynxTitleBarView extends LynxStandardElement {
   @Input() set moveable(v: boolean | undefined) { this.setAttr('moveable', v); }

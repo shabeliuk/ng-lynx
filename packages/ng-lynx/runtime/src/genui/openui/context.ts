@@ -22,7 +22,11 @@ import type { ElementNode, Library } from '@openuidev/lang-core';
 
 import type { OpenUiState } from './state.js';
 
-/** Renderer-wide OpenUI context (≈ upstream `OpenUIContextValue`). */
+/**
+ * Renderer-wide OpenUI context (≈ upstream `OpenUIContextValue`).
+ *
+ * @experimental
+ */
 export interface OpenuiRendererContext {
   readonly library: Library<Type<unknown>>;
   readonly state: OpenUiState;
@@ -31,11 +35,16 @@ export interface OpenuiRendererContext {
   readonly formName: string | undefined;
 }
 
+/** @experimental */
 export const OPENUI_RENDERER_CONTEXT = new InjectionToken<OpenuiRendererContext>(
   'OPENUI_RENDERER_CONTEXT',
 );
 
-/** Per-node OpenUI context (≈ upstream `ComponentRenderProps`). */
+/**
+ * Per-node OpenUI context (≈ upstream `ComponentRenderProps`).
+ *
+ * @experimental
+ */
 export interface OpenuiNodeContext {
   /**
    * The parsed element node being rendered. Always the current one: a new
@@ -46,4 +55,5 @@ export interface OpenuiNodeContext {
   readonly props: Signal<Record<string, unknown>>;
 }
 
+/** @experimental */
 export const OPENUI_NODE_CONTEXT = new InjectionToken<OpenuiNodeContext>('OPENUI_NODE_CONTEXT');

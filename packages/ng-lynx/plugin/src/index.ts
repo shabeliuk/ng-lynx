@@ -173,6 +173,8 @@ export interface PluginAngularLynxOptions {
    * Initialise the new gesture handlers. `[lynxGesture]` registers through
    * them, and Lynx only starts them with this flag on.
    * Same option as ReactLynx's `pluginReactLynx`. @defaultValue false
+   *
+   * @experimental Gestures are experimental, see docs/32-gestures.md.
    */
   enableNewGesture?: boolean;
   /** Same option as ReactLynx's `pluginReactLynx`. @defaultValue false */
@@ -267,6 +269,8 @@ export interface PluginAngularLynxOptions {
    *   what `getDynamicComponentExports` hands back to `loadDynamicComponent`.
    *
    * @defaultValue false
+   *
+   * @experimental Dynamic components are experimental, see docs/38-dynamic-component.md.
    */
   dynamicComponent?: boolean;
   /**
@@ -282,6 +286,8 @@ export interface PluginAngularLynxOptions {
    * which is why it isn't on by default.
    *
    * @defaultValue false
+   *
+   * @experimental Dynamic components are experimental, see docs/38-dynamic-component.md.
    */
   dynamicComponentHost?: boolean;
   /**
@@ -302,6 +308,8 @@ export interface PluginAngularLynxOptions {
    * defeats tree-shaking; only add what you need. A module the producer
    * externalizes but the host never published throws a message naming it at
    * first use, rather than failing obscurely.
+   *
+   * @experimental Dynamic components are experimental, see docs/38-dynamic-component.md.
    */
   sharedModules?: string[];
   /**

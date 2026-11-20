@@ -86,7 +86,7 @@ function registryTarget(): SharedRegistryTarget {
  * `Symbol.for` (not `Symbol`) so both bundles, compiled separately, resolve
  * the identical symbol from the runtime-wide symbol registry.
  *
- * @public
+ * @experimental
  */
 export function sharedModuleKey(moduleId: string): symbol {
   return Symbol.for(`__ANGULAR_LYNX_EXPORTS__(${moduleId})`);
@@ -102,7 +102,7 @@ export function sharedModuleKey(moduleId: string): symbol {
  * convention can't drift apart. Guarded for `lynx` being out of scope for
  * the same reason {@link registryTarget} is.
  *
- * @public
+ * @experimental
  */
 export function sharedModuleExpression(moduleId: string): string {
   const target = "(typeof lynx !== 'undefined' && lynx ? lynx : globalThis)";
@@ -115,7 +115,7 @@ export function sharedModuleExpression(moduleId: string): string {
  * second publish of the same id is ignored rather than overwriting — the
  * host owns the instance, and a dynamic bundle must never replace it.
  *
- * @public
+ * @experimental
  */
 export function publishSharedModule(moduleId: string, namespace: unknown): void {
   const target = registryTarget();
@@ -135,7 +135,7 @@ export function publishSharedModule(moduleId: string, namespace: unknown): void 
  * `Cannot read properties of undefined` from deep inside Angular, which says
  * nothing about the actual cause.
  *
- * @public
+ * @experimental
  */
 export function readSharedModule(moduleId: string): unknown {
   const namespace = registryTarget()[sharedModuleKey(moduleId)];
@@ -154,7 +154,7 @@ export function readSharedModule(moduleId: string): unknown {
  * Whether a shared module has been published — for a host that wants to
  * check its own wiring, and for tests.
  *
- * @public
+ * @experimental
  */
 export function hasSharedModule(moduleId: string): boolean {
   return registryTarget()[sharedModuleKey(moduleId)] !== undefined;
@@ -191,7 +191,7 @@ export function hasSharedModule(moduleId: string): boolean {
  * `@angular/compiler` is absent for a different reason: it only matters for
  * JIT, and dynamic-component builds are AOT.
  *
- * @public
+ * @experimental
  */
 export const DEFAULT_SHARED_MODULES: readonly string[] = [
   '@angular/core',

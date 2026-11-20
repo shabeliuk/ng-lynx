@@ -166,7 +166,11 @@ abstract class A2uiCatalogBase {
 
 // ─── components ─────────────────────────────────────────────────────────────
 
-/** Styled text from a literal, data binding, or function call. */
+/**
+ * Styled text from a literal, data binding, or function call.
+ *
+ * @experimental
+ */
 @Component({
   selector: 'a2ui-text',
   standalone: true,
@@ -186,7 +190,11 @@ export class A2uiText extends A2uiCatalogBase {
   });
 }
 
-/** Interactive button dispatching an A2UI event or function call. */
+/**
+ * Interactive button dispatching an A2UI event or function call.
+ *
+ * @experimental
+ */
 @Component({
   selector: 'a2ui-button',
   standalone: true,
@@ -235,7 +243,11 @@ export class A2uiButton extends A2uiCatalogBase {
   }
 }
 
-/** Child component ids in horizontal order. */
+/**
+ * Child component ids in horizontal order.
+ *
+ * @experimental
+ */
 @Component({
   selector: 'a2ui-row',
   standalone: true,
@@ -264,7 +276,11 @@ export class A2uiRow extends A2uiCatalogBase {
   });
 }
 
-/** Child component ids in vertical order. */
+/**
+ * Child component ids in vertical order.
+ *
+ * @experimental
+ */
 @Component({
   selector: 'a2ui-column',
   standalone: true,
@@ -293,7 +309,11 @@ export class A2uiColumn extends A2uiCatalogBase {
   });
 }
 
-/** Card container around a single child. */
+/**
+ * Card container around a single child.
+ *
+ * @experimental
+ */
 @Component({
   selector: 'a2ui-card',
   standalone: true,
@@ -318,7 +338,11 @@ export class A2uiCard extends A2uiCatalogBase {
   });
 }
 
-/** Horizontal or vertical rule. */
+/**
+ * Horizontal or vertical rule.
+ *
+ * @experimental
+ */
 @Component({
   selector: 'a2ui-divider',
   standalone: true,
@@ -335,7 +359,11 @@ export class A2uiDivider extends A2uiCatalogBase {
   );
 }
 
-/** Image from a URL. */
+/**
+ * Image from a URL.
+ *
+ * @experimental
+ */
 @Component({
   selector: 'a2ui-image',
   standalone: true,
@@ -352,7 +380,11 @@ export class A2uiImage extends A2uiCatalogBase {
   });
 }
 
-/** Scrollable list of children. */
+/**
+ * Scrollable list of children.
+ *
+ * @experimental
+ */
 @Component({
   selector: 'a2ui-list',
   standalone: true,
@@ -377,7 +409,11 @@ export class A2uiList extends A2uiCatalogBase {
   );
 }
 
-/** Loading placeholder. */
+/**
+ * Loading placeholder.
+ *
+ * @experimental
+ */
 @Component({
   selector: 'a2ui-loading',
   standalone: true,
@@ -391,7 +427,11 @@ export class A2uiList extends A2uiCatalogBase {
 })
 export class A2uiLoading extends A2uiCatalogBase {}
 
-/** Single-line or multi-line text input bound to the data model. */
+/**
+ * Single-line or multi-line text input bound to the data model.
+ *
+ * @experimental
+ */
 @Component({
   selector: 'a2ui-textfield',
   standalone: true,
@@ -451,7 +491,11 @@ export class A2uiTextField extends A2uiCatalogBase {
   }
 }
 
-/** Boolean checkbox bound to the data model. */
+/**
+ * Boolean checkbox bound to the data model.
+ *
+ * @experimental
+ */
 @Component({
   selector: 'a2ui-checkbox',
   standalone: true,
@@ -484,7 +528,11 @@ export class A2uiCheckBox extends A2uiCatalogBase {
   }
 }
 
-/** Numeric slider bound to the data model (tap-step fallback UI). */
+/**
+ * Numeric slider bound to the data model (tap-step fallback UI).
+ *
+ * @experimental
+ */
 @Component({
   selector: 'a2ui-slider',
   standalone: true,
@@ -525,7 +573,11 @@ function toMaterialIconName(name: unknown): string {
   return typeof name === 'string' ? name.replace(/[A-Z]/g, (m) => `_${m.toLowerCase()}`) : '';
 }
 
-/** Named icon from the catalog's supported Material icon set. */
+/**
+ * Named icon from the catalog's supported Material icon set.
+ *
+ * @experimental
+ */
 @Component({
   selector: 'a2ui-icon',
   standalone: true,
@@ -542,7 +594,11 @@ export class A2uiIcon extends A2uiCatalogBase {
   });
 }
 
-/** Single-choice radio group bound to the data model. */
+/**
+ * Single-choice radio group bound to the data model.
+ *
+ * @experimental
+ */
 @Component({
   selector: 'a2ui-radiogroup',
   standalone: true,
@@ -638,7 +694,11 @@ function filterChoicePickerOptions(options: ChoicePickerOption[], query: string)
   );
 }
 
-/** Single- or multi-select choice picker, optionally filterable. */
+/**
+ * Single- or multi-select choice picker, optionally filterable.
+ *
+ * @experimental
+ */
 @Component({
   selector: 'a2ui-choicepicker',
   standalone: true,
@@ -713,6 +773,8 @@ export class A2uiChoicePicker extends A2uiCatalogBase {
  * upstream: the trigger is wrapped in a tap-to-open view (like upstream),
  * but without upstream's `suppressActionDispatch` — a trigger that itself
  * carries an action fires it in addition to opening the modal.
+ *
+ * @experimental
  */
 @Component({
   selector: 'a2ui-modal',
@@ -767,7 +829,11 @@ interface A2uiTabItem {
   child: string;
 }
 
-/** Tabbed container whose tabs reference child component ids. */
+/**
+ * Tabbed container whose tabs reference child component ids.
+ *
+ * @experimental
+ */
 @Component({
   selector: 'a2ui-tabs',
   standalone: true,
@@ -831,7 +897,11 @@ const DATETIME_MONTH_LABELS = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-/** Local date and/or time picker (dialog with calendar grid + time steppers). */
+/**
+ * Local date and/or time picker (dialog with calendar grid + time steppers).
+ *
+ * @experimental
+ */
 @Component({
   selector: 'a2ui-datetimeinput',
   standalone: true,
@@ -998,7 +1068,11 @@ export class A2uiDateTimeInput extends A2uiCatalogBase {
   }
 }
 
-/** One or more numeric line series rendered via a native `<svg>` element. */
+/**
+ * One or more numeric line series rendered via a native `<svg>` element.
+ *
+ * @experimental
+ */
 @Component({
   selector: 'a2ui-linechart',
   standalone: true,
@@ -1056,7 +1130,11 @@ export class A2uiLineChart extends A2uiCatalogBase {
   protected readonly visibleLabelIndices = computed(() => sampleIndices(this.labels().length, 8));
 }
 
-/** Numeric slices rendered as a pie or donut chart via a native `<svg>` element. */
+/**
+ * Numeric slices rendered as a pie or donut chart via a native `<svg>` element.
+ *
+ * @experimental
+ */
 @Component({
   selector: 'a2ui-piechart',
   standalone: true,
@@ -1134,6 +1212,8 @@ export class A2uiPieChart extends A2uiCatalogBase {
  * import { basicFunctions } from '@lynx-js/genui/a2ui/functions';
  * const catalog = defineA2uiCatalog([...A2UI_BASIC_CATALOG, ...basicFunctions]);
  * ```
+ *
+ * @experimental
  */
 export const A2UI_BASIC_CATALOG: readonly A2uiCatalogInput[] = [
   { name: 'Text', component: A2uiText },

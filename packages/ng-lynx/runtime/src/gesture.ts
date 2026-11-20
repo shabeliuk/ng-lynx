@@ -54,6 +54,8 @@ import { toWorkletRef, type WorkletHandle, type WorkletRef } from './worklet.js'
  * (the common case per `processGesture.js`'s own "fast path"), related via
  * `waitFor`/`simultaneousWith`/`continueWith` below; a true composed tree is a
  * follow-up if a real use case needs it.
+ *
+ * @experimental
  */
 export const GESTURE_TYPE = {
   pan: 0,
@@ -66,7 +68,9 @@ export const GESTURE_TYPE = {
   native: 7,
 } as const;
 
-/** @public */
+/**
+ * @experimental
+ */
 export type LynxGestureType = keyof typeof GESTURE_TYPE;
 
 /**
@@ -77,7 +81,7 @@ export type LynxGestureType = keyof typeof GESTURE_TYPE;
  * `continueWith` reference *other keys in the same `[lynxGesture]` map* on
  * this element, resolved to the native numeric gesture ids at bind time.
  *
- * @public
+ * @experimental
  */
 export interface LynxGestureDescriptor {
   type: LynxGestureType;
@@ -93,7 +97,11 @@ export interface LynxGestureDescriptor {
   continueWith?: string[];
 }
 
-/** `[lynxGesture]`'s input value: local key → gesture descriptor. @public */
+/**
+ * `[lynxGesture]`'s input value: local key → gesture descriptor.
+ *
+ * @experimental
+ */
 export type LynxGestures = Record<string, LynxGestureDescriptor>;
 
 /** Native gesture ids are unique per Background-Thread session (like element/worklet ids). */
@@ -136,7 +144,7 @@ function workletRef(
  * `ngOnInit` — like `[lynxMainThread]`, this directive doesn't support
  * dynamically changing the gesture map after the first bind.
  *
- * @public
+ * @experimental
  */
 @Directive({
   selector: '[lynxGesture]',
@@ -203,7 +211,11 @@ export class LynxGesture implements OnInit, OnDestroy {
   }
 }
 
-/** Reset the gesture-id counter — for testing (deterministic ids across sequential renders). */
+/**
+ * Reset the gesture-id counter — for testing (deterministic ids across sequential renders).
+ *
+ * @experimental
+ */
 export function resetGestureState(): void {
   nextGestureId = 1;
 }

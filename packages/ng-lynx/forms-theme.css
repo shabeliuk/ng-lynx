@@ -296,11 +296,19 @@
   color: var(--content);
 }
 
-/* Modal backdrop + dialog shared across the four popover controls. */
+/* Modal backdrop + dialog shared across the four popover controls. The backdrop
+ * covers the screen with `top`/`left` + `width`/`height`, not `right`/`bottom: 0`,
+ * which minifiers merge into `inset`, a property Lynx drops. */
 .lynx-select-backdrop,
 .lynx-date-picker-backdrop,
 .lynx-time-picker-backdrop,
 .lynx-autocomplete-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 100;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -326,6 +334,48 @@
   border-radius: var(--lynx-radius);
   background-color: var(--primary);
 }
+.lynx-select-done-label {
+  font-size: var(--lynx-font-size);
+  font-weight: bold;
+  color: var(--primary-content);
+}
+
+/* The option column (<lynx-select-column>), shared by select and both pickers. */
+.lynx-select-list {
+  display: flex;
+  flex-direction: column;
+  height: 220px;
+  margin-bottom: var(--lynx-gap);
+}
+.lynx-select-option {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: var(--lynx-control-height);
+  padding-left: var(--lynx-control-pad-x);
+  padding-right: var(--lynx-control-pad-x);
+  border-radius: var(--lynx-radius);
+}
+.lynx-select-option-selected {
+  background-color: var(--paper);
+}
+.lynx-select-option-label {
+  font-size: var(--lynx-font-size);
+  color: var(--content);
+}
+.lynx-date-picker-columns,
+.lynx-time-picker-columns {
+  display: flex;
+  flex-direction: row;
+}
+.lynx-date-picker-day,
+.lynx-date-picker-month,
+.lynx-date-picker-year,
+.lynx-time-picker-hour,
+.lynx-time-picker-minute {
+  flex: 1;
+}
+
 .lynx-autocomplete-search {
   display: flex;
   flex-direction: row;

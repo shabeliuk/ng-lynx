@@ -168,7 +168,7 @@ export interface MainThreadScrollResult {
  * gesture arena. A pan activates by itself once the finger has moved. Use these to end
  * it early, or to give the touch to the next candidate.
  *
- * @public
+ * @experimental
  */
 export interface MainThreadGesture {
   /** Activate this gesture. */
@@ -199,7 +199,11 @@ export interface MainThreadTouchEvent extends MainThreadEvent {
   readonly changedTouches: readonly MainThreadTouch[];
 }
 
-/** `ctx.event` in a `[lynxGesture]` phase: `WorkletContext<MainThreadGestureEvent>`. @public */
+/**
+ * `ctx.event` in a `[lynxGesture]` phase: `WorkletContext<MainThreadGestureEvent>`.
+ *
+ * @experimental
+ */
 export interface MainThreadGestureEvent extends MainThreadEvent {
   /** Where the finger is, in logical pixels, and the element's scroll state. */
   readonly params: {
@@ -220,7 +224,9 @@ export interface MainThreadGestureEvent extends MainThreadEvent {
 /**
  * `ctx.event` in a fling's phases: `WorkletContext<MainThreadFlingGestureEvent>`. A
  * fling reports how far it moved since the last frame, not where a finger is: the
- * finger is already up. iOS sends `isAtStart`/`isAtEnd` as `0`/`1`. @public
+ * finger is already up. iOS sends `isAtStart`/`isAtEnd` as `0`/`1`.
+ *
+ * @experimental
  */
 export interface MainThreadFlingGestureEvent extends MainThreadEvent {
   readonly params: {

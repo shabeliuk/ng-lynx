@@ -36,6 +36,7 @@ import {
   assert,
   findAllByClass,
   findByClass,
+  findText,
   getPage,
   installMockPapi,
   type MockEl,
@@ -193,6 +194,10 @@ async function main(): Promise<void> {
   console.log('\n=== LynxSelect: single, modal dialog ===');
   const countryHost = need(findByClass(page, 'country'), '.country host');
   assert(!findByClass(countryHost, 'lynx-select-backdrop'), 'dialog closed initially');
+  assert(
+    findText(countryHost, 'Select…') != null,
+    "a model of '' that no option has shows the placeholder, as FormControl('') starts",
+  );
   tap(need(findByClass(countryHost, 'lynx-select-trigger'), 'country trigger'));
   await tick();
   await tick();

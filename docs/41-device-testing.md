@@ -210,8 +210,29 @@ Each one was driven, not just opened. What each row left out:
   "Fill example", "Reset", and typing with the cursor moved mid-field, in a `[formControl]` and an
   `[(ngModel)]` field. The cursor stays where it was put (2026-11-10).
 - `genui` ran the offline planner and both protocol tabs, not a real LLM.
-- `dynamic-component` only had its network dropped on Android, where it fails with a message.
+- `dynamic-component` on a bad network, both platforms (2026-11-19): with the remote bundle's
+  connection cut, loading fails at once with code 160101 and the engine's reason (iOS "The network
+  connection was lost", Android "unexpected end of stream"). Retried on a slow network (4 s), it loads
+  and the card works. The engine doesn't keep the failure, unlike the lazy-chunk runtime's (see
+  `network` above). iOS tried the cut request three times before failing; Android once.
 - `threejs-*` ran, but only a phone's frame rate means anything.
+
+### Installing from npm
+
+On 2026-11-19, the published `0.1.0-rc.0`, as a user gets it, outside the repository:
+
+- `npm create ng-lynx@rc` with each template (`minimal`, `router`, `forms`): install, build, and
+  run on the iOS simulator and the Android emulator. **Found and fixed:** the page background
+  stopped below the content in all three; the `router` nav stacked vertically, since
+  `flex-direction` does nothing without `display: flex`; the `forms` select, checkbox and toggle
+  were invisible, since the template didn't import the theme, and the theme itself left the
+  select's options unstyled and opened its sheet inside the form.
+- `ng add ng-lynx@rc` in `ng new` workspaces on Angular 21.2 and 22.3: the Lynx build, the
+  workspace's own `ng build`, and the app on both platforms. **Found and fixed:** Node warned on
+  every run that `lynx.config.ts` "doesn't parse as CommonJS"; `ng add` now writes
+  `lynx.config.mts`.
+
+Not run: `npm run dev` with an edit swapped in, in a created app.
 
 ## What to check, per example
 
@@ -296,8 +317,8 @@ translated too. The locale is fixed when the bundle is built, so the phone's lan
 nothing.
 
 **`dynamic-component`.** `npm run dev`, which builds the remote bundle first. Load the remote card,
-tap its button, load it again. Test on a slow connection
-and with the network dropped: it should fail, not hang.
+tap its button, load it again. On a phone, a slow connection and a dropped one (Network Link
+Conditioner): it should fail with the engine's reason, not hang, and load on the retry.
 
 **`hot-swap`.** On the dev server, with the app open and visible, edit `CounterCard`'s template and
 save: the text changes in place and the counter survives. Save again: it chains. A logic edit isn't

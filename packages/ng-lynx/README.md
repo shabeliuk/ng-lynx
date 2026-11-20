@@ -58,11 +58,14 @@ export default defineConfig({
 | `ng-lynx/plugin` | `pluginAngularLynx()` in `lynx.config.ts` | yes |
 | `ng-lynx/testing` | `renderLynxComponent()` and queries | yes |
 | `ng-lynx/main-thread` | the Main Thread runtime; tests import it once in their setup | yes, as a side-effect import |
+| `ng-lynx/worklet-runtime` | the worklet runtime; the plugin adds it, a build without the plugin imports it first among its Main Thread modules | yes, as a side-effect import |
 | `ng-lynx/entry-background` | added to your build by the plugin; don't import it | no, internal |
-| `ng-lynx/internal/ops`, `ng-lynx/internal/runtime` | the wire protocol and the runtime's test hooks | no, internal |
+| `ng-lynx/internal/ops`, `ng-lynx/internal/runtime`, `ng-lynx/internal/worklet-runtime` | the wire protocol, and test hooks for the runtime and the worklet runtime | no, internal |
 
 Gestures, dynamic components, GenUI, HarmonyOS and the desktop-only elements are
-experimental: they work, but their API may still change in a minor release.
+experimental: they work, but their API may still change in a minor release. Their
+declarations carry `@experimental`, so your editor shows it. See
+[docs/43](https://github.com/shabeliuk/ng-lynx/blob/main/docs/43-stability.md).
 
 ## Tested on
 

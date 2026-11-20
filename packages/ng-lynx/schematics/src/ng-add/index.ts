@@ -20,6 +20,7 @@ export interface NgAddOptions {
 
 interface PackageJson {
   name?: string;
+  type?: string;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
   scripts?: Record<string, string>;
@@ -39,17 +40,19 @@ export function ngAdd(options: NgAddOptions): Rule {
           + 'the root of an Angular CLI workspace.',
       );
     }
-    if (tree.exists(`${directory}/lynx.config.ts`)) {
+    const existing = ['lynx.config.ts', 'lynx.config.mts'].find((name) => tree.exists(`${directory}/${name}`));
+    if (existing) {
       throw new SchematicsException(
-        `${directory}/lynx.config.ts already exists — remove it first, or pass a `
+        `${directory}/${existing} already exists — remove it first, or pass a `
           + `different target: ng add ng-lynx --directory <name>.`,
       );
     }
 
     const pkg = JSON.parse(tree.readText('package.json')) as PackageJson;
-    updatePackageJson(tree, pkg, directory);
+    const configFile = configFileName(pkg);
+    updatePackageJson(tree, pkg, directory, configFile);
     updateGitignore(tree, directory);
-    createLynxFiles(tree, directory, pkg.name);
+    createLynxFiles(tree, directory, pkg.name, configFile);
 
     context.logger.info(
       `\nAdded a Lynx target at ${directory}/\n\n`
@@ -65,6 +68,15 @@ export function ngAdd(options: NgAddOptions): Rule {
   };
 }
 
+/**
+ * The config is an ES module. An Angular CLI workspace's package.json has no
+ * `"type": "module"`, so Node would first try a `.ts` config as CommonJS and warn
+ * that it "doesn't parse as CommonJS". `.mts` says ESM whatever the package says.
+ */
+function configFileName(pkg: PackageJson): string {
+  return pkg.type === 'module' ? 'lynx.config.ts' : 'lynx.config.mts';
+}
+
 function normalizeDirectory(directory: string): string {
   const trimmed = directory.replace(/^\/+|\/+$/g, '');
   if (!trimmed || trimmed.startsWith('.') || trimmed.includes('..') || trimmed.includes('\\')) {
@@ -73,7 +85,7 @@ function normalizeDirectory(directory: string): string {
   return trimmed;
 }
 
-function updatePackageJson(tree: Tree, pkg: PackageJson, directory: string): void {
+function updatePackageJson(tree: Tree, pkg: PackageJson, directory: string, configFile: string): void {
   const devDependencies = (pkg.devDependencies ??= {});
   const angularVersion = pkg.dependencies?.['@angular/core'] ?? pkg.devDependencies?.['@angular/core']
     ?? FALLBACK_ANGULAR_VERSION;
@@ -99,8 +111,8 @@ function updatePackageJson(tree: Tree, pkg: PackageJson, directory: string): voi
   // (confirmed empirically — passing the workspace-relative path here
   // double-joins into `<directory>/<directory>/lynx.config.ts`), so it's
   // just the bare filename.
-  scripts['lynx:dev'] ??= `rspeedy dev --root ${directory} --config lynx.config.ts`;
-  scripts['lynx:build'] ??= `rspeedy build --root ${directory} --config lynx.config.ts`;
+  scripts['lynx:dev'] ??= `rspeedy dev --root ${directory} --config ${configFile}`;
+  scripts['lynx:build'] ??= `rspeedy build --root ${directory} --config ${configFile}`;
 
   tree.overwrite('package.json', `${JSON.stringify(pkg, null, 2)}\n`);
 }
@@ -118,11 +130,11 @@ function updateGitignore(tree: Tree, directory: string): void {
   }
 }
 
-function createLynxFiles(tree: Tree, directory: string, workspaceName: string | undefined): void {
+function createLynxFiles(tree: Tree, directory: string, workspaceName: string | undefined, configFile: string): void {
   const appName = workspaceName ?? 'Angular + Lynx';
 
   tree.create(
-    `${directory}/lynx.config.ts`,
+    `${directory}/${configFile}`,
     `import { defineConfig } from '@lynx-js/rspeedy';
 
 import { pluginQRCode } from '@lynx-js/qrcode-rsbuild-plugin';
@@ -265,7 +277,7 @@ export class AppComponent {
  * projected on Lynx). Flexbox is the default layout; dimensions need units.
  */
 .app {
-  flex: 1;
+  height: 100%;
   display: flex;
   flex-direction: column;
   /* Static status-bar buffer — Lynx exposes no safe-area inset yet. */

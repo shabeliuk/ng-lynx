@@ -31,10 +31,18 @@ import {
 
 import type { A2uiFunctionEntry } from './catalog.js';
 
-/** Marker for props using dynamic syntax this renderer does not support. */
+/**
+ * Marker for props using dynamic syntax this renderer does not support.
+ *
+ * @experimental
+ */
 export const UNSUPPORTED_PROP: unique symbol = Symbol('a2ui.unsupported');
 
-/** Result of a resolution pass. */
+/**
+ * Result of a resolution pass.
+ *
+ * @experimental
+ */
 export interface ResolvedProps {
   props: Record<string, unknown>;
   /** Prop names that used unsupported dynamic syntax. */
@@ -53,7 +61,11 @@ function isCallExpression(value: unknown): boolean {
   );
 }
 
-/** Resolve a possibly-relative binding path against the data context. */
+/**
+ * Resolve a possibly-relative binding path against the data context.
+ *
+ * @experimental
+ */
 export function resolveBindingPath(rawPath: string, dataContextPath?: string): string {
   if (rawPath.startsWith('/')) return rawPath;
   if (dataContextPath) return `${dataContextPath}/${rawPath}`;
@@ -134,6 +146,8 @@ function resolveDeep(
  * `child` are left untouched — containers interpret those themselves,
  * including template bindings (`{ path, componentId }`), which
  * `isDataBinding` would otherwise flatten.
+ *
+ * @experimental
  */
 export function resolveComponentProps(
   component: Record<string, unknown>,

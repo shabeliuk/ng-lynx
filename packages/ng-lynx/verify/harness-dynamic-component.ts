@@ -45,6 +45,8 @@ import {
 })
 class DynamicCardComponent {}
 
+let lastError = '';
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -77,7 +79,8 @@ class HostComponent {
     try {
       await loadDynamicComponent('dynamic://never-registered');
       this.status.set('should not resolve');
-    } catch {
+    } catch (err) {
+      lastError = (err as Error).message;
       this.status.set('rejected');
     }
   }
@@ -107,6 +110,12 @@ async function main(): Promise<void> {
   assert(
     findText(page, 'rejected') != null,
     'loadDynamicComponent rejected for a source the native host never registered (code !== 0 → reject, not a silent no-op)',
+  );
+  assert(
+    lastError.startsWith(
+      '[ng-lynx] loadDynamicComponent(dynamic://never-registered) failed: Load lazy bundle failed, the error message is: not registered. Engine result: {"code":160101',
+    ),
+    `the error leads with the engine's own message, then the raw result (got: ${lastError})`,
   );
 
   console.log('\n=== Assertions: a registered source resolves and mounts ===');
