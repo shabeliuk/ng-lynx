@@ -109,7 +109,7 @@ A flow passing on screen isn't enough, so `run.mjs` also fails the run on:
 | `route-param` | Router navigation with a param | Angular 22's router skipping every navigation |
 | `list` | Scrolling a native list far enough to recycle cells, both ways | Cells appended again on each request |
 | `input` | Typing on the native keyboard, Return firing `(confirm)`, and, on Android, typing into the middle of an `[(ngModel)]` field | `(confirm)` needing `confirm-type` on Android; the cursor jumping to the end. iOS has no key to move the cursor with |
-| `main-thread` | A worklet on a tap, `runOnBackground`, `runOnMainThread`; a worklet whose `stopPropagation()` keeps its tap from the box around it, reporting a live `currentTarget` with its `dataset` and `uid` | Worklets not reaching the engine; the worklet runtime's event result or event targets breaking (docs/42) |
+| `main-thread` | A worklet on a tap, `runOnBackground`, `runOnMainThread`; a worklet whose `stopPropagation()` keeps its tap from the box around it, reporting a live `currentTarget` with its `dataset` and `uid`; a `<lynx-slider>` dragged both ways on the Main Thread | Worklets not reaching the engine; the worklet runtime's event result or event targets breaking (docs/42); the slider's Main-Thread measurement |
 | `gesture` | A native pan, dragged twice | The detector stopping after the first drag on Android |
 | `gesture-lab` | Tap and long-press detectors, a tap that waits for a long press, `ctx.gesture.fail()` and `end()` in a pan, and a fling after a fast swipe | `fail()`/`end()` throwing `not a function` |
 | `assets` | An image through `lynxAssetUrl()`, with no lazy chunk in the build, and two images imported as modules: one emitted as a file, one inlined as a `data:` URL | Asset URLs staying relative |
@@ -119,6 +119,7 @@ A flow passing on screen isn't enough, so `run.mjs` also fails the run on:
 | `attributes` | `(longpress)`, `initial-scroll-index`, `default-value`, `<markdown>` drawing and `<filter-image>` loading (iOS only: Explorer 4.2.0's Android APK crashes on the first and lacks the second, see [18](18-typed-templates.md)), and the engine accepting the other typed attributes and events | Attributes the engine rejects |
 | `platform` | `lynxSelectRoot()`, `lynxSelectUniqueID()`, `lynxEventSource()` with the line held open and a `✓` split between two network chunks, and `reload()` with new init data | Lynx's `EventSource` delivering nothing on iOS; `removeComponents is not a function` on reload; a split character decoding as `���` |
 | `timing` | Each measurement on the timing screen completes: boot, 50 updates, 1,000 rows, a fling | The timing screen breaking. Its numbers are for a phone: see below |
+| `memory` | 1,000 mounts and unmounts of a screen of rows, a slider and a checkbox | The churn crashing or stalling. Memory is read from outside: see below |
 
 **The timing screen** ("Open timing") shows numbers to take from a real phone:
 
@@ -143,6 +144,34 @@ be seen from JavaScript. On the iOS simulator and the Android emulator (2026-11-
 Simulators and emulators share the Mac's CPU and say little about a phone. Run it on one, release
 build of Explorer if you can, and put those numbers here.
 
+**Memory** ("Open memory"): each tap of "Churn 1000" mounts and destroys a screen of 20 rows, each
+with an `@if`, `(tap)` handlers, a `<lynx-slider>` and a `<lynx-checkbox>`, 1,000 times, waiting for
+each batch to reach the Main Thread. Read the app's memory between taps: on Android
+`adb shell dumpsys meminfo com.lynx.explorer` (TOTAL PSS), on the iOS simulator `footprint -p <pid>`
+on the Mac. A leak climbs with every round; a heap that's collected rises and falls. Headless,
+`verify:memory` checks that 1,000 mounts leave every registry on both threads at its baseline.
+
+| After | Android emulator, PSS | iOS simulator, footprint |
+|---|---|---|
+| 1,000 mounts | 87.6 MB | 68 MB |
+| 2,000 | 92.5 MB | 77 MB |
+| 3,000 | 97.3 MB | 76 MB |
+| 4,000 | 94.3 MB | 79 MB |
+| 5,000 | 92.7 MB | 93 MB |
+| 6,000 | 92.4 MB | 96 MB |
+| 7,000 | | 104 MB |
+
+Measured 2026-11-20, engine 4.2. Android levels off. The iOS simulator climbs about 4 MB per 1,000
+mounts of this 95-element screen, and rose by itself once while idle (79 to 91 MB). Nearly all of it is
+`Malloc Small` in `footprint`, native memory, while `verify:memory` shows every registry ng-lynx keeps,
+on both threads, back at its baseline. Whether it's the engine's element memory, JavaScriptCore's heap
+or the Main Thread's is open: it needs Instruments' allocations on the simulator, or the same churn in
+a ReactLynx app to compare. On a phone, run the same and put the numbers here.
+
+**Opening a bundle by hand on the iOS simulator:** leave `&fullscreen=true` off the deep link. Explorer
+4.2 on iOS takes it as part of the bundle's URL and fails with error 102, "the template file size is 0".
+Android takes it as a flag.
+
 **To try the screens by hand**, on a phone or a simulator: `npm run dev` in `packages/device-tests`,
 then scan the printed code with Lynx Explorer. The dev server also serves the `/sse` stream the
 platform screen connects to.
@@ -156,7 +185,7 @@ with no View of its own, so every element a flow taps or reads sets `[flatten]="
 it. A new screen that a flow can't find on Android is usually missing this.
 
 **What this doesn't cover:** live editing, which needs a dev server; anything visual, such as the
-invisible slider thumb; touch feel, screen readers and performance; the 24 examples, which still run by
+invisible slider thumb; touch feel, screen readers and performance; the 25 examples, which still run by
 hand.
 
 > **"Engine 3.7" below.** Early passes were recorded as "Explorer 4.0.0", but that
@@ -171,6 +200,7 @@ every engine here.
 |---|---|---|---|---|---|---|---|
 | `hello-world` | ✅ | | ✅ | ✅ | ✅ | ✅ | |
 | `product-detail` | | | ✅ | | ✅ | ✅ | |
+| `gallery` | | | ✅ | | ✅ | | |
 | `list` | ✅ |  | ✅ | ✅ | ✅ | ✅ |  |
 | `virtual-list` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | |
 | `lynx-forms` | ✅ |  | ✅ | ◐ | ✅ | ✅ |  |
@@ -275,6 +305,12 @@ and its list scrolls. Run a production build too: worklet ids come from function
 **`product-detail`.** The official tutorial. Swipe each carousel: the page follows the finger and
 snaps with its own timing (`easeInOut` above, slower and linear below), and each row of dots
 follows its own carousel. Tap a dot: the carousel jumps there. A short or slow swipe snaps back.
+
+**`gallery`.** The official Gallery tutorial. The waterfall starts scrolling by itself
+(`autoScroll` through `invoke`), in two columns of different heights. Two scrollbars follow it: the
+left one from `(scroll)` on the Background Thread, the right one from a worklet on the Main Thread.
+Drag the list fast: the right one keeps up and the left one trails. Tap a heart: it turns red with
+two ripples.
 
 **`projection`.** Both slots project, and a `(tap)` from the consumer's template works
 inside the card.

@@ -89,6 +89,11 @@ function getRegistryState(): RegistryState {
   return state;
 }
 
+/** How many event signs have a handler. For leak checks (verify:memory). */
+export function registeredSignCount(): number {
+  return getRegistryState().handlers.size;
+}
+
 export function register(handler: (data: unknown) => void): string {
   const state = getRegistryState();
   const sign = `ng:${state.signCounter++}`;

@@ -181,6 +181,7 @@
     "verify:lazy-chunks": "node verify/lazy-chunks.mjs",
     "verify:list": "node verify/build.mjs harness-list.ts",
     "verify:list-scroll": "ENABLE_SELECTOR_QUERIES=true node verify/build.mjs harness-list-scroll.ts",
+    "verify:memory": "node verify/build.mjs harness-memory.ts",
     "verify:mtref": "node verify/build.mjs harness-mtref.ts",
     "verify:main-thread-api": "node verify/build.mjs harness-main-thread-api.ts",
     "verify:native-modules": "node verify/build.mjs harness-native-modules.ts",

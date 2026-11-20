@@ -12,5 +12,7 @@ export { installLifecycle, resetAppEventsState } from './app-events.js';
 export { installIntersectionObserver } from './visibility.js';
 export { resetOpLogger } from './op-logger.js';
 export { getPageRoot, resetShadowTreeState } from './shadow-element.js';
-export { resetRegistry as resetEventRegistry, publishEvent } from './event-registry.js';
+export { resetRegistry as resetEventRegistry, publishEvent, registeredSignCount } from './event-registry.js';
+export { elementListenerCount } from './element-events.js';
+export { threadCallSizes } from './thread-calls.js';
 export { resetPendingStyleClass } from './pending-style.js';

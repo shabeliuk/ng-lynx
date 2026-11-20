@@ -62,6 +62,10 @@ release may change the API; experimental features may change in any release.
   `cap-insets-scale`, `defer-src-invalidation` and the animated-image events; and more
   on `<input>`, `<textarea>`, `<text>`, `<overlay>`, `<scroll-coordinator>`, `<blur-view>`
   and `<webview>`. `verify:element-templates` compiles them with `strictTemplates`.
+- `examples/gallery`: the official Gallery tutorial in Angular, a waterfall `<list>` that
+  scrolls itself, with a Background-Thread and a Main-Thread scrollbar side by side.
+- `verify:memory`: 1,000 mounts of a screen leave every registry on both threads at its
+  baseline. The device tests' `memory` flow runs the same churn on an engine (docs/41).
 - `ng-lynx/worklet-runtime`, for a build that doesn't use `pluginAngularLynx`: import it
   first among the Main-Thread modules.
 - `@experimental` in the types on gestures, dynamic components, GenUI and

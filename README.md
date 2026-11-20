@@ -157,7 +157,7 @@ packages/create-ng-lynx/
 packages/device-tests/
   src/           # a small test app (private, not published)
   flows/         # Maestro flows it runs on a real engine; docs/41 explains them
-examples/        # 24 runnable apps, one per feature; docs/41 lists them
+examples/        # 25 runnable apps, one per feature; docs/41 lists them
 docs/            # the guides below
 scripts/         # CI helpers
 ```

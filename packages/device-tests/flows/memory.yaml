@@ -1,0 +1,23 @@
+# Mounts and destroys a screen of rows, a slider and a checkbox 1,000 times. This
+# flow checks that the churn completes; native memory between rounds is read from
+# outside the app. See docs/41-device-testing.md, "Memory".
+appId: ${APP_ID}
+---
+- runFlow:
+    file: shared/open.yaml
+    env:
+      BUNDLE: main
+      READY: 'Count: 0'
+- scrollUntilVisible:
+    element: Open memory
+    direction: DOWN
+    timeout: 10000
+- tapOn: Open memory
+- extendedWaitUntil:
+    visible: 'Churned: 0'
+    timeout: 5000
+- tapOn: Churn 1000
+- extendedWaitUntil:
+    visible: 'Churned: 1000'
+    timeout: 300000
+- takeScreenshot: memory

@@ -56,5 +56,6 @@ export class HomeComponent {
     { label: 'Open platform', path: '/platform' },
     { label: 'Open timing', path: '/timing' },
     { label: 'Open network', path: '/network' },
+    { label: 'Open memory', path: '/memory' },
   ];
 }

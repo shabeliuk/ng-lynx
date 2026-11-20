@@ -833,6 +833,11 @@ export function applyRunOnMainThread(call: { id: string; args: string; callId: n
   }
 }
 
+/** How many refs and pending calls this thread holds. For leak checks (verify:memory). */
+export function workletStateSizes(): { boundRefs: number; liveRefs: number; backgroundCalls: number } {
+  return { boundRefs: refRegistry().size, liveRefs: liveRefs.size, backgroundCalls: backgroundCalls.size };
+}
+
 /** Frees a `mainThreadRef()` whose owner is gone. See `entry-main.ts`. */
 export function applyReleaseMainThreadRef({ id }: { id: string }): void {
   refRegistry().delete(id);
