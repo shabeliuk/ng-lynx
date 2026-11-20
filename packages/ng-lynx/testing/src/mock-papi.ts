@@ -240,6 +240,9 @@ export function installMockPapi(): void {
   defines['__DEV__'] ??= false;
   defines['__ENABLE_SELECTOR_QUERIES__'] ??= 'lazy';
   defines['__HAS_FIRST_SCREEN__'] ??= false;
+  // The mock installs the worklet runtime below, so `<lynx-slider>` drags on
+  // the Main Thread, as in a build with `mainThreadModules`.
+  defines['__WORKLET_RUNTIME__'] ??= true;
   globalListeners.clear();
   // Deliberately NOT cleared here (unlike globalListeners/ioObserved/etc.
   // below). `entry-background.ts`'s cross-thread listeners (the
@@ -717,6 +720,17 @@ export function installMockPapi(): void {
     callback: (result: { code: number; data?: unknown }) => void,
   ) => {
     ((g.__MT_INVOKE_LOG__ ??= []) as unknown[]).push({ el, method, params });
+    if (method === 'boundingClientRect') {
+      // The same rect, `__QUERY_RECT_LEFT__` and `__QUERY_DELAY_MS__` as the
+      // Background Thread's `invoke` below: `<lynx-slider>` measures here.
+      const left = (g.__QUERY_RECT_LEFT__ as number | undefined) ?? 0;
+      const answer = (): void =>
+        callback({ code: 0, data: { left, top: 0, right: left + 100, bottom: 50, width: 100, height: 50 } });
+      const delay = g.__QUERY_DELAY_MS__;
+      if (typeof delay === 'number' && delay > 0) setTimeout(answer, delay);
+      else answer();
+      return;
+    }
     callback(method === 'fail' ? { code: 1 } : { code: 0, data: { method, params } });
   };
   g.__ElementAnimate = (el: MockEl, args: unknown[]) => {

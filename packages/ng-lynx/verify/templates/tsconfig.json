@@ -1,0 +1,7 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": { "noUnusedLocals": false, "experimentalDecorators": false, "types": [] },
+  "angularCompilerOptions": { "strictTemplates": true },
+  "include": [],
+  "files": ["./ok.component.ts"]
+}

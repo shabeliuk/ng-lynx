@@ -25,9 +25,9 @@ verification in `verify/harness-list.ts` (`npm run verify:list`) and
 
 1. **Direct children of `<list>` must be `<list-item>` elements.** Angular's
    `@for` also emits comment anchor nodes between items; the renderer
-   automatically **skips** comment/text children of a `<list>` (and resolves
-   insert anchors forward to the next real `<list-item>`), so you don't have to
-   think about them. But your own markup must put `<list-item>` directly under
+   never sends comments to the Main Thread, skips text children of a `<list>`
+   too, and resolves insert anchors forward to the next real `<list-item>`, so
+   you don't have to think about them. But your own markup must put `<list-item>` directly under
    `<list>`.
 2. **Every `<list-item>` needs a stable `item-key`.** Bind it with
    `[attr.item-key]="…"`. Keep it aligned with your `@for` `track` expression.

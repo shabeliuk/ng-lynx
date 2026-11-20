@@ -20,9 +20,9 @@ Each op is `code` followed by a fixed number of arguments.
 
 | Code | Name | Args | Main-Thread effect |
 | ---: | --- | --- | --- |
-| 0 | `CREATE` | `id, type` | `__CreateView/Text/Image/ScrollView/Element`; `'#comment'` → `__CreateRawText('')`. Sets CSS scope + `ng-ref-{id}` selector attr. |
+| 0 | `CREATE` | `id, type` | `__CreateView/Text/Image/ScrollView/Element`. Sets CSS scope + `ng-ref-{id}` selector attr. Angular's comment anchors are never sent ([03](03-renderer-internals.md#comment-anchors)). |
 | 1 | `CREATE_TEXT` | `id` | `__CreateRawText('')` (raw text, lives inside `<text>`). |
-| 2 | `INSERT` | `parentId, childId, anchorId` | `anchorId === -1` → `__AppendElement`; else `__InsertElementBefore`. |
+| 2 | `INSERT` | `parentId, childId, anchorId` | `anchorId === -1` → `__AppendElement`; else `__InsertElementBefore`. `anchorId` is always a node the Main Thread has. |
 | 3 | `REMOVE` | `parentId, childId` | `__RemoveElement`. |
 | 4 | `SET_ATTR` | `id, key, value` | `key==='id'` → `__SetID`; `data-*` → `__AddDataset`; `key==='style'` → `__SetInlineStyles`; else `__SetAttribute`. |
 | 5 | `SET_TEXT` | `id, text` | `__SetAttribute(el, 'text', text)`. |

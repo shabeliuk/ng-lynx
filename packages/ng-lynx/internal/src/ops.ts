@@ -12,7 +12,7 @@
  * thread boundary in a single `callLepusMethod` call.
  *
  * Format (all numbers/strings, JSON-serializable):
- *   CREATE:        [0, id, type]                  // type '#comment' → invisible anchor
+ *   CREATE:        [0, id, type]                  // element tag; Angular's comment anchors are never sent
  *   CREATE_TEXT:   [1, id]                         // raw text node (lives inside <text>)
  *   INSERT:        [2, parentId, childId, anchorId] // anchorId === -1 means append
  *   REMOVE:        [3, parentId, childId]
@@ -493,4 +493,55 @@ export interface BoundWorklet<P = unknown> extends WorkletHandle<P> {
  */
 export function bindWorklet<P>(worklet: WorkletHandle<P>, params: ToMainThread<P>): BoundWorklet<P> {
   return { _wkltId: worklet._wkltId, _params: params };
+}
+
+// ---------------------------------------------------------------------------
+// The built-in controls' Main-Thread worklets (main-thread/src/controls.ts).
+// Registered whenever the worklet runtime is installed; the Background halves
+// bind them by these ids.
+// ---------------------------------------------------------------------------
+
+/** `<lynx-slider>`'s touch worklets. */
+export const SLIDER_WORKLET = {
+  start: '__ngSliderTouchStart',
+  move: '__ngSliderTouchMove',
+  end: '__ngSliderTouchEnd',
+} as const;
+
+/** What the slider's worklets use of a `MainThreadElement`. */
+export interface SliderElement {
+  setStyleProperty(name: string, value: string): void;
+  invoke(method: string, params?: Record<string, unknown>): Promise<unknown>;
+}
+
+/** One drag's state, kept in a per-slider `mainThreadRef`. */
+export interface SliderDrag {
+  /** Where the track starts on the page, and how wide it is. */
+  geometry: { left: number; width: number } | null;
+  /** A touch that arrived before the track was measured, applied when it is. */
+  pending: { x: number; at: number } | null;
+  /** Bumped on each measurement, so a stale one is ignored. */
+  generation: number;
+  /** The value the thumb shows now. */
+  value: number;
+  /** Between touchstart and touchend. */
+  active: boolean;
+}
+
+/** `ctx.params` of the slider's worklets. */
+export interface SliderParams {
+  min: number;
+  max: number;
+  step: number;
+  disabled: boolean;
+  /** The value the Background Thread last committed. */
+  value: number;
+  track: MainThreadRef<SliderElement | null>;
+  fill: MainThreadRef<SliderElement | null>;
+  thumb: MainThreadRef<SliderElement | null>;
+  drag: MainThreadRef<SliderDrag>;
+  /** A new value mid-drag. */
+  onValue: BackgroundFunctionHandle<[number], void>;
+  /** The drag is over: the final value, and the control was touched. */
+  onCommit: BackgroundFunctionHandle<[number], void>;
 }

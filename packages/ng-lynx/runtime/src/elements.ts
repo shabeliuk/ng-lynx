@@ -306,6 +306,22 @@ export interface LynxRefreshHeaderOffsetEvent
 /** `<refresh>` `refreshstatechange` payload — 0 idle, 1 over-drag-release, 2 refreshing. @public */
 export interface LynxRefreshStateChangeEvent extends LynxEvent<{ state: number }> {}
 
+/** `<list>` update-animation payload: one animation type of one update. @public */
+export interface LynxListAnimationEvent
+  extends LynxEvent<{ transactionId: number; type: 'remove' | 'move' | 'add' | 'change' }> {}
+
+/** `<list>` `listanimationupdate` payload: adds the progress. @public */
+export interface LynxListAnimationUpdateEvent
+  extends LynxEvent<{ transactionId: number; type: 'remove' | 'move' | 'add' | 'change'; progress: number }> {}
+
+/** A rectangle within an element, `[x, y, width, height]`, in px or %. @public */
+export type LynxRegion = [
+  `${number}px` | `${number}%`,
+  `${number}px` | `${number}%`,
+  `${number}px` | `${number}%`,
+  `${number}px` | `${number}%`,
+];
+
 /** `<viewpager>` `change` / `willchange` payload. @public */
 export interface LynxViewPagerChangeEvent extends LynxEvent<{ index: number; isDragged: boolean }> {}
 
@@ -599,8 +615,37 @@ export abstract class LynxStandardElement extends LynxElementBase {
   /** iOS 4.1+: see `ios-pan-intercept-gesture-class`. */
   @Input('ios-pan-intercept-view-tag') set iosPanInterceptViewTag(v: number | undefined) { this.setAttr('ios-pan-intercept-view-tag', v); }
 
+  /**
+   * Swipe angles, `[start, end]` in degrees, that this node's platform
+   * gestures take while it's in the touch chain. Lynx touch events aren't
+   * affected: for a scroll container written in your own code.
+   */
+  @Input('consume-slide-event') set consumeSlideEvent(v: [number, number][] | undefined) { this.setAttr('consume-slide-event', v); }
+  /** Areas of this node where a touch blocks platform gestures outside Lynx, such as swipe-back. */
+  @Input('block-native-event-areas') set blockNativeEventAreas(v: LynxRegion[] | undefined) { this.setAttr('block-native-event-areas', v); }
+  /** With `event-through`: the areas where touches go through. */
+  @Input('event-through-active-regions') set eventThroughActiveRegions(v: LynxRegion[] | undefined) { this.setAttr('event-through-active-regions', v); }
+  /** iOS: whether this node and its children take platform touch events. Default `true`. */
+  @Input('native-interaction-enabled') set nativeInteractionEnabled(v: boolean | undefined) { this.setAttr('native-interaction-enabled', v); }
+  /** iOS: fire touch events even when another recognizer would take them. */
+  @Input('ios-enable-simultaneous-touch') set iosEnableSimultaneousTouch(v: boolean | undefined) { this.setAttr('ios-enable-simultaneous-touch', v); }
+  /** Let `:active` keep bubbling up the touch chain from here. */
+  @Input('enable-touch-pseudo-propagation') set enableTouchPseudoPropagation(v: boolean | undefined) { this.setAttr('enable-touch-pseudo-propagation', v); }
+  /** Android: whether the node can take focus. */
+  @Input() set focusable(v: boolean | undefined) { this.setAttr('focusable', v); }
+
+  // --- accessibility, platform-specific ---
+  /** Android: let a screen reader's double tap reach this node's `tap`. */
+  @Input('accessibility-enable-tap') set accessibilityEnableTap(v: boolean | undefined) { this.setAttr('accessibility-enable-tap', v); }
+  /** iOS: scroll to this node when it's given accessibility focus. */
+  @Input('accessibility-auto-scroll-if-focused') set accessibilityAutoScrollIfFocused(v: boolean | undefined) { this.setAttr('accessibility-auto-scroll-if-focused', v); }
+  /** Android: keep accessibility focus here when the tree updates. */
+  @Input('android-accessibility-keep-focused') set androidAccessibilityKeepFocused(v: boolean | undefined) { this.setAttr('android-accessibility-keep-focused', v); }
+
   // --- rendering ---
   @Input() set flatten(v: boolean | undefined) { this.setAttr('flatten', v); }
+  /** Android: render the view into a hardware texture layer. */
+  @Input('hardware-layer') set hardwareLayer(v: boolean | undefined) { this.setAttr('hardware-layer', v); }
 }
 
 // ---------------------------------------------------------------------------
@@ -636,13 +681,27 @@ export class LynxText extends LynxStandardElement {
   @Input('selection-handle-size') set selectionHandleSize(v: number | undefined) { this.setAttr('selection-handle-size', v); }
   @Input('tail-color-convert') set tailColorConvert(v: boolean | undefined) { this.setAttr('tail-color-convert', v); }
   @Input('include-font-padding') set includeFontPadding(v: boolean | undefined) { this.setAttr('include-font-padding', v); }
+  /** Android: Emoji2 support. Needs the `androidx.emoji2` dependency in the app. */
+  @Input('android-emoji-compat') set androidEmojiCompat(v: boolean | undefined) { this.setAttr('android-emoji-compat', v); }
+  /** Draw bold text with a fake bold when the font has no bold face. */
+  @Input('text-fake-bold') set textFakeBold(v: boolean | undefined) { this.setAttr('text-fake-bold', v); }
 }
 
 /** Typed `<image>`. @public */
-@Directive({ selector: 'image', standalone: true, outputs: ['load', 'error'] })
+@Directive({
+  selector: 'image',
+  standalone: true,
+  outputs: ['load', 'error', 'startplay', 'currentloopcomplete', 'finalloopcomplete'],
+})
 export class LynxImage extends LynxStandardElement {
   get load(): EventEmitter<LynxImageLoadEvent> { return this.event('load'); }
   get error(): EventEmitter<LynxImageErrorEvent> { return this.event('error'); }
+  /** An animated image started playing. iOS 3.2+, Android. */
+  get startplay(): EventEmitter<LynxEvent<unknown>> { return this.event('startplay'); }
+  /** An animated image finished one loop. */
+  get currentloopcomplete(): EventEmitter<LynxEvent<unknown>> { return this.event('currentloopcomplete'); }
+  /** An animated image finished its `loop-count` loops. Never fires without `loop-count`. */
+  get finalloopcomplete(): EventEmitter<LynxEvent<unknown>> { return this.event('finalloopcomplete'); }
 
   @Input() set src(v: string | undefined) { this.setAttr('src', v); }
   @Input() set mode(v: 'scaleToFill' | 'aspectFit' | 'aspectFill' | 'center' | undefined) { this.setAttr('mode', v); }
@@ -657,6 +716,12 @@ export class LynxImage extends LynxStandardElement {
   @Input('auto-size') set autoSize(v: boolean | undefined) { this.setAttr('auto-size', v); }
   @Input() set autoplay(v: boolean | undefined) { this.setAttr('autoplay', v); }
   @Input('tint-color') set tintColor(v: string | undefined) { this.setAttr('tint-color', v); }
+  /** Android: `RGB_565` halves the bitmap's memory and drops transparency. Default `ARGB_8888`. */
+  @Input('image-config') set imageConfig(v: 'ARGB_8888' | 'RGB_565' | undefined) { this.setAttr('image-config', v); }
+  /** The scale of a 9-patch image's stretchable area. */
+  @Input('cap-insets-scale') set capInsetsScale(v: number | undefined) { this.setAttr('cap-insets-scale', v); }
+  /** Keep the old image until the new `src` has loaded, so a switch doesn't flicker. Not for recycled list items. */
+  @Input('defer-src-invalidation') set deferSrcInvalidation(v: boolean | undefined) { this.setAttr('defer-src-invalidation', v); }
 }
 
 /** Typed `<scroll-view>`. @public */
@@ -688,7 +753,18 @@ export class LynxScrollView extends LynxStandardElement {
 @Directive({
   selector: 'list',
   standalone: true,
-  outputs: ['scroll', 'scrolltoupper', 'scrolltolower', 'scrollstatechange', 'snap', 'layoutcomplete'],
+  outputs: [
+    'scroll',
+    'scrolltoupper',
+    'scrolltolower',
+    'scrollstatechange',
+    'snap',
+    'layoutcomplete',
+    'listanimationstart',
+    'listanimationend',
+    'listanimationcancel',
+    'listanimationupdate',
+  ],
 })
 export class LynxList extends LynxStandardElement {
   get scroll(): EventEmitter<LynxListScrollEvent> { return this.event('scroll'); }
@@ -697,6 +773,11 @@ export class LynxList extends LynxStandardElement {
   get scrollstatechange(): EventEmitter<LynxListScrollStateChangeEvent> { return this.event('scrollstatechange'); }
   get snap(): EventEmitter<LynxListSnapEvent> { return this.event('snap'); }
   get layoutcomplete(): EventEmitter<LynxEvent<unknown>> { return this.event('layoutcomplete'); }
+  /** An update animation type started. Needs the list's new update animation. */
+  get listanimationstart(): EventEmitter<LynxListAnimationEvent> { return this.event('listanimationstart'); }
+  get listanimationend(): EventEmitter<LynxListAnimationEvent> { return this.event('listanimationend'); }
+  get listanimationcancel(): EventEmitter<LynxListAnimationEvent> { return this.event('listanimationcancel'); }
+  get listanimationupdate(): EventEmitter<LynxListAnimationUpdateEvent> { return this.event('listanimationupdate'); }
 
   @Input('scroll-orientation') set scrollOrientation(v: 'vertical' | 'horizontal' | undefined) { this.setAttr('scroll-orientation', v); }
   @Input('list-type') set listType(v: 'single' | 'flow' | 'waterfall' | undefined) { this.setAttr('list-type', v); }
@@ -716,6 +797,12 @@ export class LynxList extends LynxStandardElement {
   @Input('need-layout-complete-info') set needLayoutCompleteInfo(v: boolean | undefined) { this.setAttr('need-layout-complete-info', v); }
   /** Adds `attachedCells` to `scroll`, `scrolltoupper` and `scrolltolower`, on every platform. Off by default. */
   @Input('need-visible-item-info') set needVisibleItemInfo(v: boolean | undefined) { this.setAttr('need-visible-item-info', v); }
+  /** How often `scroll` fires while scrolling, in ms. Default 200. */
+  @Input('scroll-event-throttle') set scrollEventThrottle(v: number | undefined) { this.setAttr('scroll-event-throttle', v); }
+  /** Paging: each scroll stops with an item at `factor` (0 top, 1 bottom) plus `offset`. `list-type="single"` only. */
+  @Input('item-snap') set itemSnap(v: { factor: number; offset: number } | undefined) { this.setAttr('item-snap', v); }
+  /** iOS: bounce past the ends. Default `true`. */
+  @Input() set bounces(v: boolean | undefined) { this.setAttr('bounces', v); }
 }
 
 /** Typed `<list-item>`. @public */
@@ -750,6 +837,16 @@ export abstract class LynxTextFieldBase extends LynxStandardElement {
   @Input() set disabled(v: boolean | undefined) { this.setAttr('disabled', v); }
   @Input('show-soft-input-on-focus') set showSoftInputOnFocus(v: boolean | undefined) { this.setAttr('show-soft-input-on-focus', v); }
   @Input('input-filter') set inputFilter(v: string | undefined) { this.setAttr('input-filter', v); }
+  /** Keep the keyboard up after `confirm`. iOS 3.4+, Android 3.5+. */
+  @Input('confirm-enter') set confirmEnter(v: boolean | undefined) { this.setAttr('confirm-enter', v); }
+  /** Android 4.3+: how the host window makes room for the keyboard. Not restored when the field goes. */
+  @Input('set-soft-input-mode') set setSoftInputMode(v: 'unspecified' | 'nothing' | 'pan' | 'resize' | undefined) { this.setAttr('set-soft-input-mode', v); }
+  /** iOS: autocorrect. Default `true`. */
+  @Input('ios-auto-correct') set iosAutoCorrect(v: boolean | undefined) { this.setAttr('ios-auto-correct', v); }
+  /** iOS: spell check. Default `true`. */
+  @Input('ios-spell-check') set iosSpellCheck(v: boolean | undefined) { this.setAttr('ios-spell-check', v); }
+  /** Android: the full-screen editor in landscape. Default `true`. */
+  @Input('android-fullscreen-mode') set androidFullscreenMode(v: boolean | undefined) { this.setAttr('android-fullscreen-mode', v); }
 }
 
 /** Typed `<input>`. @public */
@@ -761,6 +858,8 @@ export class LynxInput extends LynxTextFieldBase {
 /** Typed `<textarea>`. @public */
 @Directive({ selector: 'textarea', standalone: true })
 export class LynxTextarea extends LynxTextFieldBase {
+  /** The keyboard and content type. Engine 3.4+. */
+  @Input() set type(v: 'text' | 'number' | 'digit' | 'tel' | 'email' | undefined) { this.setAttr('type', v); }
   @Input() set maxlines(v: number | undefined) { this.setAttr('maxlines', v); }
   @Input('line-spacing') set lineSpacing(v: string | number | undefined) { this.setAttr('line-spacing', v); }
   @Input() set bounces(v: boolean | undefined) { this.setAttr('bounces', v); }
@@ -937,6 +1036,14 @@ export class LynxOverlay extends LynxStandardElement {
   @Input('ios-enable-swipe-back') set iosEnableSwipeBack(v: boolean | undefined) { this.setAttr('ios-enable-swipe-back', v); }
   /** Android 4.1+: the navigation bar's background and contrasting icons while the overlay shows; `auto` (default) keeps the Activity's. */
   @Input('android-navigation-bar-style') set androidNavigationBarStyle(v: 'auto' | 'light' | 'dark' | 'transparent' | undefined) { this.setAttr('android-navigation-bar-style', v); }
+  /** Android 3.6+: keep a global overlay showing when its view detaches. Default `true`. */
+  @Input('always-show') set alwaysShow(v: boolean | undefined) { this.setAttr('always-show', v); }
+  /** Android 4.3+: `fragment` ties the overlay's visibility to its LynxView's Fragment. Default `global`. */
+  @Input('android-overlay-scope') set androidOverlayScope(v: 'global' | 'fragment' | undefined) { this.setAttr('android-overlay-scope', v); }
+  /** iOS 4.3+: follow changes to the bounds `mode` picks. */
+  @Input('ios-follow-mode-edge') set iosFollowModeEdge(v: boolean | undefined) { this.setAttr('ios-follow-mode-edge', v); }
+  /** The id selector of a nested `<scroll-view>` to coordinate gestures with. */
+  @Input('nest-scroll') set nestScroll(v: string | undefined) { this.setAttr('nest-scroll', v); }
 }
 
 /** Typed `<refresh>` — pull-to-refresh. Engine 3.8+; renders in the web preview, see the note above. @public */
@@ -1010,6 +1117,12 @@ export class LynxScrollCoordinator extends LynxStandardElement {
   @Input('ios-force-scroll-detach') set iosForceScrollDetach(v: boolean | undefined) { this.setAttr('ios-force-scroll-detach', v); }
   @Input() set granularity(v: number | undefined) { this.setAttr('granularity', v); }
   @Input('refresh-mode') set refreshMode(v: 'none' | 'page' | 'fold' | undefined) { this.setAttr('refresh-mode', v); }
+  /** iOS 3.7+: comma-separated native scroll-view names to leave out of nested scrolling. */
+  @Input('ios-scroll-exclude') set iosScrollExclude(v: string | undefined) { this.setAttr('ios-scroll-exclude', v); }
+  /** iOS 3.7+: the smallest nested scroll view to coordinate, as a fraction of the slot's height. Default 0.5. */
+  @Input('ios-scroll-view-filter') set iosScrollViewFilter(v: number | undefined) { this.setAttr('ios-scroll-view-filter', v); }
+  /** Android 3.9+: keep gestures in the header instead of letting the parent take them. */
+  @Input('android-consume-gesture') set androidConsumeGesture(v: boolean | undefined) { this.setAttr('android-consume-gesture', v); }
 }
 
 /** Typed `<scroll-coordinator-header>` — fixed header, child of `<scroll-coordinator>`. @public */
@@ -1052,6 +1165,8 @@ export class LynxBlurView extends LynxStandardElement {
   @Input('ios-user-interface-style') set iosUserInterfaceStyle(v: 'dark' | 'light' | undefined) { this.setAttr('ios-user-interface-style', v); }
   @Input('glass-tint-color') set glassTintColor(v: string | undefined) { this.setAttr('glass-tint-color', v); }
   @Input('glass-style') set glassStyle(v: 'regular' | 'clear' | undefined) { this.setAttr('glass-style', v); }
+  /** Android 4.0+, experimental in Lynx: another way to refresh the blur buffer. */
+  @Input('experimental-update-blur-radius') set experimentalUpdateBlurRadius(v: boolean | undefined) { this.setAttr('experimental-update-blur-radius', v); }
 }
 
 /** Typed `<webview>` — embeds a web page. Engine 4.0+; renders in the web preview, see the note above. @public */
@@ -1074,6 +1189,16 @@ export class LynxWebview extends LynxStandardElement {
   @Input('scroll-bar-enable') set scrollBarEnable(v: boolean | undefined) { this.setAttr('scroll-bar-enable', v); }
   @Input('webview-type') set webviewType(v: string | undefined) { this.setAttr('webview-type', v); }
   @Input('enable-debug') set enableDebug(v: boolean | undefined) { this.setAttr('enable-debug', v); }
+  /** iOS 4.3+: hide the bar above the keyboard. */
+  @Input('ios-hide-keyboard-accessory-view') set iosHideKeyboardAccessoryView(v: boolean | undefined) { this.setAttr('ios-hide-keyboard-accessory-view', v); }
+  /** Engine 4.0+: passed to an external webview implementation. */
+  @Input() set params(v: object | undefined) { this.setAttr('params', v); }
+  /** JavaScript to run when the document is ready. */
+  @Input() set initjs(v: string | undefined) { this.setAttr('initjs', v); }
+  /** Cookies to set before loading. */
+  @Input() set cookies(v: { name: string; value: string }[] | undefined) { this.setAttr('cookies', v); }
+  /** Offscreen rendering. Default `false`. */
+  @Input('use-osr') set useOsr(v: boolean | undefined) { this.setAttr('use-osr', v); }
 }
 
 /** `<markdown>`'s `animationStep` payload. @public */

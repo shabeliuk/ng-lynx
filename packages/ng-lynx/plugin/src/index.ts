@@ -561,6 +561,11 @@ export function pluginAngularLynx(
               __HAS_FIRST_SCREEN__: String(Boolean(firstScreen)),
               // Read by ops-apply.ts (Main Thread). See `nativeElements`'s doc.
               __NATIVE_ELEMENTS__: JSON.stringify(nativeElements),
+              // Read by slider.ts (Background Thread): whether the Main-Thread
+              // bundle has the worklet runtime (applyEntry bundles it for a
+              // non-empty `mainThreadModules`), so `<lynx-slider>` can drag
+              // there. A dynamic component's Main-Thread part is a stub.
+              __WORKLET_RUNTIME__: String(mainThreadModules.length > 0 && !dynamicComponent),
             },
           },
           tools: {
@@ -1384,9 +1389,12 @@ function applyEntry(
     // Only bundled when `mainThreadModules` is non-empty — that's the only
     // documented use for the option (worklet registration modules), so an
     // empty list is a reliable signal the app doesn't use worklets at all, and
-    // an app that never touches `[lynxMainThread]` doesn't pay for it.
-    const workletRuntime =
-      opts.mainThreadModules.length > 0 ? path.resolve(angularLynxRoot, 'main-thread/dist/worklet-runtime/init.js') : undefined;
+    // an app that never touches `[lynxMainThread]` doesn't pay for it: about
+    // 10 kB of Lynx bundle, measured on examples/ng-forms. `<lynx-slider>`
+    // drags on the Main Thread when it's there (`__WORKLET_RUNTIME__`).
+    const workletRuntime = opts.mainThreadModules.length > 0
+      ? path.resolve(angularLynxRoot, 'main-thread/dist/worklet-runtime/init.js')
+      : undefined;
 
     for (const [entryName, entryPoint] of Object.entries(entries)) {
       const imports: string[] = [];

@@ -14,7 +14,7 @@ const aliasMap = {
   'ng-lynx/internal/ops': resolve(pkg, 'internal/src/ops.ts'),
   'ng-lynx/internal/runtime': resolve(pkg, 'runtime/src/internal.ts'),
   'ng-lynx/main-thread': resolve(pkg, 'main-thread/src/entry-main.ts'),
-  'ng-lynx/worklet': resolve(pkg, 'main-thread/src/worklet-apply.ts'),
+  'ng-lynx/worklet': resolve(pkg, 'main-thread/src/worklet.ts'),
   'ng-lynx/worklet-runtime': resolve(pkg, 'main-thread/src/worklet-runtime/init.ts'),
   'ng-lynx/internal/worklet-runtime': resolve(pkg, 'main-thread/src/worklet-runtime/index.ts'),
   'ng-lynx/entry-background': resolve(pkg, 'runtime/src/entry-background.ts'),
@@ -78,6 +78,10 @@ await esbuild.build({
     // handler is registered, so the buffering path never activates), and
     // exercised for real by harness-ifr.ts.
     __HAS_FIRST_SCREEN__: 'true',
+    // The mock installs the worklet runtime, as a build with
+    // `mainThreadModules` does. `WORKLET_RUNTIME=false` runs a harness as a
+    // build without it (`<lynx-slider>`'s Background path).
+    __WORKLET_RUNTIME__: process.env.WORKLET_RUNTIME === 'false' ? 'false' : 'true',
   },
   // GenUI stays unbundled: typedoc (used by the catalog extractor) breaks
   // under bundling, and @preact/signals must stay a single runtime instance —

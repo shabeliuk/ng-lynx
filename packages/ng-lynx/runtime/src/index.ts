@@ -47,7 +47,6 @@ export {
   LynxMainThreadRef,
   type MainThreadEvents,
   type WorkletHandle,
-  type WorkletRef,
 } from './worklet.js';
 
 /**

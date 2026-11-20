@@ -149,10 +149,7 @@ export function applyOps(rawOps: unknown[], epoch?: string): void {
         const id = ops[i++] as number;
         const type = ops[i++] as string;
         let el: LynxElement;
-        if (type === '#comment') {
-          // Angular view anchor → invisible raw-text placeholder.
-          el = __CreateRawText('');
-        } else if (type === 'list') {
+        if (type === 'list') {
           // Native virtualized list (created with item callbacks).
           el = createListElement(id);
           if (__ENABLE_SELECTOR_QUERIES__ === true) __SetAttribute(el, `ng-ref-${id}`, 1);

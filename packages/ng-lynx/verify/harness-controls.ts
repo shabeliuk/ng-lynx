@@ -5,9 +5,9 @@
  * a filter `<input>` plus a filtered option list), `LynxCheckbox`,
  * `LynxRadioGroup`, and `LynxToggle`. All are `ControlValueAccessor`s,
  * exercised here via `[(ngModel)]`, simulating taps (`(tap)` → a
- * Background-thread string sign, same path as any other element — these
- * controls don't use main-thread worklets) and text input (Lynx's
- * `event.detail.value` shape).
+ * Background-thread string sign, same path as any other element) and text
+ * input (Lynx's `event.detail.value` shape). `LynxSlider`'s touches go to
+ * Main-Thread worklets instead, fired here with `fireWorklet`.
  *
  * Run with: `npm run verify:controls`.
  */
@@ -17,6 +17,7 @@ import { Component, NO_ERRORS_SCHEMA, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { bootstrapLynxApplication } from 'ng-lynx';
+import 'ng-lynx/entry-background';
 import { publishEvent } from 'ng-lynx/internal/runtime';
 import {
   LynxAutocomplete,
@@ -37,6 +38,7 @@ import {
   findAllByClass,
   findByClass,
   findText,
+  fireWorklet,
   getPage,
   installMockPapi,
   type MockEl,
@@ -70,7 +72,7 @@ import {
       <lynx-checkbox class="agree" [(ngModel)]="agreed">I agree</lynx-checkbox>
       <lynx-radio-group class="contact" [options]="contactOptions" [(ngModel)]="contactMethod" />
       <lynx-toggle class="newsletter" [(ngModel)]="subscribed">Newsletter</lynx-toggle>
-      <lynx-slider class="volume" [min]="0" [max]="100" [step]="10" [(ngModel)]="volume" />
+      <lynx-slider class="volume" [min]="0" [max]="100" [step]="10" [disabled]="sliderDisabled()" [(ngModel)]="volume" />
       <!-- Mounted on demand, so a slider that has never measured can be touched. -->
       @if (showLateSlider()) {
         <lynx-slider class="late" [min]="0" [max]="100" [step]="10" [(ngModel)]="lateVolume" />
@@ -111,6 +113,7 @@ export class TestComponent {
   contactMethod = '';
   subscribed = false;
   volume = 0;
+  readonly sliderDisabled = signal(false);
   readonly showLateSlider = signal(false);
   lateVolume = 0;
   quantity = 0;
@@ -130,35 +133,53 @@ function typeInto(el: MockEl, text: string): void {
 }
 
 /**
- * Publish a touch that resolves to `x` **track-local** pixels.
+ * Fire a touch on a slider's track that resolves to `x` **track-local** pixels.
  *
- * `slider.ts` reads only `detail.x` — page-absolute — and subtracts the
- * track's *measured* `left` (from `boundingClientRect`, via
- * `mock-papi.ts`'s `__QUERY_RECT_LEFT__`). An earlier version of this
- * harness (and of `slider.ts` itself) also fed a `touches[0].x` meant to be
- * element-relative on the native engine, disambiguated from `clientX` by
- * comparing the two; that heuristic was the reproducible cause of a real
- * on-device bug (the slider value repeatedly snapping to a wrong reading
- * mid-drag) and was removed rather than patched — see the class doc comment
- * on `LynxTouchLikeEvent` in slider.ts.
+ * The slider's worklets read `detail.x`, page-absolute, and subtract the
+ * track's left as measured by `invoke('boundingClientRect')` on the Main
+ * Thread (the mock answers with `__QUERY_RECT_LEFT__`). An earlier version
+ * also read `touches[0].x` and picked between the two per event; that was the
+ * cause of a value snapping mid-drag on a real phone (slider.ts's doc).
  *
  * `trackLeft` simulates a track that isn't flush against the page origin: it
- * sets `__QUERY_RECT_LEFT__` (read by the *next* `boundingClientRect`
- * measurement — i.e. only a `touchstart` actually picks it up; a `touchmove`
- * reuses whatever geometry that gesture's touchstart already measured) and
- * offsets the published `detail.x` by the same amount, so the math is
- * expected to land back on track-local `x` regardless of `trackLeft`.
+ * sets `__QUERY_RECT_LEFT__` (read by the *next* measurement, so only a
+ * `touchstart` picks it up; a `touchmove` reuses that gesture's geometry) and
+ * offsets `detail.x` by the same amount, so the result lands back on `x`.
  */
 function touch(
   el: MockEl,
-  eventName: 'touchstart' | 'touchmove',
+  eventName: 'touchstart' | 'touchmove' | 'touchend',
   x: number,
   trackLeft = 0,
 ): void {
-  const sign = el.events[eventName]?.sign;
-  if (typeof sign !== 'string') throw new Error(`element has no (${eventName}) sign`);
   (globalThis as Record<string, unknown>)['__QUERY_RECT_LEFT__'] = trackLeft;
-  publishEvent(sign, { type: eventName, detail: { x: x + trackLeft } });
+  const event = { type: eventName, detail: { x: x + trackLeft }, touches: [{ clientX: x + trackLeft }] };
+  const sign = el.events[eventName]?.sign;
+  if (onMainThread) {
+    if (typeof sign !== 'function') throw new Error(`track has no ${eventName} worklet`);
+    fireWorklet(el, eventName, event);
+  } else {
+    if (typeof sign !== 'string') throw new Error(`track has no (${eventName}) sign`);
+    publishEvent(sign, event);
+  }
+}
+
+/**
+ * Whether this run is a build with the worklet runtime (the default), where
+ * `<lynx-slider>` drags on the Main Thread. `verify:controls-background` runs
+ * the same file without it.
+ */
+declare const __WORKLET_RUNTIME__: boolean;
+const onMainThread = __WORKLET_RUNTIME__;
+
+/** An inline style property the Main Thread set on a mock element. */
+function styleOf(el: MockEl, name: string): string | undefined {
+  if (typeof el.style !== 'string') return undefined;
+  for (const declaration of el.style.split(';')) {
+    const colon = declaration.indexOf(':');
+    if (declaration.slice(0, colon).trim() === name) return declaration.slice(colon + 1).trim();
+  }
+  return undefined;
 }
 
 function need(el: MockEl | undefined, what: string): MockEl {
@@ -461,15 +482,38 @@ async function main(): Promise<void> {
     'and the track-level state class is removed again',
   );
 
-  console.log('\n=== LynxSlider: drag along the track (mock measures a 100px-wide track) ===');
+  console.log(`\n=== LynxSlider: drag along the track, on the ${onMainThread ? 'Main' : 'Background'} Thread (mock measures a 100px-wide track) ===`);
   const volumeHost = need(findByClass(page, 'volume'), '.volume host');
   const track = need(findByClass(volumeHost, 'lynx-slider-track'), 'volume track');
+  const fill = need(findByClass(volumeHost, 'lynx-slider-fill'), 'volume fill');
+  const thumb = need(findByClass(volumeHost, 'lynx-slider-thumb'), 'volume thumb');
   assert(cmp?.volume === 0, 'starts at min (0)');
+  if (onMainThread) {
+    assert(
+      ['touchstart', 'touchmove', 'touchend', 'touchcancel'].every((name) => typeof track.events[name]?.sign === 'function'),
+      'the track binds touchstart, touchmove, touchend and touchcancel to Main-Thread worklets',
+    );
+  } else {
+    assert(
+      ['touchstart', 'touchmove', 'touchend'].every((name) => typeof track.events[name]?.sign === 'string'),
+      'without the worklet runtime the track binds Background touch handlers',
+    );
+  }
   touch(track, 'touchstart', 50);
   await tick();
+  if (onMainThread) {
+    assert(
+      styleOf(fill, 'width') === '50%' && styleOf(thumb, 'left') === '50%',
+      `the Main Thread moves the fill and thumb itself (fill ${styleOf(fill, 'width')}, thumb ${styleOf(thumb, 'left')})`,
+    );
+  }
   await tick();
   assert(cmp?.volume === 50, `touchstart at 50% of the track sets the value (got ${cmp?.volume})`);
+  assert(styleOf(fill, 'width') === '50%' && styleOf(thumb, 'left') === '50%', 'the fill and thumb show it');
   touch(track, 'touchmove', 97);
+  if (onMainThread) {
+    assert(styleOf(fill, 'width') === '100%', `a touchmove repaints at once, before the Background Thread hears of it (fill ${styleOf(fill, 'width')})`);
+  }
   await tick();
   await tick();
   assert(cmp?.volume === 100, `touchmove keeps updating and snaps to step=10 (got ${cmp?.volume})`);
@@ -477,11 +521,17 @@ async function main(): Promise<void> {
   await tick();
   await tick();
   assert(cmp?.volume === 0, `dragging past the start clamps to min (got ${cmp?.volume})`);
+  touch(track, 'touchmove', 30);
+  touch(track, 'touchend', 30);
+  await tick();
+  await tick();
+  assert(cmp?.volume === 30, `touchend commits the last value (got ${cmp?.volume})`);
+  assert(styleOf(fill, 'width') === '30%', `and the Background render that follows agrees with the Main Thread (fill ${styleOf(fill, 'width')})`);
 
   // A track that starts 40px into the page (not flush against the page
-  // origin): confirm the page-absolute touch minus the *measured* `left`
-  // still lands on the track-local position. Only a `touchstart` re-measures
-  // (see `touch()`'s doc comment), so this exercises gesture start first...
+  // origin): the page-absolute touch minus the *measured* `left` still lands
+  // on the track-local position. Only a `touchstart` re-measures (see
+  // `touch()`'s doc comment), so this exercises gesture start first...
   touch(track, 'touchstart', 60, 40);
   await tick();
   await tick();
@@ -489,10 +539,9 @@ async function main(): Promise<void> {
     cmp?.volume === 60,
     `page-absolute touch minus the measured track left resolves correctly on an inset track (got ${cmp?.volume})`,
   );
-  // ...then confirms a touchmove *later in the same gesture* reuses that
-  // gesture's already-measured geometry rather than re-measuring (or,
-  // worse, silently assuming left=0) — if it used the wrong left this would
-  // clamp to 100, not land on 80.
+  // ...then a touchmove later in the same gesture reuses that gesture's
+  // geometry rather than re-measuring or assuming left=0 (which would clamp
+  // to 100, not land on 80).
   touch(track, 'touchmove', 80, 40);
   await tick();
   await tick();
@@ -500,23 +549,25 @@ async function main(): Promise<void> {
     cmp?.volume === 80,
     `a touchmove later in the same gesture reuses that gesture's measured geometry, still inset-aware (got ${cmp?.volume})`,
   );
-  // The FIRST touch on a slider that has never measured must not be dropped —
-  // it has to be applied the moment the geometry arrives. On-device this is
-  // exactly the difference between "the first tap on a freshly-mounted slider
-  // does nothing" (a real bug, seen in examples/accessibility) and it just
-  // working. Needs a slider that has never resolved a measurement, hence the
-  // on-demand mount; the query round-trip is stretched so the window is
-  // deterministic rather than a race.
+  touch(track, 'touchend', 80, 40);
+  await tick();
+  await tick();
+
+  // The FIRST touch on a slider must not be dropped: it's applied the moment
+  // the measurement lands. On a device this is the difference between "the
+  // first tap on a freshly-mounted slider does nothing" (a real bug, seen in
+  // examples/accessibility) and it working. The measurement is stretched so
+  // the window is deterministic, and the tap ends before it lands.
   const g = globalThis as Record<string, unknown>;
   g['__QUERY_DELAY_MS__'] = 60;
   cmp?.showLateSlider.set(true);
   await tick();
-  const lateTrack = need(
-    findByClass(need(findByClass(page, 'late'), '.late host'), 'lynx-slider-track'),
-    'late track',
-  );
+  await tick();
+  const lateHost = need(findByClass(page, 'late'), '.late host');
+  const lateTrack = need(findByClass(lateHost, 'lynx-slider-track'), 'late track');
   assert(cmp?.lateVolume === 0, 'the freshly-mounted slider starts at min');
   touch(lateTrack, 'touchstart', 20);
+  touch(lateTrack, 'touchend', 20);
   await tick();
   assert(
     cmp?.lateVolume === 0,
@@ -526,12 +577,42 @@ async function main(): Promise<void> {
   await tick();
   assert(
     cmp?.lateVolume === 20,
-    `the first touch is applied once the measurement lands, not dropped (got ${cmp?.lateVolume})`,
+    `a tap is applied once the measurement lands, even after its touchend (got ${cmp?.lateVolume})`,
+  );
+  assert(
+    styleOf(need(findByClass(lateHost, 'lynx-slider-fill'), 'late fill'), 'width') === '20%',
+    'and the late commit leaves the fill where the Main Thread put it',
   );
   g['__QUERY_DELAY_MS__'] = 0;
 
+  console.log('\n=== LynxSlider: the model writes, and disabled ===');
+  // A plain field, so zoneless Angular needs telling.
+  if (cmp) cmp.volume = 70;
+  app.components[0]?.changeDetectorRef.markForCheck();
+  await tick();
+  await tick();
+  assert(styleOf(fill, 'width') === '70%', `a value written by the model moves the fill (got ${styleOf(fill, 'width')})`);
+  touch(track, 'touchstart', 70);
+  touch(track, 'touchmove', 10);
+  touch(track, 'touchend', 10);
+  await tick();
+  await tick();
+  assert(cmp?.volume === 10, `a drag after a model write starts from it (got ${cmp?.volume})`);
+  cmp?.sliderDisabled.set(true);
+  await tick();
+  await tick();
+  touch(track, 'touchstart', 90);
+  touch(track, 'touchend', 90);
+  await tick();
+  await tick();
+  assert(cmp?.volume === 10 && styleOf(fill, 'width') === '10%', `a disabled slider ignores touches (got ${cmp?.volume})`);
+  cmp?.sliderDisabled.set(false);
+  await tick();
+  await tick();
+
   // Back to min, so the accessibility-value assertion below reads a known state.
-  touch(track, 'touchmove', -20, 40);
+  touch(track, 'touchstart', -20, 40);
+  touch(track, 'touchend', -20, 40);
   await tick();
   await tick();
   assert(track.attrs['accessibility-traits'] === 'adjustable', 'track carries accessibility-traits="adjustable"');

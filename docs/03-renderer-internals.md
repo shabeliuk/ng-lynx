@@ -13,11 +13,11 @@ ops. `scheduleFlush()` is called after every mutation.
 | `Renderer2` method | Shadow-tree effect | Op(s) emitted |
 | --- | --- | --- |
 | `createElement(name)` | new `ShadowElement('element')` | `CREATE id name` |
-| `createComment(v)` | new comment node (view anchor) | `CREATE id '#comment'` |
+| `createComment(v)` | new comment node (view anchor) | (none: anchors stay on the Background Thread) |
 | `createText(v)` | new raw-text node | `CREATE_TEXT id` (+ `SET_TEXT` if non-empty) |
 | `appendChild(p, c)` | link `c` last under `p` | `INSERT p c -1` |
-| `insertBefore(p, c, ref)` | link `c` before `ref` | `INSERT p c ref?.id ?? -1` |
-| `removeChild(p, c)` | unlink `c` | `REMOVE p c` |
+| `insertBefore(p, c, ref)` | link `c` before `ref` | `INSERT p c anchor` (`ref`, or the next sibling the Main Thread has; `-1` if none) |
+| `removeChild(p, c)` | unlink `c` | `REMOVE p c` (none for a comment) |
 | `setAttribute(el, 'class', v)` | replace class set | `SET_CLASS id merged` (at flush) |
 | `setAttribute(el, 'style', v)` | keep as `staticStyle` | `SET_STYLE id cssString` (at flush) |
 | `setAttribute(el, k, v)` | track `id` if `k==='id'` | `SET_ATTR id k v` |
@@ -25,9 +25,25 @@ ops. `scheduleFlush()` is called after every mutation.
 | `addClass` / `removeClass` | mutate class set | `SET_CLASS id merged` (at flush) |
 | `setStyle` / `removeStyle` | mutate style record | `SET_STYLE id cssString` (at flush) |
 | `setProperty(el, k, v)` | `id`, `style`, `className` as their attribute forms | `SET_ATTR id k v`; `value` on a text field also calls `setValue` |
-| `setValue(node, v)` | — | `SET_TEXT id v` |
+| `setValue(node, v)` | — | `SET_TEXT id v` (none for a comment) |
 | `listen(el, name, cb)` | register sign | `SET_EVENT id type name sign` |
 | `parentNode` / `nextSibling` | read shadow tree | (none) |
+
+### Comment anchors
+
+Angular marks where a view can go with a comment node: one per `@if`, `@switch`,
+`@for`, `<ng-container>` and `*ngIf`, and one more per row for each block inside a
+`@for`. Those comments exist only in the shadow tree, where Angular walks them with
+`parentNode` and `nextSibling`. None is sent: an insert anchored on one is sent
+anchored on the next sibling that is on the Main Thread instead, or as an append when
+there's none. The shadow tree's order is the Main Thread's order minus the comments, so
+that sibling is already in place. Under a `<list>`, text nodes are skipped the same
+way, since a `<list>` takes only `<list-item>`s.
+
+Until 0.1.0-rc.1 each anchor was an empty raw-text node on the Main Thread: one more
+element, a create and an insert call, and a registry entry. `verify:anchors` checks
+the order through every kind of change, and that the registry holds only native
+nodes.
 | `selectRootElement(sel)` | return page root | (none) |
 
 ### Classes and styles are accumulated, not replaced

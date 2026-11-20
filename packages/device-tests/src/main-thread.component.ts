@@ -1,20 +1,23 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { LynxMainThread, runOnMainThread } from 'ng-lynx';
 import { LYNX_ELEMENTS } from 'ng-lynx/elements';
+import { LynxSlider } from 'ng-lynx/forms';
 
 import { addOnMainThread, countTap, stopTap } from './worklets.js';
 
 import { BackButtonComponent } from './back-button.component.js';
 
 /**
- * A worklet bound to a tap, a call across to the Main Thread and back, and a
- * worklet that stops its tap from reaching the box around it.
+ * A worklet bound to a tap, a call across to the Main Thread and back, a
+ * worklet that stops its tap from reaching the box around it, and a
+ * `<lynx-slider>`, which drags on the Main Thread in a build with worklets.
  */
 @Component({
   selector: 'app-main-thread',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BackButtonComponent, LYNX_ELEMENTS, LynxMainThread],
+  imports: [BackButtonComponent, FormsModule, LYNX_ELEMENTS, LynxMainThread, LynxSlider],
   template: `
     <view class="page">
       <app-back-button></app-back-button>
@@ -47,6 +50,10 @@ import { BackButtonComponent } from './back-button.component.js';
       </view>
       <text class="line" [flatten]="false">Outer taps: {{ outerTaps() }}</text>
       <text class="line" [flatten]="false">Stop: {{ stopReport() }}</text>
+      <view class="slider-box" [flatten]="false" accessibility-label="Volume slider">
+        <lynx-slider [min]="0" [max]="100" [step]="10" [(ngModel)]="volume" />
+      </view>
+      <text class="line" [flatten]="false">Volume: {{ volume() }}</text>
     </view>
   `,
 })
@@ -57,6 +64,7 @@ export class MainThreadComponent {
   protected readonly result = signal('none');
   protected readonly outerTaps = signal(0);
   protected readonly stopReport = signal<unknown>('none');
+  protected readonly volume = signal(50);
 
   protected call(): void {
     runOnMainThread(addOnMainThread)(40, 2).then(

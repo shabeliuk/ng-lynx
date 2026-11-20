@@ -28,6 +28,14 @@ release may change the API; experimental features may change in any release.
   with `setStyle` and `getComputedStyleProperty`, and keep the `id`, `uid` and `dataset`
   the engine sent. Printing an event or sending it to the Background Thread no longer
   reaches the native element.
+- Angular's comment anchors no longer become native nodes. Each `@if`, `@switch`, `@for`,
+  `<ng-container>` and `*ngIf`, and each block inside a `@for` row, made an empty raw-text
+  element on the Main Thread, with its own create and insert calls. They now stay on the
+  Background Thread, as they already did under `<list>`.
+- `<lynx-slider>` drags on the Main Thread in a build that has the worklet runtime
+  (`mainThreadModules`): the thumb follows the finger without a round trip to the
+  Background Thread on each move, and the model hears only of values that change. It
+  is marked touched when the finger lifts. Without the runtime it works as before.
 - `ng add ng-lynx` writes `lynx/lynx.config.mts`, so Node no longer warns that the config
   "doesn't parse as CommonJS" in an Angular CLI workspace. A `"type": "module"` workspace
   still gets `lynx.config.ts`.
@@ -36,8 +44,24 @@ release may change the API; experimental features may change in any release.
 - `mainThreadLynx.getTextInfo` says the engine has no text measurement, on the web
   preview, instead of `lynx.getTextInfo is not a function`.
 
+### Removed
+
+- From `ng-lynx/worklet`: `applySetRef`, `applySetWorkletEvent`, `applyRunOnMainThread`,
+  `applyReleaseMainThreadRef` and `resetWorkletState`, the Main-Thread executor's own op
+  handlers, which the entry exported by mistake. From `ng-lynx`: the `WorkletRef` type,
+  the wire form of a worklet binding.
+
 ### Added
 
+- Typed attributes and events from `@lynx-js/types` 4.4 that templates could only bind
+  with `NO_ERRORS_SCHEMA`: on every element `consume-slide-event`,
+  `block-native-event-areas`, `event-through-active-regions`, `native-interaction-enabled`,
+  `ios-enable-simultaneous-touch`, `enable-touch-pseudo-propagation`, `focusable`,
+  `hardware-layer` and three accessibility attributes; `<list>` `scroll-event-throttle`,
+  `item-snap`, `bounces` and the `listanimation*` events; `<image>` `image-config`,
+  `cap-insets-scale`, `defer-src-invalidation` and the animated-image events; and more
+  on `<input>`, `<textarea>`, `<text>`, `<overlay>`, `<scroll-coordinator>`, `<blur-view>`
+  and `<webview>`. `verify:element-templates` compiles them with `strictTemplates`.
 - `ng-lynx/worklet-runtime`, for a build that doesn't use `pluginAngularLynx`: import it
   first among the Main-Thread modules.
 - `@experimental` in the types on gestures, dynamic components, GenUI and
