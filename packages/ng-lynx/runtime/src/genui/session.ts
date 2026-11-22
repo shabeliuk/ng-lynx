@@ -25,6 +25,7 @@ import type {
 } from '@lynx-js/genui/a2ui/store';
 import { createResource, MessageProcessor } from '@lynx-js/genui/a2ui/store';
 
+/** @experimental */
 export class A2uiSession {
   readonly processor = new MessageProcessor();
 

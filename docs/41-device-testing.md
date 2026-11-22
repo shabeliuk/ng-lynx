@@ -109,7 +109,7 @@ A flow passing on screen isn't enough, so `run.mjs` also fails the run on:
 | `route-param` | Router navigation with a param | Angular 22's router skipping every navigation |
 | `list` | Scrolling a native list far enough to recycle cells, both ways | Cells appended again on each request |
 | `input` | Typing on the native keyboard, Return firing `(confirm)`, and, on Android, typing into the middle of an `[(ngModel)]` field | `(confirm)` needing `confirm-type` on Android; the cursor jumping to the end. iOS has no key to move the cursor with |
-| `main-thread` | A worklet on a tap, `runOnBackground`, `runOnMainThread`; a worklet whose `stopPropagation()` keeps its tap from the box around it, reporting a live `currentTarget` with its `dataset` and `uid` | Worklets not reaching the engine; the worklet runtime's event result or event targets breaking (docs/42) |
+| `main-thread` | A worklet on a tap, `runOnBackground`, `runOnMainThread`; a worklet whose `stopPropagation()` keeps its tap from the box around it, reporting a live `currentTarget` with its `dataset` and `uid`; a `<lynx-slider>` dragged both ways on the Main Thread | Worklets not reaching the engine; the worklet runtime's event result or event targets breaking (docs/42); the slider's Main-Thread measurement |
 | `gesture` | A native pan, dragged twice | The detector stopping after the first drag on Android |
 | `gesture-lab` | Tap and long-press detectors, a tap that waits for a long press, `ctx.gesture.fail()` and `end()` in a pan, and a fling after a fast swipe | `fail()`/`end()` throwing `not a function` |
 | `assets` | An image through `lynxAssetUrl()`, with no lazy chunk in the build, and two images imported as modules: one emitted as a file, one inlined as a `data:` URL | Asset URLs staying relative |
@@ -119,6 +119,7 @@ A flow passing on screen isn't enough, so `run.mjs` also fails the run on:
 | `attributes` | `(longpress)`, `initial-scroll-index`, `default-value`, `<markdown>` drawing and `<filter-image>` loading (iOS only: Explorer 4.2.0's Android APK crashes on the first and lacks the second, see [18](18-typed-templates.md)), and the engine accepting the other typed attributes and events | Attributes the engine rejects |
 | `platform` | `lynxSelectRoot()`, `lynxSelectUniqueID()`, `lynxEventSource()` with the line held open and a `✓` split between two network chunks, and `reload()` with new init data | Lynx's `EventSource` delivering nothing on iOS; `removeComponents is not a function` on reload; a split character decoding as `���` |
 | `timing` | Each measurement on the timing screen completes: boot, 50 updates, 1,000 rows, a fling | The timing screen breaking. Its numbers are for a phone: see below |
+| `memory` | 1,000 mounts and unmounts of a screen of rows, a slider and a checkbox | The churn crashing or stalling. Memory is read from outside: see below |
 
 **The timing screen** ("Open timing") shows numbers to take from a real phone:
 
@@ -143,6 +144,83 @@ be seen from JavaScript. On the iOS simulator and the Android emulator (2026-11-
 Simulators and emulators share the Mac's CPU and say little about a phone. Run it on one, release
 build of Explorer if you can, and put those numbers here.
 
+**Memory** ("Open memory"): each tap of "Churn 1000" mounts and destroys a screen of 20 rows, each
+with an `@if`, `(tap)` handlers, a `<lynx-slider>` and a `<lynx-checkbox>`, 1,000 times, waiting for
+each batch to reach the Main Thread. Read the app's memory between taps: on Android
+`adb shell dumpsys meminfo com.lynx.explorer` (TOTAL PSS), on the iOS simulator `footprint -p <pid>`
+on the Mac. A leak climbs with every round; a heap that's collected rises and falls. Headless,
+`verify:memory` checks that 1,000 mounts leave every registry on both threads at its baseline.
+
+| After | Android emulator, PSS | iOS simulator, footprint |
+|---|---|---|
+| 1,000 mounts | 87.6 MB | 68 MB |
+| 2,000 | 92.5 MB | 77 MB |
+| 3,000 | 97.3 MB | 76 MB |
+| 4,000 | 94.3 MB | 79 MB |
+| 5,000 | 92.7 MB | 93 MB |
+| 6,000 | 92.4 MB | 96 MB |
+| 7,000 | | 104 MB |
+
+Measured 2026-11-20, engine 4.2. Android levels off. The iOS simulator climbed about 4 MB per 1,000
+mounts of this 95-element screen, while `verify:memory` showed every registry ng-lynx keeps, on both
+threads, back at its baseline.
+
+**The climb is Lynx DevTool's, not ng-lynx's** (found 2026-11-22). That simulator's Explorer had Lynx
+DevTool switched on (Settings → Lynx DevTool Switches; `enable_devtool` in its preferences). Launched
+with `MallocStackLogging=1` and compared with `heap -s` before and after 2,000 mounts, 11 MB of the
+12 MB that grew was one `std::unordered_map<int, lynx::starlight::LayoutObject*>`, 184,000 entries,
+about one per element created. It's DevTool's `InspectorUIExecutor::layout_objects_`: the engine's
+`LayoutContext` reports each new layout node to DevTool (`OnLayoutObjectCreated`), but
+`DestroyLayoutNode` never reports the node's end (`OnLayoutObjectDestroy` has no caller in
+`lynx-family/lynx` at `5955097`), so the map keeps an entry, and a dangling pointer, for every element
+ever created. With DevTool off, the same 2,000 mounts left the map alone and the footprint flat (88 to
+89 MB; of the heap's 2.7 MB change, 2.3 MB is JavaScriptCore's own collected heap). An app without
+DevTool doesn't have it. Measure memory with DevTool off.
+
+### On a real iPhone
+
+Maestro drives simulators only (2.11 says "Physical iOS devices are not yet supported"), and Lynx
+Explorer's iOS build runs only on the simulator. So `iphone.mjs` replays the same flows with an
+XCUITest, [`iphone/DeviceFlows.swift`](../packages/device-tests/iphone/DeviceFlows.swift), in the
+genui example's native host app ([`examples/genui/ios`](../examples/genui/ios)), which loads any bundle
+URL it's launched with:
+
+```bash
+pnpm --filter ng-lynx-device-tests test:iphone
+```
+
+It builds the test app with this Mac's Wi-Fi address in place of `127.0.0.1`, into `dist-iphone/`,
+serves it there, turns `flows/*.yaml` into a plan of the same steps (`node iphone.mjs --plan` prints
+it), copies the test into the host's UI-test target for the run, and runs it with `xcodebuild test`.
+`--flow <name>` runs one flow. The xcodebuild log lands in `artifacts-iphone.log`, and each flow's
+screenshots in the run's `.xcresult`.
+
+Once per phone and Mac:
+
+1. `npm run ios:device` in `examples/genui`: it writes your signing team to `Signing.local.xcconfig`.
+2. On the phone: Settings → General → VPN & Device Management → your developer certificate → Trust.
+3. On the Mac, the first build asks whether `codesign` may use your signing key: Always Allow.
+
+The phone must be unlocked, and on the same Wi-Fi as the Mac. Xcode 27 rejects the pods' own
+deployment targets, so the run raises them to iOS 15.
+
+Differences from the simulator run: `page-exit` is skipped, since it leaves the page through
+Explorer's back button and the host app has none; the host's engine is the genui app's Lynx pods, not
+the pinned Explorer; and the engine log isn't checked, only what the phone fetched from the server.
+
+Three flows stop at something Explorer provides and the host doesn't, and are reported as host gaps
+rather than failures: `host-data` (the host passes no init data), `attributes` (it doesn't register
+`<markdown>`) and `assets` (its image loader doesn't load `data:` URLs). Each stops at that step, so its
+later steps don't run on the phone. Any other failure fails the run.
+
+**First run, 2026-11-22, iPhone 14 Pro:** 12 of 15 flows passed (counter, gesture, gesture-lab,
+input, lazy-route, list, main-thread, memory, network, platform, route-param, timing), and the three
+above stopped at their host gaps.
+
+**Opening a bundle by hand on the iOS simulator:** leave `&fullscreen=true` off the deep link. Explorer
+4.2 on iOS takes it as part of the bundle's URL and fails with error 102, "the template file size is 0".
+Android takes it as a flag.
+
 **To try the screens by hand**, on a phone or a simulator: `npm run dev` in `packages/device-tests`,
 then scan the printed code with Lynx Explorer. The dev server also serves the `/sse` stream the
 platform screen connects to.
@@ -156,7 +234,7 @@ with no View of its own, so every element a flow taps or reads sets `[flatten]="
 it. A new screen that a flow can't find on Android is usually missing this.
 
 **What this doesn't cover:** live editing, which needs a dev server; anything visual, such as the
-invisible slider thumb; touch feel, screen readers and performance; the 24 examples, which still run by
+invisible slider thumb; touch feel, screen readers and performance; the 25 examples, which still run by
 hand.
 
 > **"Engine 3.7" below.** Early passes were recorded as "Explorer 4.0.0", but that
@@ -171,6 +249,7 @@ every engine here.
 |---|---|---|---|---|---|---|---|
 | `hello-world` | ✅ | | ✅ | ✅ | ✅ | ✅ | |
 | `product-detail` | | | ✅ | | ✅ | ✅ | |
+| `gallery` | | | ✅ | | ✅ | | |
 | `list` | ✅ |  | ✅ | ✅ | ✅ | ✅ |  |
 | `virtual-list` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | |
 | `lynx-forms` | ✅ |  | ✅ | ◐ | ✅ | ✅ |  |
@@ -210,8 +289,38 @@ Each one was driven, not just opened. What each row left out:
   "Fill example", "Reset", and typing with the cursor moved mid-field, in a `[formControl]` and an
   `[(ngModel)]` field. The cursor stays where it was put (2026-11-10).
 - `genui` ran the offline planner and both protocol tabs, not a real LLM.
-- `dynamic-component` only had its network dropped on Android, where it fails with a message.
+- `dynamic-component` on a bad network, both platforms (2026-11-19): with the remote bundle's
+  connection cut, loading fails at once with code 160101 and the engine's reason (iOS "The network
+  connection was lost", Android "unexpected end of stream"). Retried on a slow network (4 s), it loads
+  and the card works. The engine doesn't keep the failure, unlike the lazy-chunk runtime's (see
+  `network` above). iOS tried the cut request three times before failing; Android once.
 - `threejs-*` ran, but only a phone's frame rate means anything.
+
+### Before 1.0.0
+
+On 2026-11-22, the tree tagged for `1.0.0`: the package build and typecheck, all 71 harnesses, the
+packed tarball scaffolded into all three templates and built, with the Vitest and Jest quick starts,
+on Angular 22 and 21 (`scripts/verify-consumer.mjs`), every example's production build (25 examples,
+27 configs), and the 16 device flows on the iOS simulator and the Android emulator, engine 4.2. On a
+real iPhone 14 Pro, through `test:iphone`: 12 of 15 flows passed, and three stopped at host gaps
+(above).
+
+### Installing from npm
+
+On 2026-11-19, the published `0.1.0-rc.0`, as a user gets it, outside the repository:
+
+- `npm create ng-lynx@rc` with each template (`minimal`, `router`, `forms`): install, build, and
+  run on the iOS simulator and the Android emulator. **Found and fixed:** the page background
+  stopped below the content in all three; the `router` nav stacked vertically, since
+  `flex-direction` does nothing without `display: flex`; the `forms` select, checkbox and toggle
+  were invisible, since the template didn't import the theme, and the theme itself left the
+  select's options unstyled and opened its sheet inside the form.
+- `ng add ng-lynx@rc` in `ng new` workspaces on Angular 21.2 and 22.3: the Lynx build, the
+  workspace's own `ng build`, and the app on both platforms. **Found and fixed:** Node warned on
+  every run that `lynx.config.ts` "doesn't parse as CommonJS"; `ng add` now writes
+  `lynx.config.mts`.
+
+Not run: `npm run dev` with an edit swapped in, in a created app.
 
 ## What to check, per example
 
@@ -255,6 +364,12 @@ and its list scrolls. Run a production build too: worklet ids come from function
 snaps with its own timing (`easeInOut` above, slower and linear below), and each row of dots
 follows its own carousel. Tap a dot: the carousel jumps there. A short or slow swipe snaps back.
 
+**`gallery`.** The official Gallery tutorial. The waterfall starts scrolling by itself
+(`autoScroll` through `invoke`), in two columns of different heights. Two scrollbars follow it: the
+left one from `(scroll)` on the Background Thread, the right one from a worklet on the Main Thread.
+Drag the list fast: the right one keeps up and the left one trails. Tap a heart: it turns red with
+two ripples.
+
 **`projection`.** Both slots project, and a `(tap)` from the consumer's template works
 inside the card.
 
@@ -283,7 +398,9 @@ first frame. On a real iPhone, Autoplay had done nothing at first: Reload didn't
 source, and the toggle only set an attribute Lynx doesn't have. Fixed and confirmed there.
 
 **`ui-gallery`.** Draggable, Swiper, Sheet, SwipeAction and Sortable with a finger: the page
-doesn't scroll underneath. FeedList's pull and load-more.
+doesn't scroll underneath. FeedList's pull and load-more. Since 2026-11-20 the five drags run on
+the Main Thread ([docs/37](37-ui-gallery.md)): each was dragged on the iOS simulator and the
+Android emulator, but the real-iPhone ✅ above is for the earlier, Background-Thread version.
 
 **`accessibility`.** VoiceOver and TalkBack: heading, avatar label, divider skipped, progress
 bar and value, Follow button and changing label, message row's custom actions, stepper
@@ -296,8 +413,8 @@ translated too. The locale is fixed when the bundle is built, so the phone's lan
 nothing.
 
 **`dynamic-component`.** `npm run dev`, which builds the remote bundle first. Load the remote card,
-tap its button, load it again. Test on a slow connection
-and with the network dropped: it should fail, not hang.
+tap its button, load it again. On a phone, a slow connection and a dropped one (Network Link
+Conditioner): it should fail with the engine's reason, not hang, and load on the retry.
 
 **`hot-swap`.** On the dev server, with the app open and visible, edit `CounterCard`'s template and
 save: the text changes in place and the counter survives. Save again: it chains. A logic edit isn't

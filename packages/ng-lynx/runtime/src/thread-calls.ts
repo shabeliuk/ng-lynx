@@ -115,6 +115,11 @@ export function backgroundFunction<A extends unknown[], R>(fn: (...args: A) => R
   return { _bgFnId: id };
 }
 
+/** How many Background functions and calls this thread holds. For leak checks (verify:memory). */
+export function threadCallSizes(): { backgroundFunctions: number; pendingCalls: number } {
+  return { backgroundFunctions: backgroundFunctions.size, pendingCalls: pendingCalls.size };
+}
+
 let nextRefId = 0;
 
 /**

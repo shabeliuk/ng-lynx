@@ -1,6 +1,6 @@
 {
   "name": "ng-lynx",
-  "version": "0.1.0-rc.0",
+  "version": "1.0.0",
   "private": false,
   "description": "Angular custom renderer for building Lynx apps",
   "keywords": [
@@ -80,9 +80,9 @@
       "default": "./main-thread/dist/entry-main.js"
     },
     "./worklet": {
-      "types": "./main-thread/dist/worklet-apply.d.ts",
-      "import": "./main-thread/dist/worklet-apply.js",
-      "default": "./main-thread/dist/worklet-apply.js"
+      "types": "./main-thread/dist/worklet.d.ts",
+      "import": "./main-thread/dist/worklet.js",
+      "default": "./main-thread/dist/worklet.js"
     },
     "./worklet-runtime": {
       "types": "./main-thread/dist/worklet-runtime/init.d.ts",
@@ -140,6 +140,7 @@
     "typecheck": "tsc -p tsconfig.json",
     "verify": "node verify/build.mjs",
     "verify:all": "node verify/run-all.mjs",
+    "verify:anchors": "VERIFY_DEV=true node verify/build.mjs harness-anchors.ts",
     "verify:animate": "node verify/build.mjs harness-animate.ts",
     "verify:appevents": "node verify/build.mjs harness-appevents.ts",
     "verify:page-destroy": "node verify/build.mjs harness-page-destroy.ts",
@@ -150,8 +151,10 @@
     "verify:event-collision": "VERIFY_DEV=true node verify/build.mjs harness-event-collision.ts",
     "verify:event-source": "node verify/build.mjs harness-event-source.ts",
     "verify:invoke-types": "tsc -p verify/types/tsconfig.json",
+    "verify:element-templates": "node verify/element-templates.mjs",
     "verify:ngtools-missing": "node verify/ngtools-missing.mjs",
     "verify:controls": "node verify/build.mjs harness-controls.ts",
+    "verify:controls-background": "WORKLET_RUNTIME=false node verify/build.mjs harness-controls.ts",
     "verify:defer": "node verify/build.mjs harness-defer.ts",
     "verify:destroy": "node verify/build.mjs harness-destroy.ts",
     "verify:dev-reload": "node verify/build.mjs harness-dev-reload.ts",
@@ -178,6 +181,7 @@
     "verify:lazy-chunks": "node verify/lazy-chunks.mjs",
     "verify:list": "node verify/build.mjs harness-list.ts",
     "verify:list-scroll": "ENABLE_SELECTOR_QUERIES=true node verify/build.mjs harness-list-scroll.ts",
+    "verify:memory": "node verify/build.mjs harness-memory.ts",
     "verify:mtref": "node verify/build.mjs harness-mtref.ts",
     "verify:main-thread-api": "node verify/build.mjs harness-main-thread-api.ts",
     "verify:native-modules": "node verify/build.mjs harness-native-modules.ts",

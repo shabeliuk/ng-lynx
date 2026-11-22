@@ -69,7 +69,7 @@ const runner = new SchematicTestRunner('ng-lynx', collectionPath);
 // -- ng-add: defaults ---------------------------------------------------------
 {
   const tree = await runner.runSchematic('ng-add', {}, fixtureTree());
-  assert(tree.exists('lynx/lynx.config.ts'), 'ng-add creates lynx/lynx.config.ts (default directory)');
+  assert(tree.exists('lynx/lynx.config.mts'), 'ng-add creates lynx/lynx.config.mts (default directory; .mts since the workspace is not ESM)');
   assert(tree.exists('lynx/tsconfig.json'), 'ng-add creates lynx/tsconfig.json');
   assert(tree.exists('lynx/src/index.ts'), 'ng-add creates lynx/src/index.ts');
   assert(tree.exists('lynx/src/app.component.ts'), 'ng-add creates lynx/src/app.component.ts');
@@ -80,22 +80,22 @@ const runner = new SchematicTestRunner('ng-lynx', collectionPath);
     'app.component.ts interpolates the workspace package name',
   );
   assert(
-    tree.readContent('lynx/lynx.config.ts').includes("entry: {\n      main: './src/index.ts',"),
-    'lynx.config.ts points its entry at ./src/index.ts',
+    tree.readContent('lynx/lynx.config.mts').includes("entry: {\n      main: './src/index.ts',"),
+    'lynx.config.mts points its entry at ./src/index.ts',
   );
 
   const pkg = JSON.parse(tree.readContent('package.json'));
   assert(
-    pkg.scripts['lynx:dev'] === 'rspeedy dev --root lynx --config lynx.config.ts',
+    pkg.scripts['lynx:dev'] === 'rspeedy dev --root lynx --config lynx.config.mts',
     'adds lynx:dev script (--config relative to --root, confirmed empirically — see below)',
   );
   assert(
-    pkg.scripts['lynx:build'] === 'rspeedy build --root lynx --config lynx.config.ts',
+    pkg.scripts['lynx:build'] === 'rspeedy build --root lynx --config lynx.config.mts',
     'adds lynx:build script (--config relative to --root)',
   );
   assert(
-    tree.readContent('lynx/lynx.config.ts').includes("tsconfig: 'lynx/tsconfig.json'"),
-    "lynx.config.ts pins tsconfig explicitly, workspace-root-relative (npm scripts' cwd)",
+    tree.readContent('lynx/lynx.config.mts').includes("tsconfig: 'lynx/tsconfig.json'"),
+    "lynx.config.mts pins tsconfig explicitly, workspace-root-relative (npm scripts' cwd)",
   );
   assert(pkg.scripts.start === 'ng serve', 'existing scripts are preserved');
   for (const dep of ['@lynx-js/rspeedy', '@lynx-js/qrcode-rsbuild-plugin', '@angular/compiler-cli', '@ngtools/webpack']) {
@@ -111,11 +111,19 @@ const runner = new SchematicTestRunner('ng-lynx', collectionPath);
   );
 }
 
+// -- ng-add: an ESM workspace keeps .ts --------------------------------------------
+{
+  const tree = await runner.runSchematic('ng-add', {}, fixtureTree({ type: 'module' }));
+  assert(tree.exists('lynx/lynx.config.ts') && !tree.exists('lynx/lynx.config.mts'), 'a "type": "module" workspace gets lynx.config.ts');
+  const pkg = JSON.parse(tree.readContent('package.json'));
+  assert(pkg.scripts['lynx:dev'] === 'rspeedy dev --root lynx --config lynx.config.ts', 'and its scripts name lynx.config.ts');
+}
+
 // -- ng-add: custom directory -------------------------------------------------
 {
   const tree = await runner.runSchematic('ng-add', { directory: 'mobile' }, fixtureTree());
-  assert(tree.exists('mobile/lynx.config.ts'), '--directory mobile scaffolds into mobile/ instead of lynx/');
-  assert(!tree.exists('lynx/lynx.config.ts'), '--directory mobile does not also create lynx/');
+  assert(tree.exists('mobile/lynx.config.mts'), '--directory mobile scaffolds into mobile/ instead of lynx/');
+  assert(!tree.exists('lynx/lynx.config.mts'), '--directory mobile does not also create lynx/');
 }
 
 // -- ng-add: preserves an existing devDependency pin -------------------------
@@ -205,17 +213,17 @@ for (const file of generated.files.filter((f) => f.startsWith(`/${scratchName}/`
   mkdirSync(path.dirname(dest), { recursive: true });
   writeFileSync(dest, generated.readContent(file));
 }
-assert(existsSync(path.join(scratchDir, 'lynx.config.ts')), 'materialized the generated lynx.config.ts onto disk');
+assert(existsSync(path.join(scratchDir, 'lynx.config.mts')), 'materialized the generated lynx.config.mts onto disk');
 
 try {
   execFileSync(
     './node_modules/.bin/rspeedy',
-    ['build', '--root', scratchName, '--config', 'lynx.config.ts'],
+    ['build', '--root', scratchName, '--config', 'lynx.config.mts'],
     { cwd: routerDir, stdio: 'pipe' },
   );
   assert(
     existsSync(path.join(scratchDir, 'dist/main.lynx.bundle')) && existsSync(path.join(scratchDir, 'dist/main.web.bundle')),
-    'a real `rspeedy build --root <dir> --config lynx.config.ts` (cwd = workspace root) finds src/index.ts and produces both bundles',
+    'a real `rspeedy build --root <dir> --config lynx.config.mts` (cwd = workspace root) finds src/index.ts and produces both bundles',
   );
 } finally {
   rmSync(scratchDir, { recursive: true, force: true });

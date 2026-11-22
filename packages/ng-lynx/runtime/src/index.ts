@@ -47,7 +47,6 @@ export {
   LynxMainThreadRef,
   type MainThreadEvents,
   type WorkletHandle,
-  type WorkletRef,
 } from './worklet.js';
 
 /**
@@ -75,7 +74,7 @@ export {
  * `@lynx-js/web-core` doesn't implement the underlying native PAPI. See
  * docs/32-gestures.md.
  *
- * @public
+ * @experimental
  */
 export {
   GESTURE_TYPE,
@@ -347,6 +346,12 @@ export function asLynxElement(nativeElement: unknown): unknown {
   return nativeElement;
 }
 
+/**
+ * `loadDynamicComponent(url)` loads a separately built component bundle at runtime.
+ * See docs/38-dynamic-component.md.
+ *
+ * @experimental
+ */
 export { loadDynamicComponent } from './dynamic-component.js';
 
 /**
@@ -357,6 +362,8 @@ export { loadDynamicComponent } from './dynamic-component.js';
  * `pluginAngularLynx({ dynamicComponentHost: true })` /
  * `({ dynamicComponent: true })`; exported for hosts that wire it by hand
  * and for tests. See docs/38-dynamic-component.md.
+ *
+ * @experimental
  */
 export {
   DEFAULT_SHARED_MODULES,

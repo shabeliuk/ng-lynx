@@ -7,6 +7,7 @@
  * Internal: `ng-lynx/internal/worklet-runtime`. `pluginAngularLynx` bundles
  * `init.ts`, which calls {@link installWorkletRuntime}.
  */
+import { registerControlWorklets } from '../controls.js';
 import { installQueries, installTimers } from './api-env.js';
 import { clearWorkletFunctions, markWorkletRuntimeInstalled, registerWorkletFunction, workletMap } from './registry.js';
 import { runWorklet } from './run-worklet.js';
@@ -38,6 +39,7 @@ export function installWorkletRuntime(): void {
     installQueries(lynxObject);
   }
   markWorkletRuntimeInstalled();
+  registerControlWorklets();
 }
 
 /** Forget every registered worklet. For tests: `installMockPapi()` calls it. */
@@ -45,4 +47,6 @@ export function clearWorklets(): void {
   clearWorkletFunctions();
   const impl = (globalThis as Record<string, unknown>)['lynxWorkletImpl'] as { _workletMap?: unknown } | undefined;
   if (impl) impl._workletMap = workletMap();
+  // ng-lynx's own controls stay: they're part of the runtime, not the app.
+  registerControlWorklets();
 }

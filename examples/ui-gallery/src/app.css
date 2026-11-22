@@ -147,10 +147,6 @@
   height: 100%;
 }
 
-.swiper-track-animated {
-  transition: transform 240ms ease;
-}
-
 .swiper-slide {
   display: flex;
   flex-direction: column;
@@ -296,10 +292,6 @@
   border-top-right-radius: 20px;
 }
 
-.sheet-panel-animated {
-  transition: transform 220ms ease;
-}
-
 /* Back to 10px (was briefly 20px) — that made the touch target bigger but
  * wasn't what was wanted; `.sheet-panel`'s extra bottom padding above is the
  * actual fix for "more room". */
@@ -389,11 +381,16 @@
 
 /* --- Sortable ------------------------------------------------------------- */
 .sortable-list {
-  display: flex;
-  flex-direction: column;
+  position: relative;
 }
 
+/* Each item sits in a slot that its transform picks, so a reorder moves
+ * transforms, not elements (sortable-demo.component.ts). */
 .sortable-item {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -404,10 +401,6 @@
   border-bottom-width: 1px;
   border-bottom-style: solid;
   border-bottom-color: var(--border);
-}
-
-.sortable-item-dragging {
-  background-color: var(--card-bg);
 }
 
 .sortable-handle {

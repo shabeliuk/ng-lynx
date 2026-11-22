@@ -22,6 +22,14 @@ export default defineConfig({
     pluginAngularLynx({
       enableCSSSelector: true,
       enableCSSInheritance: true,
+      // The drag demos' touch handling, which runs on the Main Thread.
+      mainThreadModules: [
+        './src/components/draggable.mt.ts',
+        './src/components/sheet.mt.ts',
+        './src/components/sortable.mt.ts',
+        './src/components/swipe-action.mt.ts',
+        './src/components/swiper.mt.ts',
+      ],
     }),
   ],
 });

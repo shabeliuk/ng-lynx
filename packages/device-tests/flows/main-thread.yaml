@@ -1,5 +1,6 @@
 # A worklet bound to a tap reports back with runOnBackground, and runOnMainThread
 # returns a value across the threads. A third worklet stops its tap from bubbling.
+# <lynx-slider> drags on the Main Thread here, since this build has worklets.
 appId: ${APP_ID}
 ---
 - runFlow:
@@ -34,4 +35,21 @@ appId: ${APP_ID}
     visible: 'Outer taps: 1'
     timeout: 5000
 - assertNotVisible: 'Outer taps: 2'
+# Past the right end clamps to max. Maestro's left swipe ends a few points inside
+# the track's start, so it lands on 0 or 10.
+- extendedWaitUntil:
+    visible: 'Volume: 50'
+    timeout: 5000
+- swipe:
+    from: Volume slider
+    direction: RIGHT
+- extendedWaitUntil:
+    visible: 'Volume: 100'
+    timeout: 5000
+- swipe:
+    from: Volume slider
+    direction: LEFT
+- extendedWaitUntil:
+    visible: 'Volume: (0|10)'
+    timeout: 5000
 - takeScreenshot: main-thread

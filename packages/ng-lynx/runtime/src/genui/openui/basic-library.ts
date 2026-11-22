@@ -213,6 +213,7 @@ const ALIGN_CSS: Record<string, string> = {
   stretch: 'stretch',
 };
 
+/** @experimental */
 @Component({
   selector: 'openui-stack',
   standalone: true,
@@ -244,6 +245,7 @@ export class OpenuiStackComponent extends OpenuiBase {
   });
 }
 
+/** @experimental */
 @Component({
   selector: 'openui-row',
   standalone: true,
@@ -263,7 +265,11 @@ export class OpenuiRowComponent extends OpenuiStackComponent {
   protected override defaultAlign = 'center';
 }
 
-/** Button group — upstream names the prop `buttons`, not `children`. */
+/**
+ * Button group — upstream names the prop `buttons`, not `children`.
+ *
+ * @experimental
+ */
 @Component({
   selector: 'openui-buttons',
   standalone: true,
@@ -286,6 +292,7 @@ export class OpenuiButtonsComponent extends OpenuiBase {
   });
 }
 
+/** @experimental */
 @Component({
   selector: 'openui-column',
   standalone: true,
@@ -302,6 +309,7 @@ export class OpenuiButtonsComponent extends OpenuiBase {
 })
 export class OpenuiColumnComponent extends OpenuiStackComponent {}
 
+/** @experimental */
 @Component({
   selector: 'openui-card',
   standalone: true,
@@ -330,6 +338,7 @@ export class OpenuiCardComponent extends OpenuiStackComponent {
 
 // ─── content ────────────────────────────────────────────────────────────────
 
+/** @experimental */
 @Component({
   selector: 'openui-card-header',
   standalone: true,
@@ -352,6 +361,7 @@ export class OpenuiCardHeaderComponent extends OpenuiBase {
   });
 }
 
+/** @experimental */
 @Component({
   selector: 'openui-text',
   standalone: true,
@@ -372,6 +382,7 @@ const TEXT_CONTENT_SIZE_CLASS: Record<string, string> = {
   'large-heavy': 'OpenUITextContentLargeHeavy',
 };
 
+/** @experimental */
 @Component({
   selector: 'openui-text-content',
   standalone: true,
@@ -387,6 +398,7 @@ export class OpenuiTextContentComponent extends OpenuiBase {
   });
 }
 
+/** @experimental */
 @Component({
   selector: 'openui-tag',
   standalone: true,
@@ -402,6 +414,7 @@ export class OpenuiTagComponent extends OpenuiBase {
   protected readonly text = computed(() => String(this.props()['text'] ?? ''));
 }
 
+/** @experimental */
 @Component({
   selector: 'openui-divider',
   standalone: true,
@@ -420,6 +433,7 @@ export class OpenuiDividerComponent extends OpenuiBase {
   );
 }
 
+/** @experimental */
 @Component({
   selector: 'openui-image',
   standalone: true,
@@ -450,6 +464,8 @@ export class OpenuiImageComponent extends OpenuiBase {
  * `createOpenUiLibrary({ components })` (a same-named component replaces the
  * built-in). To keep the model from choosing it, build the prompt with
  * `componentNames`.
+ *
+ * @experimental
  */
 @Component({
   selector: 'openui-canvas',
@@ -466,6 +482,7 @@ export class OpenuiCanvasComponent extends OpenuiBase {}
 
 // ─── interactive ────────────────────────────────────────────────────────────
 
+/** @experimental */
 @Component({
   selector: 'openui-button',
   standalone: true,
@@ -507,6 +524,7 @@ export class OpenuiButtonComponent extends OpenuiBase {
   }
 }
 
+/** @experimental */
 @Component({
   selector: 'openui-textfield',
   standalone: true,
@@ -613,6 +631,7 @@ export class OpenuiTextFieldComponent extends OpenuiBase {
   }
 }
 
+/** @experimental */
 @Component({
   selector: 'openui-checkbox',
   standalone: true,
@@ -669,6 +688,7 @@ function toMaterialName(name: unknown): string {
   return typeof name === 'string' ? name.replace(/[A-Z]/g, (m) => `_${m.toLowerCase()}`) : '';
 }
 
+/** @experimental */
 @Component({
   selector: 'openui-icon',
   standalone: true,
@@ -688,6 +708,7 @@ export class OpenuiIconComponent extends OpenuiBase {
   });
 }
 
+/** @experimental */
 @Component({
   selector: 'openui-list',
   standalone: true,
@@ -724,6 +745,7 @@ export class OpenuiListComponent extends OpenuiBase {
   });
 }
 
+/** @experimental */
 @Component({
   selector: 'openui-loading',
   standalone: true,
@@ -743,6 +765,7 @@ export class OpenuiLoadingComponent extends OpenuiBase {
   protected readonly variantClass = computed(() => (this.variant() === 'block' ? 'OpenUILoadingBlock' : 'OpenUILoadingInline'));
 }
 
+/** @experimental */
 @Component({
   selector: 'openui-separator',
   standalone: true,
@@ -760,6 +783,8 @@ export class OpenuiSeparatorComponent extends OpenuiBase {}
  * playback in your own app, use the typed `<video>` element directly
  * (`ng-lynx/elements`' `LynxVideo`; see its doc for the on-device-only
  * caveat).
+ *
+ * @experimental
  */
 @Component({
   selector: 'openui-video',
@@ -791,7 +816,11 @@ export class OpenuiVideoComponent extends OpenuiBase {
   });
 }
 
-/** Audio attachment placeholder — matches upstream exactly (see `OpenuiVideoComponent`'s doc). */
+/**
+ * Audio attachment placeholder — matches upstream exactly (see `OpenuiVideoComponent`'s doc).
+ *
+ * @experimental
+ */
 @Component({
   selector: 'openui-audioplayer',
   standalone: true,
@@ -822,7 +851,11 @@ export class OpenuiAudioPlayerComponent extends OpenuiBase {
 
 // ─── interactive (continued) ───────────────────────────────────────────────
 
-/** Single-choice radio group; writes back through form state by `name` and can fire an action. */
+/**
+ * Single-choice radio group; writes back through form state by `name` and can fire an action.
+ *
+ * @experimental
+ */
 @Component({
   selector: 'openui-radiogroup',
   standalone: true,
@@ -910,6 +943,8 @@ function toFiniteNumber(value: unknown, fallback: number): number {
  * definition, so a measuring slider would work on device and silently do
  * nothing in the browser. Tap-a-segment + steppers behaves identically on
  * both. Values snap to `step` exactly like upstream's `fromRatio`.
+ *
+ * @experimental
  */
 @Component({
   selector: 'openui-slider',
@@ -1027,6 +1062,8 @@ export class OpenuiSliderComponent extends OpenuiBase {
  * Choice picker as selectable chips. Matches upstream's OpenUI behavior:
  * purely local visual selection, no external write-back (unlike the a2ui
  * ChoicePicker, which is data-model-bound).
+ *
+ * @experimental
  */
 @Component({
   selector: 'openui-choicepicker',
@@ -1076,7 +1113,11 @@ export class OpenuiChoicePickerComponent extends OpenuiBase {
   }
 }
 
-/** Date/time value display with optional label and min/max hints (matches upstream: display-only, no picker dialog). */
+/**
+ * Date/time value display with optional label and min/max hints (matches upstream: display-only, no picker dialog).
+ *
+ * @experimental
+ */
 @Component({
   selector: 'openui-datetimeinput',
   standalone: true,
@@ -1113,7 +1154,11 @@ export class OpenuiDateTimeInputComponent extends OpenuiBase {
   });
 }
 
-/** Tap-triggered modal with a header (optional title + close button) and nested trigger/content nodes. */
+/**
+ * Tap-triggered modal with a header (optional title + close button) and nested trigger/content nodes.
+ *
+ * @experimental
+ */
 @Component({
   selector: 'openui-modal',
   standalone: true,
@@ -1167,7 +1212,11 @@ interface OpenuiTabItem {
   child: unknown;
 }
 
-/** Tabbed content switcher — each tab carries its own nested child node. */
+/**
+ * Tabbed content switcher — each tab carries its own nested child node.
+ *
+ * @experimental
+ */
 @Component({
   selector: 'openui-tabs',
   standalone: true,
@@ -1539,6 +1588,8 @@ const DEFAULT_COMPONENTS: DefinedComponent<any, Type<unknown>>[] = DEFAULT_COMPO
  * `createOpenUiPromptLibrary`, so a prompt built with
  * `buildOpenUiSystemPrompt(options)` describes exactly the library
  * `createOpenUiLibrary(options)` renders.
+ *
+ * @experimental
  */
 export interface CreateOpenUiLibraryOptions {
   /**
@@ -1571,6 +1622,8 @@ export interface CreateOpenUiLibraryOptions {
  * Create an Angular OpenUI library: the built-ins plus any caller-provided
  * extensions (≈ upstream `createOpenUiLibrary`). Assembled like upstream's
  * `resolveLibraryOptions`.
+ *
+ * @experimental
  */
 export function createOpenUiLibrary(options?: CreateOpenUiLibraryOptions): Library<Type<unknown>> {
   registerOpenUiBuiltins();

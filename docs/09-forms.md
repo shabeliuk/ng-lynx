@@ -491,13 +491,23 @@ number-text input entirely (Lynx has none), the same way `LynxCheckbox`/
 
 A `number` you drag or tap along a track. Because Lynx has no native
 `<input type="range">`, this measures its own track (via
-`invoke({ method: 'boundingClientRect' })` — the selector-query path from
-[10 — Element queries](10-element-queries.md), refreshed at the start of each
-gesture) and drives the value from plain `(touchstart)`/`(touchmove)` events —
-Lynx's own touch-event catalog, **not** the newer gesture-detector system
-([32 — Gestures](32-gestures.md)). `step` snaps (`0` disables snapping). Style
+`invoke({ method: 'boundingClientRect' })`, refreshed at the start of each
+gesture) and drives the value from Lynx's touch events —
+**not** the newer gesture-detector system ([32 — Gestures](32-gestures.md)).
+
+**Where the drag runs.** In a build that has the worklet runtime (any
+`pluginAngularLynx` build with `mainThreadModules`), the track's touches go to
+ng-lynx's own Main-Thread worklets: they measure the track, move the fill and
+thumb, and send the value to the Background Thread only when it changes, so the
+thumb follows the finger however busy the Background Thread is. The model gets
+each new value as it changes, and the control is marked touched when the finger
+lifts. Without the runtime, the slider uses `(touchstart)`/`(touchmove)` on the
+Background Thread, and every move is a round trip. The runtime is about 10 kB of
+Lynx bundle, so an app without worklets doesn't get it for a slider's sake. Both
+paths run in `verify:controls` and `verify:controls-background`, and the
+`main-thread` device flow drags one on both platforms. `step` snaps (`0` disables snapping). Style
 `.lynx-slider` (`-disabled` modifier), `.lynx-slider-track`,
-`.lynx-slider-fill` (bind its `width`), and `.lynx-slider-thumb` (position it
+`.lynx-slider-fill` (the slider sets its `width`), and `.lynx-slider-thumb` (position it
 with `left: N%` + a negative `margin-left` of half its width, over a
 `position: relative` track — see `examples/ng-forms/src/app.css`).
 

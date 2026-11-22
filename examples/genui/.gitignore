@@ -8,3 +8,6 @@ ios/LynxResources/*.bundle
 ios/build-device/
 # Your signing team (ios/Signing.xcconfig includes it; `npm run ios:device` writes it)
 ios/Signing.local.xcconfig
+# packages/device-tests/iphone.mjs: its build output, and the test it copies in for a run
+ios/build-device-tests/
+ios/SparklingGoUITests/DeviceFlows.swift

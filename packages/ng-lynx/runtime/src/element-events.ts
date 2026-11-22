@@ -31,6 +31,11 @@ interface ListenerEntry {
 
 const listeners = new Map<string, ListenerEntry>();
 
+/** How many element listeners are registered. For leak checks (verify:memory). */
+export function elementListenerCount(): number {
+  return listeners.size;
+}
+
 /** How each registration type is written in a template. `global-bindEvent` has its own map. */
 const TEMPLATE_PREFIXES: Partial<Record<LynxEventRegType, string>> = {
   bindEvent: '',

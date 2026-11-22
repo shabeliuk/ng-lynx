@@ -11,10 +11,6 @@ starting from:
 
 ## New app: `create-ng-lynx`
 
-> ⚠️ **Not published yet.** `create-ng-lynx` on npm is still an empty placeholder until the
-> first release candidate. Until then, run the CLI from this repo:
-> `node packages/create-ng-lynx/index.mjs my-app`.
-
 ```bash
 npm create ng-lynx@latest my-app
 cd my-app
@@ -78,7 +74,7 @@ ng add ng-lynx --directory mobile
 schematic (`packages/ng-lynx/schematics/ng-add`), which:
 
 1. Scaffolds a **new, self-contained Lynx entry point** at `<directory>/`
-   (default `lynx/`) — `lynx.config.ts`, `tsconfig.json`, and a
+   (default `lynx/`) — `lynx.config.mts`, `tsconfig.json`, and a
    `src/` with the same signals-counter shell as `create-ng-lynx`'s
    `minimal` template (its banner text picks up the workspace's own
    `package.json` `name`).
@@ -114,12 +110,17 @@ step): once `--root` is given, rspeedy resolves `--config` *relative to that
 root*, so `--config <directory>/lynx.config.ts --root <directory>` silently
 double-joins into `<directory>/<directory>/lynx.config.ts` and fails to find
 the config at all. The generated scripts are `rspeedy build --root
-<directory> --config lynx.config.ts`.
+<directory> --config lynx.config.mts`.
+
+The config is `.mts`, not `.ts`, because an Angular CLI workspace's
+`package.json` has no `"type": "module"`: Node would try a `.ts` config as
+CommonJS first, and warn that it "doesn't parse as CommonJS" on every run. A
+workspace that is `"type": "module"` gets `lynx.config.ts`.
 
 Separately, `pluginAngularLynx`'s own `tsconfig` option is **not**
 root-aware — it resolves against `process.cwd()` (the actual OS-level
 cwd, which for an `npm run` script is always the workspace root, `--root`
-notwithstanding). The generated `lynx.config.ts` therefore pins
+notwithstanding). The generated config therefore pins
 `tsconfig: '<directory>/tsconfig.json'` explicitly; without it, AOT would
 silently pick up the *workspace's* root tsconfig instead of the Lynx
 target's, and `@ngtools/webpack` fails with "is missing from the TypeScript

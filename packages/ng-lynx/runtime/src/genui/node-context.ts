@@ -19,7 +19,11 @@ import type { MessageProcessor, Surface } from '@lynx-js/genui/a2ui/store';
 
 import type { A2uiFunctionEntry } from './catalog.js';
 
-/** Context injected by A2UI catalog components. */
+/**
+ * Context injected by A2UI catalog components.
+ *
+ * @experimental
+ */
 export interface A2uiNodeContext {
   /** Protocol component instance id. */
   readonly id: string;
@@ -40,13 +44,19 @@ export interface A2uiNodeContext {
   sendAction(action: Record<string, unknown>): void;
 }
 
+/** @experimental */
 export const A2UI_NODE_CONTEXT = new InjectionToken<A2uiNodeContext>('A2UI_NODE_CONTEXT');
 
-/** Surface-level context shared by all nodes under one `A2uiSurface`. */
+/**
+ * Surface-level context shared by all nodes under one `A2uiSurface`.
+ *
+ * @experimental
+ */
 export interface A2uiSurfaceContext {
   readonly componentsByName: ReadonlyMap<string, Type<unknown>>;
   readonly functions: readonly A2uiFunctionEntry[];
   readonly processor: MessageProcessor;
 }
 
+/** @experimental */
 export const A2UI_SURFACE_CONTEXT = new InjectionToken<A2uiSurfaceContext>('A2UI_SURFACE_CONTEXT');

@@ -153,7 +153,7 @@ const registeredModules = new Map<string, unknown>();
 // has already fetched and cached" (see runtime/src/dynamic-component.ts).
 // `QueryComponent` mirrors the real `{code: 0, detail: {schema}}` success
 // shape confirmed against lynx-family/lynx's own `lynx.ts`/`appManager.ts`
-// for anything registered, or `{code: 1}` (failure) for anything not.
+// for anything registered, or the failure iOS Explorer 4.2 sends for anything not.
 const dynamicComponentExports = new Map<string, unknown>();
 
 /**
@@ -240,6 +240,9 @@ export function installMockPapi(): void {
   defines['__DEV__'] ??= false;
   defines['__ENABLE_SELECTOR_QUERIES__'] ??= 'lazy';
   defines['__HAS_FIRST_SCREEN__'] ??= false;
+  // The mock installs the worklet runtime below, so `<lynx-slider>` drags on
+  // the Main Thread, as in a build with `mainThreadModules`.
+  defines['__WORKLET_RUNTIME__'] ??= true;
   globalListeners.clear();
   // Deliberately NOT cleared here (unlike globalListeners/ioObserved/etc.
   // below). `entry-background.ts`'s cross-thread listeners (the
@@ -290,13 +293,14 @@ export function installMockPapi(): void {
     // Mirrors the real success shape confirmed against lynx-family/lynx's own
     // `js_libraries/lynx-core/src/lynx/lynx.ts` — `{ code: 0, data: {...},
     // detail: { schema } }` — for a `source` a harness has registered via
-    // `registerDynamicComponent(schema, exports)`; `{ code: 1 }` (failure)
-    // otherwise, since nothing here has fetched it.
+    // `registerDynamicComponent(schema, exports)`; otherwise the failure iOS
+    // Explorer 4.2 sends for a dropped connection (code 160101, `error_msg`),
+    // since nothing here has fetched it.
     QueryComponent: (
       source: string,
       callback: (result: {
         code: number;
-        data?: { url: string; sync?: boolean; error_message?: string; mode?: string };
+        data?: { url: string; sync?: boolean; error_msg?: string; error_message?: string; mode?: string };
         detail?: { schema: string; cache?: boolean; errMsg?: string };
       }) => void,
     ) => {
@@ -307,7 +311,12 @@ export function installMockPapi(): void {
           detail: { schema: source, cache: false, errMsg: '' },
         });
       } else {
-        callback({ code: 1, detail: { schema: source, cache: false, errMsg: 'not registered' } });
+        const message = 'Load lazy bundle failed, the error message is: not registered.';
+        callback({
+          code: 160101,
+          data: { url: source, sync: false, error_msg: message, mode: 'normal' },
+          detail: { schema: source, cache: false, errMsg: message },
+        });
       }
     },
     getNativeApp: () => ({
@@ -711,6 +720,17 @@ export function installMockPapi(): void {
     callback: (result: { code: number; data?: unknown }) => void,
   ) => {
     ((g.__MT_INVOKE_LOG__ ??= []) as unknown[]).push({ el, method, params });
+    if (method === 'boundingClientRect') {
+      // The same rect, `__QUERY_RECT_LEFT__` and `__QUERY_DELAY_MS__` as the
+      // Background Thread's `invoke` below: `<lynx-slider>` measures here.
+      const left = (g.__QUERY_RECT_LEFT__ as number | undefined) ?? 0;
+      const answer = (): void =>
+        callback({ code: 0, data: { left, top: 0, right: left + 100, bottom: 50, width: 100, height: 50 } });
+      const delay = g.__QUERY_DELAY_MS__;
+      if (typeof delay === 'number' && delay > 0) setTimeout(answer, delay);
+      else answer();
+      return;
+    }
     callback(method === 'fail' ? { code: 1 } : { code: 0, data: { method, params } });
   };
   g.__ElementAnimate = (el: MockEl, args: unknown[]) => {

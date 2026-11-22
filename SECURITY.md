@@ -9,8 +9,7 @@ advisory is published with credit to you, unless you'd rather stay anonymous.
 
 ## Supported versions
 
-Security fixes go into the latest release only. Before 1.0, that's the newest
-`0.x` version, including its release candidates.
+Security fixes go into the latest release only: the newest `1.x` version.
 
 ## What's in scope
 

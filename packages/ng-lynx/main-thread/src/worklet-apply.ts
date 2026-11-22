@@ -168,7 +168,7 @@ export interface MainThreadScrollResult {
  * gesture arena. A pan activates by itself once the finger has moved. Use these to end
  * it early, or to give the touch to the next candidate.
  *
- * @public
+ * @experimental
  */
 export interface MainThreadGesture {
   /** Activate this gesture. */
@@ -199,7 +199,11 @@ export interface MainThreadTouchEvent extends MainThreadEvent {
   readonly changedTouches: readonly MainThreadTouch[];
 }
 
-/** `ctx.event` in a `[lynxGesture]` phase: `WorkletContext<MainThreadGestureEvent>`. @public */
+/**
+ * `ctx.event` in a `[lynxGesture]` phase: `WorkletContext<MainThreadGestureEvent>`.
+ *
+ * @experimental
+ */
 export interface MainThreadGestureEvent extends MainThreadEvent {
   /** Where the finger is, in logical pixels, and the element's scroll state. */
   readonly params: {
@@ -220,7 +224,9 @@ export interface MainThreadGestureEvent extends MainThreadEvent {
 /**
  * `ctx.event` in a fling's phases: `WorkletContext<MainThreadFlingGestureEvent>`. A
  * fling reports how far it moved since the last frame, not where a finger is: the
- * finger is already up. iOS sends `isAtStart`/`isAtEnd` as `0`/`1`. @public
+ * finger is already up. iOS sends `isAtStart`/`isAtEnd` as `0`/`1`.
+ *
+ * @experimental
  */
 export interface MainThreadFlingGestureEvent extends MainThreadEvent {
   readonly params: {
@@ -453,30 +459,29 @@ export function defineWorklet(idOrFn: string | Worklet<never, never>, maybeFn?: 
 // clicking the live demo, not by the headless harness (whose mock has no
 // concept of document visibility) or by reading source alone. `setTimeout`,
 // confirmed by the same live test, fires normally regardless of the iframe's
-// visibility — so this uses a fixed-interval `setTimeout` loop instead,
-// tracking elapsed time as a self-maintained counter (one tick = one
-// `FRAME_INTERVAL_MS`) rather than reading a real clock, so timing is exactly
-// reproducible in tests and has no wall-clock dependency at all.
+// visibility — so this uses a fixed-interval `setTimeout` loop instead.
 //
-// **Web-preview caveat, also found live, not assumed:** a hidden document is
-// exactly the case browsers throttle nested `setTimeout` chains for (Chrome
-// clamps repeated nested timeouts in a backgrounded/hidden context to on the
-// order of ~1s apart after the first few) — so on the web preview a `lynxAnimate`
-// call still *completes correctly* (settles on exactly `to`, still calls
-// `onFinish`), but its real-world wall-clock duration can run many times
-// longer than the `duration` you asked for. Confirmed live: a `duration: 400`
-// tween visibly took several seconds to settle in the web preview, while
-// reaching the exact right final value throughout. On-device, the Main
-// Thread isn't a hidden document, so this throttling doesn't apply — the web
-// preview is the one target where this helper's *timing* (not its
-// *correctness*) is honestly degraded.
+// **Progress comes from the clock, not from counting ticks.** It used to add
+// one `FRAME_INTERVAL_MS` per tick, which assumed every timer fires on time. On
+// the iOS simulator's Main Thread they don't, and a 240 ms snap in
+// `examples/ui-gallery` visibly took twice that (2026-11-20). With the clock, a
+// late timer means fewer, larger steps, and the tween still ends after
+// `duration`. The same holds on the web preview, whose hidden iframe throttles
+// nested timeouts to about a second apart: a tween there now jumps to its end
+// on the first tick after `duration`, instead of crawling through every frame.
 // ---------------------------------------------------------------------------
 
 declare function setTimeout(callback: () => void, ms: number): number;
 declare function clearTimeout(handle: number): void;
 
-/** Assumed frame cadence for the `setTimeout` loop (~60fps). */
+/** Frame cadence asked of the `setTimeout` loop (~60fps); progress comes from {@link now}. */
 const FRAME_INTERVAL_MS = 16;
+
+/** Milliseconds, monotonic where the engine has `performance.now`. */
+function now(): number {
+  const perf = (globalThis as { performance?: { now?: () => number } }).performance;
+  return typeof perf?.now === 'function' ? perf.now() : Date.now();
+}
 
 /** Options for {@link lynxAnimate}. */
 export interface LynxAnimateOptions {
@@ -545,16 +550,17 @@ export function lynxAnimate(
  */
 export function lynxTween(options: LynxTweenOptions): LynxAnimationHandle {
   const { from, to, duration, easing = (t: number) => t, onUpdate, onFinish } = options;
-  let elapsed = 0;
+  let start: number | undefined;
   let timerId: number | undefined;
   let cancelled = false;
 
   function tick(): void {
     if (cancelled) return;
-    const t = duration <= 0 ? 1 : Math.min(1, elapsed / duration);
+    const time = now();
+    start ??= time;
+    const t = duration <= 0 ? 1 : Math.min(1, (time - start) / duration);
     onUpdate(from + (to - from) * easing(t));
     if (t < 1) {
-      elapsed += FRAME_INTERVAL_MS;
       timerId = setTimeout(tick, FRAME_INTERVAL_MS);
     } else {
       onFinish?.();
@@ -825,6 +831,11 @@ export function applyRunOnMainThread(call: { id: string; args: string; callId: n
   } catch (err) {
     fail(err);
   }
+}
+
+/** How many refs and pending calls this thread holds. For leak checks (verify:memory). */
+export function workletStateSizes(): { boundRefs: number; liveRefs: number; backgroundCalls: number } {
+  return { boundRefs: refRegistry().size, liveRefs: liveRefs.size, backgroundCalls: backgroundCalls.size };
 }
 
 /** Frees a `mainThreadRef()` whose owner is gone. See `entry-main.ts`. */

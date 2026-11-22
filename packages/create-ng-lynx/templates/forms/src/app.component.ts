@@ -13,7 +13,8 @@ import {
  * `@angular/forms` on Lynx: `LynxValueAccessor` bridges `[(ngModel)]` to the
  * Lynx `<input>`, and the headless controls from `ng-lynx/forms`
  * (select, checkbox, toggle, pickers, …) are ControlValueAccessors too.
- * They ship unstyled — the classes below are this app's own.
+ * They ship unstyled; index.ts imports the optional default theme,
+ * `ng-lynx/forms/theme.css`. See docs/09-forms.md#theming.
  */
 @Component({
   selector: 'app-root',

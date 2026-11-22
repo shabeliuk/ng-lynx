@@ -99,7 +99,7 @@ jobs:
       - name: Build examples
         run: |
           set -euo pipefail
-          for ex in hello-world ng-forms worklet product-detail styling tailwind control-theme responsive; do
+          for ex in hello-world ng-forms worklet product-detail gallery ui-gallery styling tailwind control-theme responsive; do
             echo "::group::build examples/$ex"
             pnpm --filter "ng-lynx-$ex" build
             echo "::endgroup::"

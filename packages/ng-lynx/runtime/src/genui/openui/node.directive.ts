@@ -83,7 +83,11 @@ function isExpression(value: unknown): boolean {
   return isASTNode(value) || (Array.isArray(value) && value.some((item) => isASTNode(item)));
 }
 
-/** Bare text node for primitive children (≈ upstream `renderDeep`). */
+/**
+ * Bare text node for primitive children (≈ upstream `renderDeep`).
+ *
+ * @experimental
+ */
 @Component({
   selector: 'openui-text-value',
   standalone: true,
@@ -95,6 +99,7 @@ export class OpenuiTextValue {
   @Input() value = '';
 }
 
+/** @experimental */
 @Directive({
   selector: '[openuiNode]',
   standalone: true,

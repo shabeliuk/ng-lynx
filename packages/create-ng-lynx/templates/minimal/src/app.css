@@ -4,7 +4,7 @@
  * projected on Lynx). Flexbox is the default layout; dimensions need units.
  */
 .app {
-  flex: 1;
+  height: 100%;
   display: flex;
   flex-direction: column;
   /* Static status-bar buffer — Lynx exposes no safe-area inset yet. */

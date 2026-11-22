@@ -44,8 +44,10 @@ export default defineConfig({
   output: {
     // run.mjs serves dist/ here. A device has no base URL of its own to resolve
     // lazy chunks and assets against. `npm run dev` uses the dev server's own
-    // address instead.
-    assetPrefix: 'http://127.0.0.1:8791/',
+    // address instead. iphone.mjs builds with this Mac's Wi-Fi address, into
+    // its own folder, since a phone can't reach 127.0.0.1.
+    assetPrefix: process.env.DEVICE_TESTS_ORIGIN ?? 'http://127.0.0.1:8791/',
+    ...(process.env.DEVICE_TESTS_DIST ? { distPath: { root: process.env.DEVICE_TESTS_DIST } } : {}),
   },
   plugins: [
     // `npm run dev` prints a code to scan with Lynx Explorer on a phone.

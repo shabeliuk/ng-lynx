@@ -2,10 +2,29 @@
 
 Both packages, `ng-lynx` and `create-ng-lynx`, share one version and one changelog.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
-versions follow [Semantic Versioning](https://semver.org/). Before 1.0, a minor
-release may change the API; experimental features may change in any release.
+versions follow [Semantic Versioning](https://semver.org/). What a release promises, and
+which parts are experimental and may change in a minor release, is in
+[docs/43-stability.md](docs/43-stability.md).
 
 ## [Unreleased]
+
+## [1.0.0] - 2026-11-22
+
+The first stable release. From here on, a breaking change to the covered API needs a major
+release ([docs/43](docs/43-stability.md)). The changes below are since `0.1.0-rc.0`.
+
+### Supported
+
+- Angular 21 and 22, with TypeScript 5.9 and 6.0. Node 22.12 or later, `@lynx-js/rspeedy`
+  0.18.
+- Lynx engines 4.1 and 4.2, tested in Lynx Explorer on the iOS simulator and the Android
+  emulator, and on a real iPhone. Android has not been tested on a real phone.
+
+### Experimental
+
+Native gestures, dynamic components (with the shared-runtime exports), GenUI, HarmonyOS and
+the desktop-only elements. They work and are tested, but their API may still change in a
+minor release; their types say `@experimental`.
 
 ### Changed
 
@@ -28,16 +47,70 @@ release may change the API; experimental features may change in any release.
   with `setStyle` and `getComputedStyleProperty`, and keep the `id`, `uid` and `dataset`
   the engine sent. Printing an event or sending it to the Background Thread no longer
   reaches the native element.
+- Angular's comment anchors no longer become native nodes. Each `@if`, `@switch`, `@for`,
+  `<ng-container>` and `*ngIf`, and each block inside a `@for` row, made an empty raw-text
+  element on the Main Thread, with its own create and insert calls. They now stay on the
+  Background Thread, as they already did under `<list>`.
+- `<lynx-slider>` drags on the Main Thread in a build that has the worklet runtime
+  (`mainThreadModules`): the thumb follows the finger without a round trip to the
+  Background Thread on each move, and the model hears only of values that change. It
+  is marked touched when the finger lifts. Without the runtime it works as before.
+- `examples/ui-gallery`'s Draggable, Swiper, Sheet, SwipeAction and Sortable drag on the Main
+  Thread, with worklets, as `examples/product-detail` does, instead of a round trip to the
+  Background Thread on each move. The page stops scrolling on the touch that starts a drag.
+- `ng add ng-lynx` writes `lynx/lynx.config.mts`, so Node no longer warns that the config
+  "doesn't parse as CommonJS" in an Angular CLI workspace. A `"type": "module"` workspace
+  still gets `lynx.config.ts`.
+- `loadDynamicComponent`'s error starts with the engine's own reason, such as "The network
+  connection was lost", before the raw result.
 - `mainThreadLynx.getTextInfo` says the engine has no text measurement, on the web
   preview, instead of `lynx.getTextInfo is not a function`.
 
+### Removed
+
+- From `ng-lynx/worklet`: `applySetRef`, `applySetWorkletEvent`, `applyRunOnMainThread`,
+  `applyReleaseMainThreadRef` and `resetWorkletState`, the Main-Thread executor's own op
+  handlers, which the entry exported by mistake. From `ng-lynx`: the `WorkletRef` type,
+  the wire form of a worklet binding.
+
 ### Added
 
+- Typed attributes and events from `@lynx-js/types` 4.4 that templates could only bind
+  with `NO_ERRORS_SCHEMA`: on every element `consume-slide-event`,
+  `block-native-event-areas`, `event-through-active-regions`, `native-interaction-enabled`,
+  `ios-enable-simultaneous-touch`, `enable-touch-pseudo-propagation`, `focusable`,
+  `hardware-layer` and three accessibility attributes; `<list>` `scroll-event-throttle`,
+  `item-snap`, `bounces` and the `listanimation*` events; `<image>` `image-config`,
+  `cap-insets-scale`, `defer-src-invalidation` and the animated-image events; and more
+  on `<input>`, `<textarea>`, `<text>`, `<overlay>`, `<scroll-coordinator>`, `<blur-view>`
+  and `<webview>`. `verify:element-templates` compiles them with `strictTemplates`.
+- `examples/gallery`: the official Gallery tutorial in Angular, a waterfall `<list>` that
+  scrolls itself, with a Background-Thread and a Main-Thread scrollbar side by side.
+- `verify:memory`: 1,000 mounts of a screen leave every registry on both threads at its
+  baseline. The device tests' `memory` flow runs the same churn on an engine (docs/41).
 - `ng-lynx/worklet-runtime`, for a build that doesn't use `pluginAngularLynx`: import it
   first among the Main-Thread modules.
+- `@experimental` in the types on gestures, dynamic components, GenUI and
+  `<title-bar-view>`, so editors show it. These were already experimental in the README.
+- docs/43-stability.md: what 1.0 promises, what's experimental, and the supported Angular,
+  TypeScript, Node and engine versions.
 
 ### Fixed
 
+- `lynxTween` and `lynxAnimate` time an animation by the clock, not by counting 16 ms frames.
+  When the Main Thread's timers fired late, as on the iOS simulator, a 240 ms snap took twice
+  as long or more; it now ends after its `duration`, in fewer steps. On the web preview, whose
+  timers are throttled to about a second, an animation now ends on time instead of crawling.
+- The `ng-lynx/forms/theme.css` default theme had no rules for the option list that
+  `<lynx-select>`, `<lynx-date-picker>` and `<lynx-time-picker>` open, so the options were
+  black on the dark sheet, and its backdrop wasn't fixed, so the sheet opened inside the
+  form. Both are styled now.
+- `<lynx-select>` shows its placeholder for a value of `''` that no option has, as
+  `FormControl('')` and `name = ''` start, instead of an empty trigger.
+- `create-ng-lynx` and `ng add`: the page background now fills the screen; the `router`
+  template's nav is a row, as meant; the `forms` template imports the default theme, so
+  its select, checkbox and toggle are visible, and its placeholder is readable. Found by
+  running each template from npm on the iOS simulator and the Android emulator.
 - `lynxEventSource()` turned a character split between two network chunks into
   `U+FFFD`s, on both platforms: neither engine has a `TextDecoder`, and the polyfill
   ignored `stream: true`. The polyfill is now the WHATWG UTF-8 decoder, and about 3.5
@@ -85,5 +158,6 @@ Gestures: pan, tap, long press and fling run on iOS and Android. Lynx's engines 
 recognizer for `pinch` or `rotation`, so those never fire, and a dev build warns when you
 bind one. A fling's event is typed as `MainThreadFlingGestureEvent`.
 
-[Unreleased]: https://github.com/shabeliuk/ng-lynx/compare/v0.1.0-rc.0...HEAD
+[Unreleased]: https://github.com/shabeliuk/ng-lynx/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/shabeliuk/ng-lynx/compare/v0.1.0-rc.0...v1.0.0
 [0.1.0-rc.0]: https://github.com/shabeliuk/ng-lynx/releases/tag/v0.1.0-rc.0

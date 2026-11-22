@@ -39,6 +39,7 @@ import { A2UI_SURFACE_CONTEXT, A2uiSurfaceContext } from './node-context.js';
 import { A2uiNode } from './node.directive.js';
 import { A2uiSession } from './session.js';
 
+/** @experimental */
 @Component({
   selector: 'a2ui-surface',
   standalone: true,

@@ -55,6 +55,7 @@ import { OPENUI_RENDERER_CONTEXT, OpenuiRendererContext } from './context.js';
 import { OpenuiNode } from './node.directive.js';
 import { OpenUiState, type OpenUiToolProviderInput } from './state.js';
 
+/** @experimental */
 @Component({
   selector: 'openui-renderer',
   standalone: true,

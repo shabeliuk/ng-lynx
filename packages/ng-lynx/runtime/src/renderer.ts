@@ -101,6 +101,15 @@ function isSelfEvent(event: unknown): boolean {
   return t === ct;
 }
 
+/**
+ * Whether `node`, as a child of `parent`, exists on the Main Thread: comment
+ * anchors never do, and under a `<list>` only elements do.
+ */
+function isSentTo(parent: ShadowElement, node: ShadowElement): boolean {
+  if (node.kind === 'comment') return false;
+  return parent.type !== 'list' || node.kind === 'element';
+}
+
 // ---------------------------------------------------------------------------
 // Renderer
 // ---------------------------------------------------------------------------
@@ -145,7 +154,8 @@ class LynxRenderer2 extends Renderer2 {
       // Drop any pending style/class serialization for this node so the flush
       // doesn't emit a set op targeting a Main-Thread element we're freeing.
       clearPendingStyleClass(n);
-      pushOp(OP.DESTROY, n.id);
+      // Comment anchors never reached the Main Thread (see createComment).
+      if (n.kind !== 'comment') pushOp(OP.DESTROY, n.id);
       for (let c = n.firstChild; c; c = c.next) stack.push(c);
     }
     scheduleFlush();
@@ -159,12 +169,13 @@ class LynxRenderer2 extends Renderer2 {
   }
 
   override createComment(_value: string): ShadowElement {
-    // Angular uses comment nodes as view anchors (*ngIf / @if / @for boundaries).
-    // They are materialised as invisible placeholders on the Main Thread.
-    const el = new ShadowElement('#comment', 'comment');
-    pushOp(OP.CREATE, el.id, '#comment');
-    scheduleFlush();
-    return el;
+    // Angular uses comment nodes as view anchors (`@if`, `@for`, `@switch`,
+    // `<ng-container>`, `<ng-template>` boundaries). They live only in the
+    // shadow tree, where Angular navigates them; the Main Thread never sees
+    // them. An insert anchored on one is resolved forward to the next sibling
+    // that the Main Thread has (emitInsert). Before 1.0.0 every anchor
+    // was a native raw-text node: one element and two native calls each.
+    return new ShadowElement('#comment', 'comment');
   }
 
   override createText(value: string): ShadowElement {
@@ -193,10 +204,15 @@ class LynxRenderer2 extends Renderer2 {
    * Shared insert path. The shadow tree is always updated (Angular relies on it
    * for navigation), but what we send to the Main Thread depends on the parent:
    *
-   * Lynx's native `<list>` only accepts real `<list-item>` element children.
-   * Angular's `@for` interleaves comment anchor nodes between items, so for a
-   * `<list>` parent we (1) never send comment/text children, and (2) resolve an
-   * anchor that is a comment/text node forward to the next real element sibling.
+   * Comment anchors are never sent (see createComment), so an insert
+   * anchored on one is resolved forward to the next sibling that was sent. The
+   * shadow tree's order is the Main Thread's order minus those nodes, so that
+   * sibling is already in place there, and `null` (append) is right when
+   * nothing follows.
+   *
+   * Lynx's native `<list>` only accepts real `<list-item>` element children,
+   * so under a `<list>` text nodes are skipped too, both as children and as
+   * anchors.
    */
   private emitInsert(
     parent: ShadowElement,
@@ -205,14 +221,10 @@ class LynxRenderer2 extends Renderer2 {
   ): void {
     parent.insertBefore(child, anchor);
 
-    if (parent.type === 'list' && child.kind !== 'element') {
-      return; // @for anchor inside a <list> — never materialised natively
-    }
+    if (!isSentTo(parent, child)) return;
 
     let resolved = anchor;
-    if (parent.type === 'list') {
-      while (resolved && resolved.kind !== 'element') resolved = resolved.next;
-    }
+    while (resolved && !isSentTo(parent, resolved)) resolved = resolved.next;
 
     pushOp(OP.INSERT, parent.id, child.id, resolved ? resolved.id : APPEND_ANCHOR);
     scheduleFlush();
@@ -227,9 +239,8 @@ class LynxRenderer2 extends Renderer2 {
     if (!realParent) return;
     const parentId = realParent.id;
     realParent.removeChild(oldChild);
-    // Comment/text anchors under a <list> were never sent to the Main Thread,
-    // so don't send a REMOVE for them either.
-    if (realParent.type === 'list' && oldChild.kind !== 'element') return;
+    // Nodes that were never sent to the Main Thread get no REMOVE either.
+    if (!isSentTo(realParent, oldChild)) return;
     pushOp(OP.REMOVE, parentId, oldChild.id);
     scheduleFlush();
   }
@@ -353,7 +364,10 @@ class LynxRenderer2 extends Renderer2 {
   }
 
   override setValue(node: ShadowElement, value: string): void {
-    // Text-node content update (interpolation change).
+    // Text-node content update (interpolation change). Dev-mode Angular also
+    // writes `bindings={…}` into structural-directive comments; those have no
+    // Main-Thread node.
+    if (node.kind === 'comment') return;
     pushOp(OP.SET_TEXT, node.id, value);
     scheduleFlush();
   }

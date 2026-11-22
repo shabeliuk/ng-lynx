@@ -25,7 +25,11 @@ import { functionRegistry } from '@lynx-js/genui/a2ui/store';
 
 type FunctionDefinition = NonNullable<FunctionEntry['definition']>;
 
-/** Function entry — same shape as upstream `CatalogFunctionEntry`. */
+/**
+ * Function entry — same shape as upstream `CatalogFunctionEntry`.
+ *
+ * @experimental
+ */
 export interface A2uiFunctionEntry {
   kind: 'function';
   name: string;
@@ -33,7 +37,11 @@ export interface A2uiFunctionEntry {
   definition?: FunctionDefinition;
 }
 
-/** A named Angular component registered as an A2UI catalog component. */
+/**
+ * A named Angular component registered as an A2UI catalog component.
+ *
+ * @experimental
+ */
 export interface A2uiComponentEntry {
   /** Protocol component name the agent refers to (e.g. `"Text"`). */
   name: string;
@@ -43,14 +51,22 @@ export interface A2uiComponentEntry {
   schema?: Record<string, unknown>;
 }
 
-/** Inputs accepted by {@link defineA2uiCatalog}. */
+/**
+ * Inputs accepted by {@link defineA2uiCatalog}.
+ *
+ * @experimental
+ */
 export type A2uiCatalogInput =
   | A2uiComponentEntry
   | A2uiFunctionEntry
   /** `[component, { Name: schema }]` pair, mirroring upstream tuples. */
   | readonly [Type<unknown>, Record<string, Record<string, unknown>>];
 
-/** Resolved catalog: what `A2uiSurface` consumes. */
+/**
+ * Resolved catalog: what `A2uiSurface` consumes.
+ *
+ * @experimental
+ */
 export interface A2uiCatalog {
   components: A2uiComponentEntry[];
   functions: A2uiFunctionEntry[];
@@ -65,6 +81,8 @@ function isFunctionEntry(input: A2uiCatalogInput): input is A2uiFunctionEntry {
  * manifest]` pairs, and function entries. Duplicate names within the same
  * kind are rejected, and function impls are registered into the shared
  * `functionRegistry` immediately — both mirroring upstream `defineCatalog`.
+ *
+ * @experimental
  */
 export function defineA2uiCatalog(inputs: readonly A2uiCatalogInput[]): A2uiCatalog {
   const components: A2uiComponentEntry[] = [];
@@ -111,7 +129,11 @@ export function defineA2uiCatalog(inputs: readonly A2uiCatalogInput[]): A2uiCata
   return { components, functions };
 }
 
-/** Name → Angular component lookup used by the node renderer. */
+/**
+ * Name → Angular component lookup used by the node renderer.
+ *
+ * @experimental
+ */
 export function resolveA2uiCatalog(catalog: A2uiCatalog): Map<string, Type<unknown>> {
   const map = new Map<string, Type<unknown>>();
   for (const entry of catalog.components) map.set(entry.name, entry.component);

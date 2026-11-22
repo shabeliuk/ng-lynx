@@ -1,42 +1,89 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 
+import { bindWorklet, LynxMainThread, LynxMainThreadRef, mainThreadRef, runOnMainThread, type ToMainThread } from 'ng-lynx';
 import { LYNX_ELEMENTS } from 'ng-lynx/elements';
+import type { MainThreadElement } from 'ng-lynx/worklet';
 
-import { lockDrag, unlockDrag } from '../drag-lock.service.js';
+import { pageScroll } from '../page-lock.js';
+import { swipeRowEnd, swipeRowForget, swipeRowMove, swipeRowStart, type SwipeRowState } from './swipe-action.mt.js';
 
-interface SwipeRow {
-  id: number;
-  label: string;
-  /** Current content-layer translateX, in px (0 = closed, negative = open). */
-  offset: number;
-}
-
+/** `.swipe-action-area`'s width in `app.css`. */
 const ACTION_WIDTH = 88;
 
 /**
+ * One swipeable row: its content (`displayArea`) stacked over its action
+ * (`actionArea`). A component of its own so that each row has its own
+ * Main-Thread refs.
+ *
+ * The touch worklets are bound to the row's **static outer view**, not the
+ * moving content, and use the touch's page position, so every reading is in
+ * one frame.
+ */
+@Component({
+  selector: 'swipe-row',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [LYNX_ELEMENTS, LynxMainThread, LynxMainThreadRef],
+  template: `
+    <view class="swipe-row" [lynxMainThread]="touchEvents()">
+      <view class="swipe-action-area">
+        <view class="swipe-action-btn" (tap)="delete.emit()">
+          <text class="swipe-action-btn-label">Delete</text>
+        </view>
+      </view>
+      <view class="swipe-display-area" [lynxMainThreadRef]="display">
+        <text class="swipe-display-label">{{ label() }}</text>
+      </view>
+    </view>
+  `,
+})
+export class SwipeRowComponent {
+  readonly label = input.required<string>();
+  /** The list's shared "which row is open" ref. */
+  readonly openRow = input.required<ToMainThread<SwipeRowState['openRow']>>();
+  readonly delete = output();
+
+  protected readonly display = mainThreadRef<MainThreadElement | null>();
+  private readonly start = mainThreadRef<SwipeRowState['start']['current']>(null);
+  private readonly offset = mainThreadRef(0);
+  private readonly snap = mainThreadRef<SwipeRowState['snap']['current']>(null);
+
+  protected readonly touchEvents = computed(() => {
+    const state: ToMainThread<SwipeRowState> = {
+      page: pageScroll,
+      display: this.display,
+      start: this.start,
+      offset: this.offset,
+      snap: this.snap,
+      openRow: this.openRow(),
+      actionWidth: ACTION_WIDTH,
+    };
+    return {
+      touchstart: bindWorklet(swipeRowStart, state),
+      touchmove: bindWorklet(swipeRowMove, state),
+      touchend: bindWorklet(swipeRowEnd, state),
+      touchcancel: bindWorklet(swipeRowEnd, state),
+    };
+  });
+}
+
+/**
  * A recreation of `@lynx-js/lynx-ui`'s `<SwipeAction>` primitive
- * (https://lynxjs.org/next/ui/components/swipe-action.html) — swipe a row to
- * reveal a hidden action — for ng-lynx.
+ * (https://lynxjs.org/next/ui/components/swipe-action.html), swipe a row to
+ * reveal a hidden action, for ng-lynx.
  *
- * Each row is a `displayArea` (the swipeable content) stacked over an
- * `actionArea` (the revealed action button). The touch listeners are bound
- * to the row's static outer container, same reasoning as the other demos:
- * `detail.x` needs a fixed frame, not one that moves with the content layer.
- * Only one row is open at a time — opening a new row closes any other, the
- * common swipe-list convention.
- *
- * `catch`-prefixed, not bubbling `bind` — see draggable-demo's doc comment
- * for why: a touch here would otherwise also scroll the ancestor
- * `.app-scroll` underneath the list, found on a real device. `catch` alone
- * wasn't enough there either, so `onStart`/`onEnd` also call
- * `lockDrag()`/`unlockDrag()` (`drag-lock.service.ts`), which is what
- * actually gates `.app-scroll`'s `[enable-scroll]`.
+ * **The drag runs on the Main Thread** (`swipe-action.mt.ts`): touch worklets
+ * move a row's content with `setStyleProperty` and snap it open or closed with
+ * `lynxTween`, so Angular never binds its `transform`. Only one row is open at
+ * a time: opening a row closes the other there too, through a ref the rows
+ * share. Delete is an ordinary `(tap)`. The drag stops the page scrolling until
+ * it ends (`page-lock.ts`).
  */
 @Component({
   selector: 'swipe-action-demo',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LYNX_ELEMENTS],
+  imports: [LYNX_ELEMENTS, SwipeRowComponent],
   template: `
     <view class="demo-card">
       <text class="demo-title">SwipeAction</text>
@@ -44,21 +91,7 @@ const ACTION_WIDTH = 88;
 
       <view class="swipe-list">
         @for (row of rows(); track row.id) {
-          <view
-            class="swipe-row"
-            (catchtouchstart)="onStart(row, $event)"
-            (catchtouchmove)="onMove(row, $event)"
-            (catchtouchend)="onEnd(row)"
-          >
-            <view class="swipe-action-area">
-              <view class="swipe-action-btn" (tap)="deleteRow(row.id)">
-                <text class="swipe-action-btn-label">Delete</text>
-              </view>
-            </view>
-            <view class="swipe-display-area" [style.transform]="'translateX(' + row.offset + 'px)'">
-              <text class="swipe-display-label">{{ row.label }}</text>
-            </view>
-          </view>
+          <swipe-row [label]="row.label" [openRow]="openRow" (delete)="deleteRow(row.id)" />
         } @empty {
           <text class="demo-desc">No rows left — reload to reset.</text>
         }
@@ -67,50 +100,17 @@ const ACTION_WIDTH = 88;
   `,
 })
 export class SwipeActionDemoComponent {
-  protected readonly rows = signal<SwipeRow[]>([
-    { id: 1, label: 'Inbox message #1', offset: 0 },
-    { id: 2, label: 'Inbox message #2', offset: 0 },
-    { id: 3, label: 'Inbox message #3', offset: 0 },
+  protected readonly rows = signal([
+    { id: 1, label: 'Inbox message #1' },
+    { id: 2, label: 'Inbox message #2' },
+    { id: 3, label: 'Inbox message #3' },
   ]);
 
-  private draggingId: number | null = null;
-  private startPointerX = 0;
-  private startOffset = 0;
-
-  protected onStart(row: SwipeRow, event: { detail?: { x?: number } }): void {
-    const x = event.detail?.x;
-    if (typeof x !== 'number') return;
-    this.draggingId = row.id;
-    lockDrag();
-    this.startPointerX = x;
-    this.startOffset = row.offset;
-  }
-
-  protected onMove(row: SwipeRow, event: { detail?: { x?: number } }): void {
-    if (this.draggingId !== row.id) return;
-    const x = event.detail?.x;
-    if (typeof x !== 'number') return;
-    const next = Math.min(0, Math.max(-ACTION_WIDTH, this.startOffset + (x - this.startPointerX)));
-    this.setOffset(row.id, next);
-  }
-
-  protected onEnd(row: SwipeRow): void {
-    if (this.draggingId !== row.id) return;
-    this.draggingId = null;
-    unlockDrag();
-    const open = row.offset < -ACTION_WIDTH / 2;
-    this.setOffset(row.id, open ? -ACTION_WIDTH : 0);
-    // Opening one row closes every other (single-row-open convention).
-    if (open) {
-      for (const r of this.rows()) if (r.id !== row.id) this.setOffset(r.id, 0);
-    }
-  }
+  protected readonly openRow = mainThreadRef<SwipeRowState['openRow']['current']>(null);
 
   protected deleteRow(id: number): void {
+    // Only an open row shows Delete, so the open row is the one going.
+    void runOnMainThread(swipeRowForget)(this.openRow);
     this.rows.update((rows) => rows.filter((r) => r.id !== id));
-  }
-
-  private setOffset(id: number, offset: number): void {
-    this.rows.update((rows) => rows.map((r) => (r.id === id ? { ...r, offset } : r)));
   }
 }

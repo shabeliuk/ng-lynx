@@ -94,7 +94,8 @@
 /** The callback result shape `lynx.QueryComponent` / `getNativeLynx().QueryComponent` deliver. */
 interface DynamicComponentQueryResult {
   code: number;
-  data?: { url: string; sync?: boolean; error_message?: string; mode?: string };
+  /** iOS Explorer 4.2 sends `error_msg`; Lynx's type source names it `error_message`. */
+  data?: { url: string; sync?: boolean; error_msg?: string; error_message?: string; mode?: string };
   detail?: { schema: string; cache?: boolean; errMsg?: string };
 }
 
@@ -128,7 +129,7 @@ declare var lynxCoreInject:
  * `ViewContainerRef.createComponent(resolved.default)`, same as any other
  * dynamic component creation.
  *
- * @public
+ * @experimental
  */
 export function loadDynamicComponent<T = unknown>(source: string): Promise<{ default: T }> {
   return new Promise((resolve, reject) => {
@@ -144,9 +145,9 @@ export function loadDynamicComponent<T = unknown>(source: string): Promise<{ def
     query(source, (result) => {
       if (result?.code !== 0) {
         const raw = JSON.stringify(result);
-        const hint = notABundleHint(result?.code, raw);
+        const lead = notABundleHint(result?.code, raw) || engineMessage(result);
         reject(
-          new Error(`[ng-lynx] loadDynamicComponent(${source}) failed: ${hint ? `${hint} Engine result: ` : ''}${raw}`),
+          new Error(`[ng-lynx] loadDynamicComponent(${source}) failed: ${lead ? `${lead} Engine result: ` : ''}${raw}`),
         );
         return;
       }
@@ -163,6 +164,17 @@ export function loadDynamicComponent<T = unknown>(source: string): Promise<{ def
       resolve(exports as { default: T });
     });
   });
+}
+
+/**
+ * The engine's own words, when it sent any: a dropped connection on iOS is
+ * `Load lazy bundle failed, the error message is: The network connection was lost.`
+ * with code 160101.
+ */
+function engineMessage(result: DynamicComponentQueryResult | undefined): string {
+  const message = result?.data?.error_msg ?? result?.data?.error_message ?? result?.detail?.errMsg;
+  if (typeof message !== 'string' || message === '') return '';
+  return /[.!?]$/.test(message) ? message : `${message}.`;
 }
 
 /**

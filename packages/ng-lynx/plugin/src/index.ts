@@ -163,7 +163,7 @@ export interface PluginAngularLynxOptions {
    *   hit on an element's first query for skipping the native call on
    *   elements that turn out to never be queried. `lynxSelectAll(...)`
    *   (a whole-tree CSS-selector query, not `ng-ref`-based) is unaffected by
-   *   any of these three modes. The default since 0.1.0-rc.1: most elements
+   *   any of these three modes. The default since 1.0.0: most elements
    *   are never queried, so each one used to pay a native call for nothing.
    *
    * @defaultValue 'lazy'
@@ -173,6 +173,8 @@ export interface PluginAngularLynxOptions {
    * Initialise the new gesture handlers. `[lynxGesture]` registers through
    * them, and Lynx only starts them with this flag on.
    * Same option as ReactLynx's `pluginReactLynx`. @defaultValue false
+   *
+   * @experimental Gestures are experimental, see docs/32-gestures.md.
    */
   enableNewGesture?: boolean;
   /** Same option as ReactLynx's `pluginReactLynx`. @defaultValue false */
@@ -267,6 +269,8 @@ export interface PluginAngularLynxOptions {
    *   what `getDynamicComponentExports` hands back to `loadDynamicComponent`.
    *
    * @defaultValue false
+   *
+   * @experimental Dynamic components are experimental, see docs/38-dynamic-component.md.
    */
   dynamicComponent?: boolean;
   /**
@@ -282,6 +286,8 @@ export interface PluginAngularLynxOptions {
    * which is why it isn't on by default.
    *
    * @defaultValue false
+   *
+   * @experimental Dynamic components are experimental, see docs/38-dynamic-component.md.
    */
   dynamicComponentHost?: boolean;
   /**
@@ -302,6 +308,8 @@ export interface PluginAngularLynxOptions {
    * defeats tree-shaking; only add what you need. A module the producer
    * externalizes but the host never published throws a message naming it at
    * first use, rather than failing obscurely.
+   *
+   * @experimental Dynamic components are experimental, see docs/38-dynamic-component.md.
    */
   sharedModules?: string[];
   /**
@@ -553,6 +561,11 @@ export function pluginAngularLynx(
               __HAS_FIRST_SCREEN__: String(Boolean(firstScreen)),
               // Read by ops-apply.ts (Main Thread). See `nativeElements`'s doc.
               __NATIVE_ELEMENTS__: JSON.stringify(nativeElements),
+              // Read by slider.ts (Background Thread): whether the Main-Thread
+              // bundle has the worklet runtime (applyEntry bundles it for a
+              // non-empty `mainThreadModules`), so `<lynx-slider>` can drag
+              // there. A dynamic component's Main-Thread part is a stub.
+              __WORKLET_RUNTIME__: String(mainThreadModules.length > 0 && !dynamicComponent),
             },
           },
           tools: {
@@ -1376,9 +1389,12 @@ function applyEntry(
     // Only bundled when `mainThreadModules` is non-empty — that's the only
     // documented use for the option (worklet registration modules), so an
     // empty list is a reliable signal the app doesn't use worklets at all, and
-    // an app that never touches `[lynxMainThread]` doesn't pay for it.
-    const workletRuntime =
-      opts.mainThreadModules.length > 0 ? path.resolve(angularLynxRoot, 'main-thread/dist/worklet-runtime/init.js') : undefined;
+    // an app that never touches `[lynxMainThread]` doesn't pay for it: about
+    // 10 kB of Lynx bundle, measured on examples/ng-forms. `<lynx-slider>`
+    // drags on the Main Thread when it's there (`__WORKLET_RUNTIME__`).
+    const workletRuntime = opts.mainThreadModules.length > 0
+      ? path.resolve(angularLynxRoot, 'main-thread/dist/worklet-runtime/init.js')
+      : undefined;
 
     for (const [entryName, entryPoint] of Object.entries(entries)) {
       const imports: string[] = [];

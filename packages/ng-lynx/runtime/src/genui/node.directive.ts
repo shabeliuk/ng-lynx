@@ -50,7 +50,11 @@ import { resolveBindingPath, resolveComponentProps } from './resolve-props.js';
 
 const warnedTags = new Set<string>();
 
-/** Rendered when a component tag is missing from the catalog. */
+/**
+ * Rendered when a component tag is missing from the catalog.
+ *
+ * @experimental
+ */
 @Component({
   selector: 'a2ui-unsupported-notice',
   standalone: true,
@@ -67,6 +71,7 @@ export class A2uiUnsupportedNotice {
   @Input() nodeId = '';
 }
 
+/** @experimental */
 @Directive({
   selector: '[a2uiNode]',
   standalone: true,

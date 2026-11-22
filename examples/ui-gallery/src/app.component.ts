@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 
+import { LynxMainThreadRef } from 'ng-lynx';
 import { LYNX_ELEMENTS } from 'ng-lynx/elements';
 
 import { DraggableDemoComponent } from './components/draggable-demo.component.js';
@@ -8,7 +9,7 @@ import { SheetDemoComponent } from './components/sheet-demo.component.js';
 import { SortableDemoComponent } from './components/sortable-demo.component.js';
 import { SwipeActionDemoComponent } from './components/swipe-action-demo.component.js';
 import { SwiperDemoComponent } from './components/swiper-demo.component.js';
-import { dragLockScrollEnabled } from './drag-lock.service.js';
+import { pageScroll } from './page-lock.js';
 
 /**
  * A gallery of `@lynx-js/lynx-ui` component patterns
@@ -26,6 +27,7 @@ import { dragLockScrollEnabled } from './drag-lock.service.js';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     LYNX_ELEMENTS,
+    LynxMainThreadRef,
     DraggableDemoComponent,
     SwiperDemoComponent,
     SheetDemoComponent,
@@ -39,7 +41,7 @@ import { dragLockScrollEnabled } from './drag-lock.service.js';
         <text class="app-title">UI Gallery</text>
         <text class="app-subtitle">lynx-ui component patterns on ng-lynx</text>
       </view>
-      <scroll-view class="app-scroll" scroll-orientation="vertical" [enable-scroll]="dragLockScrollEnabled()">
+      <scroll-view class="app-scroll" scroll-orientation="vertical" [lynxMainThreadRef]="pageScroll">
         <view class="app-scroll-content">
           <draggable-demo />
           <swiper-demo />
@@ -53,7 +55,6 @@ import { dragLockScrollEnabled } from './drag-lock.service.js';
   `,
 })
 export class AppComponent {
-  // Templates can only reference class members, not bare module imports —
-  // this just re-exposes the shared signal under the same name.
-  protected readonly dragLockScrollEnabled = dragLockScrollEnabled;
+  // Templates can only reference class members, not module imports.
+  protected readonly pageScroll = pageScroll;
 }
