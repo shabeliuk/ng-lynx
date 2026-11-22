@@ -35,7 +35,12 @@ export function sendServerEvents(res) {
 const NETWORK_MODES = ['normal', 'slow', 'dropped'];
 const LAZY_CHUNK = /^\/static\/js\/async\/lazy-route\./;
 
-export function serve(root, port) {
+/**
+ * Serves `root` on `port`. `host` is 127.0.0.1 unless a phone on the network has to
+ * reach it (iphone.mjs). `main` is the bundle answered for `/main.lynx.bundle`: a host
+ * app that always opens that path can load the `assets` bundle from a second server.
+ */
+export function serve(root, port, { host = '127.0.0.1', main = 'main' } = {}) {
   const requests = [];
   let network = 'normal';
   const server = createServer((req, res) => {
@@ -53,7 +58,13 @@ export function serve(root, port) {
       res.writeHead(known ? 200 : 404, { 'Access-Control-Allow-Origin': '*' }).end(network);
       return;
     }
-    if (pathname === '/main.lynx.bundle') network = 'normal';
+    if (pathname === '/main.lynx.bundle') {
+      network = 'normal';
+      if (main !== 'main') {
+        respond(root, `/${main}.lynx.bundle`, requests, res);
+        return;
+      }
+    }
     if (LAZY_CHUNK.test(pathname) && network === 'dropped') {
       requests.push({ pathname, status: 'dropped' });
       req.socket.destroy();
@@ -67,7 +78,7 @@ export function serve(root, port) {
   });
   return new Promise((resolve, reject) => {
     server.once('error', reject);
-    server.listen(port, '127.0.0.1', () => resolve({ requests, close: () => server.close() }));
+    server.listen(port, host, () => resolve({ requests, close: () => server.close() }));
   });
 }
 

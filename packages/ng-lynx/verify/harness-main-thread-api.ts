@@ -317,6 +317,27 @@ async function main(): Promise<void> {
   lynxTween({ from: 0, to: 1, duration: 1000, onUpdate: (v) => cancelled.push(v) }).cancel();
   await new Promise((resolve) => setTimeout(resolve, 40));
   assert(cancelled.length === 1, 'cancel stops the loop');
+  // Late timers, as on the iOS simulator's Main Thread: each frame blocks for 40 ms. A tween
+  // that counted ticks would take ten of them (about 560 ms); the clock ends it on time.
+  const late: number[] = [];
+  const startedAt = Date.now();
+  await new Promise<void>((resolve) => {
+    lynxTween({
+      from: 0,
+      to: 1,
+      duration: 160,
+      onUpdate: (v) => {
+        late.push(v);
+        const until = Date.now() + 40;
+        while (Date.now() < until) {
+          // a busy Main Thread
+        }
+      },
+      onFinish: resolve,
+    });
+  });
+  const took = Date.now() - startedAt;
+  assert(late.at(-1) === 1 && took < 350, `late frames still end on time: ${late.length} frames in ${took} ms`);
 
   console.log('\n=== [lynxMainThread] rebinds ===');
   const rebind = el('rebind');

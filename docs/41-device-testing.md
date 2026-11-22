@@ -161,12 +161,52 @@ on the Mac. A leak climbs with every round; a heap that's collected rises and fa
 | 6,000 | 92.4 MB | 96 MB |
 | 7,000 | | 104 MB |
 
-Measured 2026-11-20, engine 4.2. Android levels off. The iOS simulator climbs about 4 MB per 1,000
-mounts of this 95-element screen, and rose by itself once while idle (79 to 91 MB). Nearly all of it is
-`Malloc Small` in `footprint`, native memory, while `verify:memory` shows every registry ng-lynx keeps,
-on both threads, back at its baseline. Whether it's the engine's element memory, JavaScriptCore's heap
-or the Main Thread's is open: it needs Instruments' allocations on the simulator, or the same churn in
-a ReactLynx app to compare. On a phone, run the same and put the numbers here.
+Measured 2026-11-20, engine 4.2. Android levels off. The iOS simulator climbed about 4 MB per 1,000
+mounts of this 95-element screen, while `verify:memory` showed every registry ng-lynx keeps, on both
+threads, back at its baseline.
+
+**The climb is Lynx DevTool's, not ng-lynx's** (found 2026-11-22). That simulator's Explorer had Lynx
+DevTool switched on (Settings → Lynx DevTool Switches; `enable_devtool` in its preferences). Launched
+with `MallocStackLogging=1` and compared with `heap -s` before and after 2,000 mounts, 11 MB of the
+12 MB that grew was one `std::unordered_map<int, lynx::starlight::LayoutObject*>`, 184,000 entries,
+about one per element created. It's DevTool's `InspectorUIExecutor::layout_objects_`: the engine's
+`LayoutContext` reports each new layout node to DevTool (`OnLayoutObjectCreated`), but
+`DestroyLayoutNode` never reports the node's end (`OnLayoutObjectDestroy` has no caller in
+`lynx-family/lynx` at `5955097`), so the map keeps an entry, and a dangling pointer, for every element
+ever created. With DevTool off, the same 2,000 mounts left the map alone and the footprint flat (88 to
+89 MB; of the heap's 2.7 MB change, 2.3 MB is JavaScriptCore's own collected heap). An app without
+DevTool doesn't have it. Measure memory with DevTool off.
+
+### On a real iPhone
+
+Maestro drives simulators only (2.11 says "Physical iOS devices are not yet supported"), and Lynx
+Explorer's iOS build runs only on the simulator. So `iphone.mjs` replays the same flows with an
+XCUITest, [`iphone/DeviceFlows.swift`](../packages/device-tests/iphone/DeviceFlows.swift), in the
+genui example's native host app ([`examples/genui/ios`](../examples/genui/ios)), which loads any bundle
+URL it's launched with:
+
+```bash
+pnpm --filter ng-lynx-device-tests test:iphone
+```
+
+It builds the test app with this Mac's Wi-Fi address in place of `127.0.0.1`, into `dist-iphone/`,
+serves it there, turns `flows/*.yaml` into a plan of the same steps (`node iphone.mjs --plan` prints
+it), copies the test into the host's UI-test target for the run, and runs it with `xcodebuild test`.
+`--flow <name>` runs one flow. The xcodebuild log lands in `artifacts-iphone.log`, and each flow's
+screenshots in the run's `.xcresult`.
+
+Once per phone and Mac:
+
+1. `npm run ios:device` in `examples/genui`: it writes your signing team to `Signing.local.xcconfig`.
+2. On the phone: Settings → General → VPN & Device Management → your developer certificate → Trust.
+3. On the Mac, the first build asks whether `codesign` may use your signing key: Always Allow.
+
+The phone must be unlocked, and on the same Wi-Fi as the Mac. Xcode 27 rejects the pods' own
+deployment targets, so the run raises them to iOS 15.
+
+Differences from the simulator run: `page-exit` is skipped, since it leaves the page through
+Explorer's back button and the host app has none; the host's engine is the genui app's Lynx pods, not
+the pinned Explorer; and the engine log isn't checked, only what the phone fetched from the server.
 
 **Opening a bundle by hand on the iOS simulator:** leave `&fullscreen=true` off the deep link. Explorer
 4.2 on iOS takes it as part of the bundle's URL and fails with error 102, "the template file size is 0".
@@ -246,6 +286,13 @@ Each one was driven, not just opened. What each row left out:
   and the card works. The engine doesn't keep the failure, unlike the lazy-chunk runtime's (see
   `network` above). iOS tried the cut request three times before failing; Android once.
 - `threejs-*` ran, but only a phone's frame rate means anything.
+
+### Before 1.0.0
+
+On 2026-11-22, the tree tagged for `1.0.0`: the package build and typecheck, all 71 harnesses, the
+packed tarball scaffolded into all three templates and built, with the Vitest and Jest quick starts,
+on Angular 22 and 21 (`scripts/verify-consumer.mjs`), every example's production build (25 examples,
+27 configs), and the 16 device flows on the iOS simulator and the Android emulator, engine 4.2.
 
 ### Installing from npm
 
