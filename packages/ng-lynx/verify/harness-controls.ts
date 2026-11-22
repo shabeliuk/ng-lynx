@@ -13,7 +13,7 @@
  */
 import '@angular/compiler';
 
-import { Component, NO_ERRORS_SCHEMA, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, NO_ERRORS_SCHEMA, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { bootstrapLynxApplication } from 'ng-lynx';
@@ -83,6 +83,9 @@ import {
   `,
 })
 export class TestComponent {
+  // No `changeDetection` set, so OnPush on Angular 22 and Eager on 21: a test
+  // that writes a plain field marks this view itself, which works on both.
+  readonly cdr = inject(ChangeDetectorRef);
   readonly countryOptions = [
     { label: 'United States', value: 'us' },
     { label: 'Ukraine', value: 'ua' },
@@ -586,9 +589,10 @@ async function main(): Promise<void> {
   g['__QUERY_DELAY_MS__'] = 0;
 
   console.log('\n=== LynxSlider: the model writes, and disabled ===');
-  // A plain field, so zoneless Angular needs telling.
+  // A plain field, so Angular needs telling. Marking the root's host view
+  // isn't enough on Angular 22, where an unset strategy means OnPush.
   if (cmp) cmp.volume = 70;
-  app.components[0]?.changeDetectorRef.markForCheck();
+  cmp?.cdr.markForCheck();
   await tick();
   await tick();
   assert(styleOf(fill, 'width') === '70%', `a value written by the model moves the fill (got ${styleOf(fill, 'width')})`);
