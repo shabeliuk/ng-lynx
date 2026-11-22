@@ -8,6 +8,39 @@ which parts are experimental and may change in a minor release, is in
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-11-22
+
+Fixes found by building a real app, MyAssets (live crypto prices and charts), from the
+published 1.0.0 packages and running it in Lynx Explorer 4.2 on the iOS simulator. Each one
+worked in the web preview, which is why the harnesses didn't catch them.
+
+### Fixed
+
+- **`HttpClient` failed on every request on a device.** There's no `globalThis.fetch` on the
+  Background Thread (Lynx passes `fetch` to the bundle as a wrapper parameter), and
+  Angular's fetch backend calls `globalThis.fetch`. Then Lynx's responses have no stream,
+  and reading their `body` uses the body up. `provideLynxHttpClient()` now installs
+  `lynx.fetch` as the global and reads every engine response through `text()`, never
+  `.body`. `verify:http` fakes that engine.
+- **No `WebSocket` in release builds.** rspeedy provides `@lynx-js/websocket` only for
+  `rspeedy dev`. `pluginAngularLynx` now provides it for every lynx build; new harness
+  `verify:websocket-build`. `ng-lynx` depends on `@lynx-js/websocket`.
+
+### Documentation
+
+- docs/08: `span-count` and `estimated-main-axis-size-px` are numbers, so the examples
+  bind them (`[span-count]="1"`); the string form fails strict template checking.
+- docs/12: how touch events behave on iOS (one finger per event, unstable `identifier`,
+  `x`/`y` relative to the element touched).
+- docs/13: CSS variables work from stylesheets, not inline; `<text>` keeps whitespace.
+- docs/14: a component's host element has no size; give it a class.
+- docs/22: what failed on a device, and how it's fixed.
+- docs/29: `WebSocket` on a device.
+
+### Changed
+
+- The templates require `ng-lynx@^1.0.1`.
+
 ## [1.0.0] - 2026-11-22
 
 The first stable release. From here on, a breaking change to the covered API needs a major
@@ -158,6 +191,7 @@ Gestures: pan, tap, long press and fling run on iOS and Android. Lynx's engines 
 recognizer for `pinch` or `rotation`, so those never fire, and a dev build warns when you
 bind one. A fling's event is typed as `MainThreadFlingGestureEvent`.
 
-[Unreleased]: https://github.com/shabeliuk/ng-lynx/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/shabeliuk/ng-lynx/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/shabeliuk/ng-lynx/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/shabeliuk/ng-lynx/compare/v0.1.0-rc.0...v1.0.0
 [0.1.0-rc.0]: https://github.com/shabeliuk/ng-lynx/releases/tag/v0.1.0-rc.0

@@ -66,6 +66,26 @@ Verified on the web engine (and the supported model on-device):
 
 Other Lynx CSS facts worth knowing:
 
+- **CSS variables work when they're declared in a stylesheet, not inline.**
+  `.app { --bg: #0e1117 }` and `.app.theme-light { --bg: #f6f7f9 }`, with the
+  class switched on the root, re-theme everything below at once (MyAssets'
+  light/dark switch, on a device). Setting the same variables through
+  `[style]` does nothing on a device: Lynx drops custom properties in inline
+  styles unless the template is compiled with `enableCSSInlineVariables`, which
+  Lynx's template plugin doesn't pass through. The web preview applies them, so
+  only a device shows it.
+- **`<text>` keeps the whitespace you write.** Content written across lines,
+
+  ```html
+  <text class="price">
+    {{ price }}
+  </text>
+  ```
+
+  renders as `"\n    61,320.83\n  "` on a device: visible as an indent, and
+  enough to make a test that matches the text fail. Keep text on one line, or
+  bind it.
+
 - **Don't rely on a default `display`/`flex-direction`.** Lynx's own docs say
   a plain `<view>` defaults to `linear` layout (vertical), not flex — and even
   where flex *is* in effect, relying on an assumed default direction is how a

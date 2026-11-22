@@ -449,6 +449,7 @@ interface RsbuildApiLike {
         environment: { name: string; webSocketToken?: string };
         isDev: boolean;
         isProd: boolean;
+        bundler: { ProvidePlugin: new (definitions: Record<string, string | string[]>) => unknown };
       },
     ) => void,
   ): void;
@@ -470,7 +471,7 @@ interface RsbuildApiLike {
     ) => void,
   ): void;
   /** Populated once the dev server is listening; absent for `build`. */
-  context: { devServer?: { hostname: string; port: number; https: boolean } };
+  context: { devServer?: { hostname: string; port: number; https: boolean }; action?: string };
   /** What another plugin published with `api.expose` (e.g. `pluginLynxConfig`'s config). */
   useExposed?<T>(id: symbol): T | undefined;
 }
@@ -1322,7 +1323,7 @@ function applyEntry(
     sharedRuntimeHostModule?: string;
   },
 ): void {
-  api.modifyBundlerChain((chain, { environment, isProd, isDev }) => {
+  api.modifyBundlerChain((chain, { environment, isProd, isDev, bundler }) => {
     const isLynx = environment.name === 'lynx' || environment.name.startsWith('lynx-');
     const isWeb = environment.name === 'web' || environment.name.startsWith('web-');
     if (!isLynx && !isWeb) return;
@@ -1537,6 +1538,20 @@ function applyEntry(
     if ((isLynx || isWeb) && mainThreadFilenames.length > 0) {
       c.plugin('lynx:angular-mark-main-thread')
         .use(AngularMarkMainThreadPlugin, [mainThreadFilenames])
+        .end();
+    }
+
+    // `WebSocket` on a device is `@lynx-js/websocket`, a native-module-backed
+    // implementation. rspeedy provides it, with a ProvidePlugin, only for
+    // `rspeedy dev` (for its own reload client): its plugin returns early with
+    // `if ('dev' !== action && !isDev)`. So an app that opened a WebSocket
+    // worked in dev and had none in a release build (found by a real app on
+    // Explorer 4.2). Provide it for every other lynx build too; the
+    // ProvidePlugin only adds the module where `WebSocket` is used.
+    const action = api.context.action;
+    if (isLynx && !isDev && action !== 'dev') {
+      c.plugin('lynx:angular-websocket')
+        .use(bundler.ProvidePlugin, [{ WebSocket: [require.resolve('@lynx-js/websocket'), 'default'] }])
         .end();
     }
 

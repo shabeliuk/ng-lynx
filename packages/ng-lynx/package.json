@@ -1,6 +1,6 @@
 {
   "name": "ng-lynx",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": false,
   "description": "Angular custom renderer for building Lynx apps",
   "keywords": [
@@ -210,13 +210,15 @@
     "verify:wireproto-intern": "node verify/build.mjs harness-intern.ts",
     "verify:wireproto-measure": "node verify/build.mjs harness-wireproto-measure.ts",
     "verify:worklet": "node verify/build.mjs harness-worklet.ts",
-    "verify:worklet-runtime": "node verify/build.mjs harness-worklet-runtime.ts"
+    "verify:worklet-runtime": "node verify/build.mjs harness-worklet-runtime.ts",
+    "verify:websocket-build": "node verify/websocket-build.mjs"
   },
   "dependencies": {
     "@babel/core": "^7.29.13",
     "@lynx-js/runtime-wrapper-webpack-plugin": "^0.2.6",
     "@lynx-js/template-webpack-plugin": "^0.16.8",
     "@lynx-js/types": "^4.4.2",
+    "@lynx-js/websocket": "^0.0.4",
     "babel-loader": "^9.2.1"
   },
   "peerDependencies": {

@@ -11,7 +11,13 @@
  * What Angular's `FetchBackend` (v21) actually touches at request time —
  * verified against `@angular/common`'s compiled output, not assumed:
  *
- *  - the global `fetch` itself;
+ *  - the global `fetch` itself. **On a device there is none**: Lynx hands
+ *    `fetch` to each bundle as a parameter of its wrapper
+ *    (`fetch = fetch || lynx.fetch`), not as a property of `globalThis`, and
+ *    FetchBackend calls `globalThis.fetch(...)`. Every request failed with
+ *    "not a function" until 1.0.1 (found by a real app on Explorer 4.2; the
+ *    web preview's worker has a real global fetch, which is how it got
+ *    through). {@link installStreamlessFetchShim} now puts one there;
  *  - `new AbortController()` (request cancellation) and `new TextDecoder()`
  *    (body decoding) — both beyond ES2019, so entry-background.ts ships
  *    guarded polyfills for PrimJS (same class as the `Object.hasOwn` gap that
@@ -21,8 +27,10 @@
  *    exclusively via `response.body.getReader()`; there is *no* fallback to
  *    `response.text()`, and the branch is a bare `if (response.body)` with no
  *    `else`, so a stream-less response yields a **silently `null` body**
- *    rather than an error. {@link installStreamlessFetchShim} closes that
- *    hole — see its doc.
+ *    rather than an error. Lynx's own `Response` has no stream, and reading
+ *    its `body` at all uses the body up, after which `text()` fails or gives
+ *    `undefined`. {@link installStreamlessFetchShim} closes both holes — see
+ *    its doc.
  *
  * Interceptors (`withInterceptors`), typed responses, and error handling are
  * plain `@angular/common/http` — verified by `npm run verify:http`.
@@ -47,7 +55,10 @@ interface FetchLikeResponse {
   readonly url: string;
   readonly headers: { get(name: string): string | null };
   readonly body: unknown;
+  readonly redirected?: boolean;
+  readonly type?: string;
   arrayBuffer?(): Promise<ArrayBuffer>;
+  text?(): Promise<string>;
 }
 
 type FetchLike = (...args: unknown[]) => Promise<FetchLikeResponse>;
@@ -99,9 +110,97 @@ function withSynthesizedBody(response: FetchLikeResponse): FetchLikeResponse {
   };
 }
 
+/** UTF-8 bytes of a string. Neither engine has `TextEncoder`. */
+function utf8(text: string): Uint8Array {
+  const out: number[] = [];
+  for (let i = 0; i < text.length; i++) {
+    let code = text.charCodeAt(i);
+    if (code >= 0xd800 && code <= 0xdbff && i + 1 < text.length) {
+      const next = text.charCodeAt(i + 1);
+      if (next >= 0xdc00 && next <= 0xdfff) {
+        code = 0x10000 + ((code - 0xd800) << 10) + (next - 0xdc00);
+        i++;
+      }
+    }
+    if (code < 0x80) out.push(code);
+    else if (code < 0x800) out.push(0xc0 | (code >> 6), 0x80 | (code & 63));
+    else if (code < 0x10000) out.push(0xe0 | (code >> 12), 0x80 | ((code >> 6) & 63), 0x80 | (code & 63));
+    else out.push(0xf0 | (code >> 18), 0x80 | ((code >> 12) & 63), 0x80 | ((code >> 6) & 63), 0x80 | (code & 63));
+  }
+  return new Uint8Array(out);
+}
+
 /**
- * Wrap the global `fetch` so responses that arrive **without a readable
- * stream** still deliver their body to Angular's `HttpClient`.
+ * A Lynx engine response, made readable by FetchBackend: a one-chunk
+ * `body.getReader()` over `text()`.
+ *
+ * **Never reads `response.body`.** On Lynx (Explorer 4.2, iOS) reading it,
+ * even to check it, uses the body up: a later `text()` then fails with "body
+ * used" or resolves to `undefined`. So a Lynx response is always read through
+ * `text()`, whether or not the page turned on standard streaming.
+ */
+function withTextBody(response: FetchLikeResponse): FetchLikeResponse {
+  let text: Promise<string> | undefined;
+  const readText = (): Promise<string> =>
+    (text ??= response.text
+      ? response.text().then((t) => (typeof t === 'string' ? t : ''))
+      : response.arrayBuffer!().then((b) => decodeUtf8(new Uint8Array(b))));
+  const body = {
+    getReader() {
+      let finished = false;
+      return {
+        async read(): Promise<{ done: boolean; value?: Uint8Array }> {
+          if (finished) return { done: true };
+          finished = true;
+          const bytes = utf8(await readText());
+          return bytes.byteLength === 0 ? { done: true } : { done: false, value: bytes };
+        },
+        async cancel(): Promise<void> {
+          finished = true;
+        },
+        releaseLock(): void {},
+      };
+    },
+  };
+  return {
+    ok: response.ok,
+    status: response.status,
+    statusText: response.statusText,
+    url: response.url,
+    headers: response.headers,
+    redirected: response.redirected,
+    type: response.type,
+    body,
+    text: readText,
+    arrayBuffer: () => readText().then((t) => utf8(t).buffer as ArrayBuffer),
+  };
+}
+
+function decodeUtf8(bytes: Uint8Array): string {
+  const Decoder = (globalThis as { TextDecoder?: new () => { decode(b: Uint8Array): string } }).TextDecoder;
+  return Decoder ? new Decoder().decode(bytes) : String.fromCharCode(...bytes);
+}
+
+// eslint-disable-next-line no-var
+declare var lynx: { fetch?: FetchLike } | null | undefined;
+
+/** The engine's own fetch, bound: `lynx.fetch`, which the bundle wrapper's `fetch` is. */
+function lynxFetch(): FetchLike | undefined {
+  const l = typeof lynx !== 'undefined' ? lynx : undefined;
+  const f = l?.fetch;
+  return typeof f === 'function' ? (f.bind(l) as FetchLike) : undefined;
+}
+
+/**
+ * Give Angular's `HttpClient` a `fetch` that works on the engine: put one on
+ * `globalThis` where there is none, and make sure every response delivers its
+ * body.
+ *
+ * - **No global `fetch`** (a device): install `lynx.fetch`, wrapped so each
+ *   response is read through `text()` and never through `.body`, which on Lynx
+ *   uses the body up (see `withTextBody`).
+ * - **A global `fetch`** (the web preview, or a compliant engine): responses
+ *   that arrive without a readable stream get one built from `arrayBuffer()`.
  *
  * Angular's `FetchBackend` reads bodies only through
  * `response.body.getReader()`, guarded by a bare `if (response.body)` with no
@@ -130,11 +229,19 @@ function withSynthesizedBody(response: FetchLikeResponse): FetchLikeResponse {
  */
 export function installStreamlessFetchShim(): boolean {
   const g = globalThis as { fetch?: FetchLike & { __angularLynxStreamShim?: true } };
-  const original = g.fetch;
-  if (typeof original !== 'function' || original.__angularLynxStreamShim) return false;
+  const global = g.fetch;
+  if (typeof global === 'function' && global.__angularLynxStreamShim) return false;
+  const engine = lynxFetch();
+  // No global fetch: a device, where `lynx.fetch` is the one there is. A global
+  // that is `lynx.fetch` itself behaves the same way.
+  const fromEngine = typeof global !== 'function' || (engine !== undefined && global === (lynx as { fetch?: FetchLike }).fetch);
+  const original = typeof global === 'function' ? global : engine;
+  if (!original) return false;
   const wrapped = async (...args: unknown[]): Promise<FetchLikeResponse> => {
     const response = await original(...args);
-    if (response && !response.body && typeof response.arrayBuffer === 'function') {
+    if (!response) return response;
+    if (fromEngine) return withTextBody(response);
+    if (!response.body && typeof response.arrayBuffer === 'function') {
       return withSynthesizedBody(response);
     }
     return response;
@@ -163,16 +270,15 @@ export function provideLynxHttpClient(
   return makeEnvironmentProviders([
     provideHttpClient(withFetch(), ...features),
     provideEnvironmentInitializer(() => {
+      // Puts the engine's fetch on `globalThis` where FetchBackend looks for
+      // it, and makes every response readable. See its doc.
+      installStreamlessFetchShim();
       if (__DEV__ && typeof (globalThis as { fetch?: unknown }).fetch !== 'function') {
         console.warn(
-          '[ng-lynx] provideLynxHttpClient: no global `fetch` is available '
-            + 'in this Lynx environment — every HttpClient request will fail. '
-            + 'Check that your Lynx runtime version ships the Fetch API.',
+          '[ng-lynx] provideLynxHttpClient: this engine has no fetch, global or '
+            + '`lynx.fetch`: every HttpClient request will fail.',
         );
       }
-      // Guard against a stream-less engine fetch silently producing `null`
-      // bodies — a no-op wherever `response.body` is already a real stream.
-      installStreamlessFetchShim();
     }),
   ]);
 }

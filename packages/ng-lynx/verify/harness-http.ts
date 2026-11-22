@@ -123,6 +123,7 @@ async function main(): Promise<void> {
   assert(seenRequests.length === 2, 'exactly the two expected requests were made');
 
   await verifyStreamlessShim(app);
+  await verifyLynxEngineFetch(app);
 
   console.log('\n✅ All HttpClient assertions passed — provideLynxHttpClient works.\n');
 }
@@ -200,6 +201,82 @@ async function verifyStreamlessShim(app: import('@angular/core').ApplicationRef)
   assert(untouched.body === realBody, 'a response that already streams is returned as-is, not re-wrapped');
 
   g['fetch'] = realFetch;
+}
+
+/**
+ * What a device actually has (Lynx Explorer 4.2, found by a real app):
+ *
+ * - **no global `fetch`**: Lynx hands `fetch` to each bundle as a wrapper
+ *   parameter, `fetch = fetch || lynx.fetch`, and FetchBackend calls
+ *   `globalThis.fetch(...)`, so every request failed with "not a function";
+ * - **responses without a stream**, whose `body` getter uses the body up:
+ *   reading it, even to check it, makes a later `text()` fail.
+ *
+ * This fakes exactly that engine and drives a real HttpClient request through it.
+ */
+async function verifyLynxEngineFetch(app: import('@angular/core').ApplicationRef): Promise<void> {
+  console.log('\n=== The engine fetch: no global fetch, lynx.fetch only ===');
+  const g = globalThis as Record<string, unknown>;
+  const realFetch = g['fetch'];
+  const hadLynx = 'lynx' in g;
+  const realLynx = g['lynx'];
+
+  let bodyReads = 0;
+  let failNext = false;
+  let calledWith: { url?: string; self?: unknown } = {};
+  const engine = {
+    fetch(this: unknown, url: string) {
+      calledWith = { url, self: this };
+      if (failNext) return Promise.reject(new TypeError('Network request failed'));
+      let used = false;
+      const response = {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        url,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        get body() {
+          // What Lynx does: reading the body uses it up.
+          bodyReads++;
+          used = true;
+          return undefined;
+        },
+        async text() {
+          if (used) throw new Error('body used');
+          used = true;
+          return JSON.stringify({ title: 'From lynx.fetch', price: '61,234.56 €' });
+        },
+      };
+      return Promise.resolve(response);
+    },
+  };
+  delete g['fetch'];
+  g['lynx'] = { ...(realLynx as object), fetch: engine.fetch };
+
+  assert(installStreamlessFetchShim() === true, 'with no global fetch, the shim installs lynx.fetch as the global');
+  assert(typeof g['fetch'] === 'function', 'globalThis.fetch exists now, where FetchBackend looks for it');
+
+  const http = app.injector.get(HttpClient);
+  const received = await new Promise<unknown>((resolve, reject) => {
+    http.get('https://example.test/engine').subscribe({ next: resolve, error: reject });
+  });
+  const data = received as { title?: string; price?: string };
+  assert(data?.title === 'From lynx.fetch', 'HttpClient parsed the JSON body from the engine response');
+  assert(data?.price === '61,234.56 €', 'non-ASCII text survives the UTF-8 round trip');
+  assert(bodyReads === 0, 'the response body getter was never read (it would have used the body up)');
+  assert(calledWith.url === 'https://example.test/engine', 'the request reached lynx.fetch');
+  assert(calledWith.self === g['lynx'], 'lynx.fetch was called with lynx as `this`');
+
+  console.log('\n=== A failed engine response still surfaces as an error ===');
+  failNext = true;
+  const failure = await new Promise<unknown>((resolve) => {
+    http.get('https://example.test/engine').subscribe({ next: () => resolve('next'), error: resolve });
+  });
+  assert((failure as { status?: number })?.status === 0, 'a network failure is an HttpErrorResponse with status 0');
+
+  g['fetch'] = realFetch;
+  if (hadLynx) g['lynx'] = realLynx;
+  else delete g['lynx'];
 }
 
 main().catch((err) => {

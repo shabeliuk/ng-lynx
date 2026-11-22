@@ -23,7 +23,7 @@ fails inside Rspack (`WebAssembly.instantiate(): Unknown heap type -14`). The
   "dependencies": {
     "@angular/core": "^21.0.0",
     "@angular/compiler": "^21.0.0",
-    "ng-lynx": "^1.0.0"
+    "ng-lynx": "^1.0.1"
   },
   "devDependencies": {
     "@angular/compiler-cli": "^21.0.0",
