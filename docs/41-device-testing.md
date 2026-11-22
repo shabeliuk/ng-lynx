@@ -208,6 +208,15 @@ Differences from the simulator run: `page-exit` is skipped, since it leaves the 
 Explorer's back button and the host app has none; the host's engine is the genui app's Lynx pods, not
 the pinned Explorer; and the engine log isn't checked, only what the phone fetched from the server.
 
+Three flows stop at something Explorer provides and the host doesn't, and are reported as host gaps
+rather than failures: `host-data` (the host passes no init data), `attributes` (it doesn't register
+`<markdown>`) and `assets` (its image loader doesn't load `data:` URLs). Each stops at that step, so its
+later steps don't run on the phone. Any other failure fails the run.
+
+**First run, 2026-11-22, iPhone 14 Pro:** 12 of 15 flows passed (counter, gesture, gesture-lab,
+input, lazy-route, list, main-thread, memory, network, platform, route-param, timing), and the three
+above stopped at their host gaps.
+
 **Opening a bundle by hand on the iOS simulator:** leave `&fullscreen=true` off the deep link. Explorer
 4.2 on iOS takes it as part of the bundle's URL and fails with error 102, "the template file size is 0".
 Android takes it as a flag.
@@ -292,7 +301,9 @@ Each one was driven, not just opened. What each row left out:
 On 2026-11-22, the tree tagged for `1.0.0`: the package build and typecheck, all 71 harnesses, the
 packed tarball scaffolded into all three templates and built, with the Vitest and Jest quick starts,
 on Angular 22 and 21 (`scripts/verify-consumer.mjs`), every example's production build (25 examples,
-27 configs), and the 16 device flows on the iOS simulator and the Android emulator, engine 4.2.
+27 configs), and the 16 device flows on the iOS simulator and the Android emulator, engine 4.2. On a
+real iPhone 14 Pro, through `test:iphone`: 12 of 15 flows passed, and three stopped at host gaps
+(above).
 
 ### Installing from npm
 
