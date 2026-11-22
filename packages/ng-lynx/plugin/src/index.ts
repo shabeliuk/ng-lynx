@@ -163,7 +163,7 @@ export interface PluginAngularLynxOptions {
    *   hit on an element's first query for skipping the native call on
    *   elements that turn out to never be queried. `lynxSelectAll(...)`
    *   (a whole-tree CSS-selector query, not `ng-ref`-based) is unaffected by
-   *   any of these three modes. The default since 0.1.0-rc.1: most elements
+   *   any of these three modes. The default since 1.0.0: most elements
    *   are never queried, so each one used to pay a native call for nothing.
    *
    * @defaultValue 'lazy'

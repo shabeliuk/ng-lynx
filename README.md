@@ -123,7 +123,7 @@ What has been run where is in [41 — Device testing](docs/41-device-testing.md)
 desktop-only elements. They work, but their API may still change; their types say
 `@experimental`. What 1.0 promises is in [43 — Stability](docs/43-stability.md).
 
-Angular 21 and 22 are supported, on Node 22.12 or later. 66 headless harnesses
+Angular 21 and 22 are supported, on Node 22.12 or later. 71 headless harnesses
 (`npm run verify:all`) drive the real runtime against a mock engine, and
 `scripts/verify-consumer.mjs` packs the tarball and builds real apps from it. See
 [07 — Verifying](docs/07-verifying.md).

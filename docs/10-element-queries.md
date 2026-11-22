@@ -175,7 +175,7 @@ Every method above targets the element by an `[ng-ref-{id}]` attribute.
 | `true` | On every element, at `CREATE` | One native `__SetAttribute` call per element, queried or not |
 | `false` | Never | Every query matches nothing |
 
-Before 0.1.0-rc.1 the default was `true`. Most elements are never queried, so
+Before 1.0.0 the default was `true`. Most elements are never queried, so
 each one paid a native call for nothing; set `true` to get the old behaviour,
 for example when a first query mustn't wait a round trip.
 

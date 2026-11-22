@@ -11,10 +11,6 @@ starting from:
 
 ## New app: `create-ng-lynx`
 
-> ⚠️ **Not published yet.** `create-ng-lynx` on npm is still an empty placeholder until the
-> first release candidate. Until then, run the CLI from this repo:
-> `node packages/create-ng-lynx/index.mjs my-app`.
-
 ```bash
 npm create ng-lynx@latest my-app
 cd my-app

@@ -2,10 +2,29 @@
 
 Both packages, `ng-lynx` and `create-ng-lynx`, share one version and one changelog.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
-versions follow [Semantic Versioning](https://semver.org/). Before 1.0, a minor
-release may change the API; experimental features may change in any release.
+versions follow [Semantic Versioning](https://semver.org/). What a release promises, and
+which parts are experimental and may change in a minor release, is in
+[docs/43-stability.md](docs/43-stability.md).
 
 ## [Unreleased]
+
+## [1.0.0] - 2026-11-22
+
+The first stable release. From here on, a breaking change to the covered API needs a major
+release ([docs/43](docs/43-stability.md)). The changes below are since `0.1.0-rc.0`.
+
+### Supported
+
+- Angular 21 and 22, with TypeScript 5.9 and 6.0. Node 22.12 or later, `@lynx-js/rspeedy`
+  0.18.
+- Lynx engines 4.1 and 4.2, tested in Lynx Explorer on the iOS simulator and the Android
+  emulator, and on a real iPhone. Android has not been tested on a real phone.
+
+### Experimental
+
+Native gestures, dynamic components (with the shared-runtime exports), GenUI, HarmonyOS and
+the desktop-only elements. They work and are tested, but their API may still change in a
+minor release; their types say `@experimental`.
 
 ### Changed
 
@@ -78,6 +97,10 @@ release may change the API; experimental features may change in any release.
 
 ### Fixed
 
+- `lynxTween` and `lynxAnimate` time an animation by the clock, not by counting 16 ms frames.
+  When the Main Thread's timers fired late, as on the iOS simulator, a 240 ms snap took twice
+  as long or more; it now ends after its `duration`, in fewer steps. On the web preview, whose
+  timers are throttled to about a second, an animation now ends on time instead of crawling.
 - The `ng-lynx/forms/theme.css` default theme had no rules for the option list that
   `<lynx-select>`, `<lynx-date-picker>` and `<lynx-time-picker>` open, so the options were
   black on the dark sheet, and its backdrop wasn't fixed, so the sheet opened inside the
@@ -135,5 +158,6 @@ Gestures: pan, tap, long press and fling run on iOS and Android. Lynx's engines 
 recognizer for `pinch` or `rotation`, so those never fire, and a dev build warns when you
 bind one. A fling's event is typed as `MainThreadFlingGestureEvent`.
 
-[Unreleased]: https://github.com/shabeliuk/ng-lynx/compare/v0.1.0-rc.0...HEAD
+[Unreleased]: https://github.com/shabeliuk/ng-lynx/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/shabeliuk/ng-lynx/compare/v0.1.0-rc.0...v1.0.0
 [0.1.0-rc.0]: https://github.com/shabeliuk/ng-lynx/releases/tag/v0.1.0-rc.0

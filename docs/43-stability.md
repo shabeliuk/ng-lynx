@@ -2,9 +2,6 @@
 
 What a release of ng-lynx promises, what it leaves out, and what it runs on.
 
-> **Draft for 1.0.** Until `1.0.0`, ng-lynx is `0.x`: a minor release (`0.1` → `0.2`) may
-> still break things, as SemVer allows for `0.x`. Every break is in the CHANGELOG.
-
 ## What 1.0 promises
 
 From `1.0.0` on, ng-lynx follows [Semantic Versioning](https://semver.org):

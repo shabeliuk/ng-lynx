@@ -40,7 +40,7 @@ there's none. The shadow tree's order is the Main Thread's order minus the comme
 that sibling is already in place. Under a `<list>`, text nodes are skipped the same
 way, since a `<list>` takes only `<list-item>`s.
 
-Until 0.1.0-rc.1 each anchor was an empty raw-text node on the Main Thread: one more
+Until 1.0.0 each anchor was an empty raw-text node on the Main Thread: one more
 element, a create and an insert call, and a registry entry. `verify:anchors` checks
 the order through every kind of change, and that the registry holds only native
 nodes.

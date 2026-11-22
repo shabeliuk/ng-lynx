@@ -173,7 +173,7 @@ class LynxRenderer2 extends Renderer2 {
     // `<ng-container>`, `<ng-template>` boundaries). They live only in the
     // shadow tree, where Angular navigates them; the Main Thread never sees
     // them. An insert anchored on one is resolved forward to the next sibling
-    // that the Main Thread has (emitInsert). Before 0.1.0-rc.1 every anchor
+    // that the Main Thread has (emitInsert). Before 1.0.0 every anchor
     // was a native raw-text node: one element and two native calls each.
     return new ShadowElement('#comment', 'comment');
   }
