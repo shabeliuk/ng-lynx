@@ -41,6 +41,20 @@ worked in the web preview, which is why the harnesses didn't catch them.
 
 - The templates require `ng-lynx@^1.0.1`.
 
+### Tests
+
+- **The weekly Android device run failed on `main-thread`.** CI's emulator is 320x640 (no
+  device profile), which nothing local had matched: the slider sat just above Android's
+  navigation handle, the system took the swipe, and the slider got `touchcancel`. The page
+  now scrolls, the flow centres the slider first, and the slider is narrow enough for
+  Maestro's swipes to pass both its ends. `run.mjs` now runs Android at CI's screen size
+  by default (`--screen device` keeps the device's). At that size two more flows failed
+  locally and are fixed: `gesture` couldn't see its link on the home screen (every flow
+  now scrolls to its link first), and the keyboard covered `input`'s model line (now
+  above its field).
+- The iOS device jobs run one at a time. Both waiting on the small `xcode-27` runner pool
+  left one never given a runner, and it was cancelled without running.
+
 ## [1.0.0] - 2026-11-22
 
 The first stable release. From here on, a breaking change to the covered API needs a major

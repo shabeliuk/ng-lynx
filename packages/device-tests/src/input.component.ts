@@ -28,8 +28,9 @@ import { BackButtonComponent } from './back-button.component.js';
       />
       <text class="line" [flatten]="false">Typed: {{ typed() }}</text>
       <text class="line" [flatten]="false">Confirmed: {{ confirmed() }}</text>
-      <input class="field" [flatten]="false" accessibility-label="Model field" [(ngModel)]="model" />
+      <!-- Above its field: below it, the keyboard covers it on a short screen. -->
       <text class="line" [flatten]="false">Model: {{ model() }}</text>
+      <input class="field" [flatten]="false" accessibility-label="Model field" [(ngModel)]="model" />
     </view>
   `,
 })

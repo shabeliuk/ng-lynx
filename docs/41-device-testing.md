@@ -84,8 +84,9 @@ pnpm --filter ng-lynx-device-tests test:android
 pnpm --filter ng-lynx-device-tests test:ios
 ```
 
-Android needs a booted emulator. iOS creates and boots its own simulator, "Angular Lynx Device Tests",
-and leaves yours alone. Both need Java 17. `run.mjs` downloads Maestro and Lynx Explorer into
+Android needs a booted emulator. `run.mjs` switches it to the CI emulator's screen, 320x640 at
+160 dpi, for the run and puts its own size back afterwards; add `--screen device` to keep the
+device's. iOS creates and boots its own simulator, "Angular Lynx Device Tests", and leaves yours alone. Both need Java 17. `run.mjs` downloads Maestro and Lynx Explorer into
 `~/.cache/ng-lynx-e2e` on first use (about 520 MB) and checks each against the SHA-256 in
 [`tools.json`](../packages/device-tests/tools.json). Bump Explorer there together with the Lynx
 toolchain. Add `--flow <name>` to run one flow. Results land in `packages/device-tests/artifacts/`:
@@ -228,6 +229,13 @@ platform screen connects to.
 **Leave the emulator alone during a run.** A click in its window lands in the app and can fail a flow
 with a confusing screenshot. In the engine log, Maestro's touches are on whole numbers, and a person's
 are fractional.
+
+**Keep swipes away from the bottom of the screen on Android.** With gesture navigation, the system
+takes a horizontal swipe that starts near the navigation handle ("Gesture Monitor swipe-up is
+stealing input gesture" in logcat), and the element gets `touchcancel` a few pixels in. On the
+320x640 CI screen, swipes starting 56 and 70 pixels above the bottom edge were both taken. Let the page scroll, and scroll the
+element up first (`scrollUntilVisible` with `centerElement: true`, and room under the last line so
+it can reach the middle).
 
 **Maestro only sees unflattened elements on Android.** Lynx draws a flattened element into its parent
 with no View of its own, so every element a flow taps or reads sets `[flatten]="false"`. iOS doesn't need
