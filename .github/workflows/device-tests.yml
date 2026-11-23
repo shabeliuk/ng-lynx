@@ -67,6 +67,8 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      # No `profile`: a generic 320x640 screen at 160 dpi. run.mjs uses the same size on
+      # a local emulator, so local runs match this one. See docs/41-device-testing.md.
       - name: Run the flows
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -97,6 +99,11 @@ jobs:
     timeout-minutes: 60
     strategy:
       fail-fast: false
+      # One at a time: the preview image's pool is small. With both jobs asking for a
+      # runner at once, one waited 11 minutes and the other was never given one ("not
+      # acquired by Runner of type hosted"), so it was cancelled without running.
+      # Queued behind the first job, the second asks only once it's done.
+      max-parallel: 1
       matrix:
         angular: [21, 22]
     steps:

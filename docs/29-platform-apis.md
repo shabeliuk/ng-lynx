@@ -248,6 +248,26 @@ the bytes through, and parses the events itself. Measured on the iOS simulator
 (Explorer 4.2, 2026-11-09): three events arrived with the connection held open.
 Android isn't measured yet.
 
+## `WebSocket`
+
+Use the standard `WebSocket` on the Background Thread. On a device it's
+`@lynx-js/websocket`, backed by a native module (Lynx 2.16+), and the build
+provides it wherever your code says `WebSocket`; the web preview's worker has
+the browser's own.
+
+ng-lynx 1.0.0 only had it in `rspeedy dev`: rspeedy's ProvidePlugin is added for
+its dev client, so an app's socket worked in dev and was missing from a release
+build. Since 1.0.1 `pluginAngularLynx` provides it for every lynx build, checked
+by `npm run verify:websocket-build`.
+
+Two things a real app met:
+
+- **Batch your subscriptions.** Servers rate-limit control messages (Binance
+  allows five a second and drops the connection past that); re-subscribing a
+  list of streams one message each after a change is enough to hit it.
+- **`onmessage` data is a string.** Check `typeof event.data === 'string'`
+  before parsing.
+
 ## Verifying
 
 `npm run verify:event-source` covers the parser (multi-line data, named events,

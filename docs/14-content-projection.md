@@ -72,6 +72,19 @@ to confirm it and flag one consequence of Angular's component model.
 
 ## Nesting components creates a real host element
 
+> **It has no size of its own.** The host is a plain `<view>`, so `height: 100%`
+> on the root of a component's template resolves against a view with no height:
+> a chart drawn in percentages comes out flat, and a `<list>` inside a routed
+> page renders no rows. Give the host a class that flexes:
+>
+> ```ts
+> @Component({ selector: 'candle-chart', host: { class: 'chart-host' }, … })
+> ```
+>
+> ```css
+> .chart-host { flex: 1; display: flex; flex-direction: column; }
+> ```
+
 This is **not specific to projection** — it applies to any multi-component Lynx
 app — but projection is usually the first time you reach for a second component,
 so it's worth calling out here.

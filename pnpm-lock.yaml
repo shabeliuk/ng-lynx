@@ -864,6 +864,9 @@ importers:
       '@lynx-js/types':
         specifier: ^4.4.2
         version: 4.4.2
+      '@lynx-js/websocket':
+        specifier: ^0.0.4
+        version: 0.0.4
       babel-loader:
         specifier: ^9.2.1
         version: 9.2.1(@babel/core@7.29.13(supports-color@8.1.1))(webpack@5.112.2(cssnano@7.1.9(postcss@8.5.33))(csso@5.0.5)(esbuild@0.28.2)(postcss@8.5.33)(svgo@4.1.0))

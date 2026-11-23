@@ -18,7 +18,13 @@ import { BackButtonComponent } from './back-button.component.js';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [BackButtonComponent, FormsModule, LYNX_ELEMENTS, LynxMainThread, LynxSlider],
+  // The page scrolls, with room under its last line, so the flow can bring the slider
+  // up the screen before it drags it. On a short screen (CI's emulator is 320x640) the
+  // slider sat just above Android's navigation handle, where the system takes a
+  // horizontal swipe for itself and the slider gets touchcancel after a few pixels.
+  host: { class: 'fill' },
   template: `
+    <scroll-view class="fill" scroll-orientation="vertical">
     <view class="page">
       <app-back-button></app-back-button>
       <text class="title" [flatten]="false">Main taps: {{ taps() }}</text>
@@ -54,7 +60,9 @@ import { BackButtonComponent } from './back-button.component.js';
         <lynx-slider [min]="0" [max]="100" [step]="10" [(ngModel)]="volume" />
       </view>
       <text class="line" [flatten]="false">Volume: {{ volume() }}</text>
+      <view class="scroll-room"></view>
     </view>
+    </scroll-view>
   `,
 })
 export class MainThreadComponent {

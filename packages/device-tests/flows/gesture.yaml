@@ -7,6 +7,10 @@ appId: ${APP_ID}
     env:
       BUNDLE: main
       READY: 'Count: 0'
+- scrollUntilVisible:
+    element: Open gesture
+    direction: DOWN
+    timeout: 10000
 - tapOn: Open gesture
 - extendedWaitUntil:
     visible: 'Drags finished: 0'

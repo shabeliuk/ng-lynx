@@ -29,16 +29,39 @@ request touches:
 
 | API | Status on Lynx |
 | --- | --- |
-| global `fetch` | Provided by the Lynx runtime (BG thread); dev warning at boot if absent. |
+| global `fetch` | **Not on a device.** Lynx passes `fetch` to each bundle as a parameter of its wrapper (`fetch = fetch \|\| lynx.fetch`), not as `globalThis.fetch`, which is what FetchBackend calls. Since 1.0.1 `provideLynxHttpClient()` puts `lynx.fetch` there (see below). The web preview's worker has a real one. |
 | `AbortController` (cancellation) | **Polyfilled** by entry-background.ts if missing (PrimJS has no `AbortController`). |
 | `TextDecoder` (body decoding) | **Polyfilled** (UTF-8, the WHATWG decoder, `stream: true` included) if missing. Neither JavaScriptCore on iOS nor PrimJS on Android has one (Explorer 4.2), so the polyfill is what runs. |
 | `response.headers` / `status` / `statusText` | Standard fetch surface. |
-| `response.body` **as a ReadableStream** | ⚠ the one to check on-device — see below. |
+| `response.body` **as a ReadableStream** | **Not on a device**, and reading `body` there at all uses the body up. Since 1.0.1 every engine response is read through `text()` instead — see below. |
 
 Both polyfills are guarded (engines that ship the real APIs, and the web
 preview, are untouched) and covered by `npm run verify:polyfills` — the same
 treatment as the `Object.hasOwn` gap that once crashed `@angular/forms`
 on-device.
+
+### On a device: 1.0.0 couldn't make a request
+
+ng-lynx 1.0.0's HttpClient failed on every request on a real device, while the
+web preview worked. Found by a real app on Lynx Explorer 4.2 (iOS simulator):
+
+1. **`TypeError: not a function`.** There's no `globalThis.fetch` on the
+   Background Thread: the runtime wrapper hands `fetch` to the bundle as a
+   variable in its scope. FetchBackend's default is
+   `(...args) => globalThis.fetch(...args)`.
+2. **Then a `null` body.** Lynx's `Response` has no stream, and the shim below
+   built one from `arrayBuffer()`, which Lynx's responses don't serve either.
+3. **Then "body used".** Reading `response.body` on Lynx, even to check it, uses
+   the body up, so a later `text()` fails or resolves to `undefined`.
+
+`installStreamlessFetchShim()` (run by `provideLynxHttpClient()`) now handles
+all three: with no global `fetch`, it installs `lynx.fetch` (bound to `lynx`) as
+the global, and wraps each engine response in a one-chunk reader over `text()`,
+without ever touching `.body`. `npm run verify:http` fakes exactly that engine:
+no global fetch, a `lynx.fetch` whose `body` getter uses the body up.
+
+The harnesses before 1.0.1 ran against Node's `fetch` and the web preview, which
+both have a global `fetch` and streaming bodies: that is how this got through.
 
 ### The stream caveat
 

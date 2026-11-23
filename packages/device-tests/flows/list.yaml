@@ -7,6 +7,10 @@ appId: ${APP_ID}
     env:
       BUNDLE: main
       READY: 'Count: 0'
+- scrollUntilVisible:
+    element: Open list
+    direction: DOWN
+    timeout: 10000
 - tapOn: Open list
 - extendedWaitUntil:
     visible: 'Rows: 120'

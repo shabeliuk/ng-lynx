@@ -7,6 +7,10 @@ appId: ${APP_ID}
     env:
       BUNDLE: main
       READY: 'Count: 0'
+- scrollUntilVisible:
+    element: Open lazy page
+    direction: DOWN
+    timeout: 10000
 - tapOn: Open lazy page
 - extendedWaitUntil:
     visible: Lazy page loaded

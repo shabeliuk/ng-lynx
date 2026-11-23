@@ -46,8 +46,14 @@
   margin-bottom: 10px;
 }
 
+.scroll-room {
+  height: 320px;
+}
+
+/* Narrower than any screen's middle 80%: Maestro's swipes end about 10% in from the
+   screen's edges, and the flow needs them past both ends of the track. */
 .slider-box {
-  width: 300px;
+  width: 200px;
   margin-bottom: 8px;
 }
 
@@ -56,7 +62,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  width: 300px;
+  width: 200px;
   height: 40px;
 }
 

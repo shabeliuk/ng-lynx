@@ -8,6 +8,10 @@ appId: ${APP_ID}
     env:
       BUNDLE: main
       READY: 'Count: 0'
+- scrollUntilVisible:
+    element: Open main thread
+    direction: DOWN
+    timeout: 10000
 - tapOn: Open main thread
 - extendedWaitUntil:
     visible: 'Main taps: 0'
@@ -37,6 +41,14 @@ appId: ${APP_ID}
 - assertNotVisible: 'Outer taps: 2'
 # Past the right end clamps to max. Maestro's left swipe ends a few points inside
 # the track's start, so it lands on 0 or 10.
+# The slider is brought to the middle of the screen first: a horizontal swipe that
+# starts near Android's navigation handle is taken by the system, and the slider gets
+# touchcancel. On CI's 320x640 emulator it sat right above the handle.
+- scrollUntilVisible:
+    element: Volume slider
+    direction: DOWN
+    centerElement: true
+    timeout: 30000
 - extendedWaitUntil:
     visible: 'Volume: 50'
     timeout: 5000

@@ -12,9 +12,9 @@ verification in `verify/harness-list.ts` (`npm run verify:list`) and
 ## Usage
 
 ```html
-<list list-type="single" span-count="1" scroll-orientation="vertical">
+<list list-type="single" [span-count]="1" scroll-orientation="vertical">
   @for (c of contacts(); track c.id) {
-    <list-item [attr.item-key]="c.id" estimated-main-axis-size-px="64">
+    <list-item [attr.item-key]="c.id" [estimated-main-axis-size-px]="64">
       <text>{{ c.name }}</text>
     </list-item>
   }
@@ -29,12 +29,17 @@ verification in `verify/harness-list.ts` (`npm run verify:list`) and
    too, and resolves insert anchors forward to the next real `<list-item>`, so
    you don't have to think about them. But your own markup must put `<list-item>` directly under
    `<list>`.
-2. **Every `<list-item>` needs a stable `item-key`.** Bind it with
+2. **Numbers are bindings.** `span-count` and `estimated-main-axis-size-px` are
+   typed as numbers, so with `strictTemplates` the static `span-count="1"` is a
+   build error: write `[span-count]="1"`.
+3. **Every `<list-item>` needs a stable `item-key`.** Bind it with
    `[attr.item-key]="…"`. Keep it aligned with your `@for` `track` expression.
-3. **`<list>` config** (`list-type`, `span-count`, `scroll-orientation`, …) are
+4. **`<list>` config** (`list-type`, `span-count`, `scroll-orientation`, …) are
    normal attributes on the `<list>` element.
-4. **Give the list a size.** Like any scroller it needs bounds (e.g.
-   `flex: 1`) to scroll.
+5. **Give the list a size.** Like any scroller it needs bounds (e.g.
+   `flex: 1`) to scroll. Inside a routed page or another component, its host
+   element needs a size too (see [14](14-content-projection.md#nesting-components-creates-a-real-host-element)):
+   a `<list>` with no height renders no rows at all.
 
 ### Platform-info attributes
 

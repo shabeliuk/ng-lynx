@@ -136,6 +136,29 @@ event on the same element (one native `__AddEvent`, fanned out to every
 callback). This is what lets `@angular/forms`' built-in `DefaultValueAccessor`
 and ng-lynx's `LynxValueAccessor` both listen for `input` on one field.
 
+## Touch events on iOS
+
+Measured on Lynx Explorer 4.2 (iOS simulator) by a real app's chart gestures.
+None of it shows in the web preview, which doesn't send touch events for a mouse.
+
+- **One finger per event.** With two fingers down, each `touchstart` and
+  `touchmove` carries only the finger that changed, in `touches` as well as
+  `changedTouches`. `touches.length` is never 2.
+- **`identifier` isn't a finger's identity.** Both fingers' `touchstart` came
+  with the same value, and it changed between phases. Track fingers yourself:
+  match each changed touch to the nearest finger you know, by `clientX`/`clientY`.
+- **`touchend` still lists the finger that lifted** in `touches`. Fingers left
+  is `touches` less `changedTouches`.
+- **`x`/`y` are relative to the element the finger landed on**, which may be a
+  child of the listener (a candle, not the chart). Use `clientX`/`clientY` and
+  the listener's `boundingClientRect`.
+- **A finger that lands outside the listener can stop its events**, `touchend`
+  included: a gesture can be left half-finished. Listen on the whole area a
+  gesture may use, and treat a `touchstart` long after the last event as a new
+  gesture.
+
+`event.timestamp` is in milliseconds.
+
 ## Global events
 
 `(window:…)` / `(document:…)` / `(body:…)` bindings map to Lynx's app-level

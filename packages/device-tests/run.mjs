@@ -3,9 +3,13 @@
 // server, and what the engine logged. See docs/41-device-testing.md.
 //
 // Usage:  node run.mjs --platform <ios|android> [--flow <name>] [--timeout <minutes>]
+//                     [--screen <ci|device>]
 //
 // The app's build is run first, so build ng-lynx before this. Android needs a
 // booted emulator or device; iOS boots its own simulator and leaves yours alone.
+//
+// On Android the run uses CI's screen size (--screen ci, the default) and puts the
+// device's own size back afterwards; --screen device keeps the device's.
 import { execFileSync, spawn } from 'node:child_process';
 import { createWriteStream, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -22,15 +26,27 @@ const { values: args } = parseArgs({
     platform: { type: 'string' },
     flow: { type: 'string' },
     timeout: { type: 'string', default: '35' },
+    screen: { type: 'string', default: 'ci' },
   },
 });
 const { platform } = args;
+if (args.screen !== 'ci' && args.screen !== 'device') {
+  console.error('--screen is ci or device');
+  process.exit(1);
+}
 if (platform !== 'ios' && platform !== 'android') {
-  console.error('usage: node run.mjs --platform <ios|android> [--flow <name>] [--timeout <minutes>]');
+  console.error('usage: node run.mjs --platform <ios|android> [--flow <name>] [--timeout <minutes>] [--screen <ci|device>]');
   process.exit(1);
 }
 
 const PORT = 8791; // lynx.config.ts's assetPrefix
+/**
+ * The CI emulator's screen: android-emulator-runner with no `profile` creates a
+ * generic AVD, 320x640 at 160 dpi. Flows that passed on a phone-sized emulator
+ * failed there (a slider right above the navigation handle), so every Android run
+ * uses this size, and passing here means passing on CI.
+ */
+const CI_SCREEN = { size: '320x640', density: '160' };
 const SIMULATOR = 'Angular Lynx Device Tests';
 const appId = tools.explorer[platform].appId;
 const artifacts = path.join(here, 'artifacts', platform);
@@ -41,6 +57,9 @@ const adbPath = () => {
   const adb = path.join(sdk, 'platform-tools/adb');
   return existsSync(adb) ? adb : 'adb';
 };
+
+/** Puts the Android device's own screen size back. Set once the size is changed. */
+let restoreScreen = () => {};
 
 /** A plain "iPhone <n> Pro": Explorer's page ignores taps on some newer screen shapes. */
 function bootSimulator() {
@@ -82,6 +101,23 @@ async function prepareDevice() {
   const adb = adbPath();
   const id = run(adb, ['devices']).split('\n').find((line) => /\tdevice$/.test(line))?.split('\t')[0];
   if (!id) throw new Error('No booted Android device. Start an emulator first.');
+  if (args.screen === 'ci') {
+    run(adb, ['-s', id, 'shell', 'wm', 'size', CI_SCREEN.size]);
+    run(adb, ['-s', id, 'shell', 'wm', 'density', CI_SCREEN.density]);
+    restoreScreen = () => {
+      restoreScreen = () => {};
+      for (const setting of ['size', 'density']) {
+        try {
+          run(adb, ['-s', id, 'shell', 'wm', setting, 'reset']);
+        } catch {}
+      }
+    };
+    process.once('SIGINT', () => {
+      restoreScreen();
+      process.exit(130);
+    });
+    console.log(`  screen ${CI_SCREEN.size} at ${CI_SCREEN.density} dpi, as on CI`);
+  }
   run(adb, ['-s', id, 'install', '-r', explorer]);
   run(adb, ['-s', id, 'reverse', `tcp:${PORT}`, `tcp:${PORT}`]);
   run(adb, ['-s', id, 'logcat', '-c']);
@@ -193,6 +229,7 @@ const flowsPassed = await runMaestro(maestro, device.id);
 
 device.log.kill();
 server.close();
+restoreScreen();
 await new Promise((resolve) => logStream.end(resolve));
 writeFileSync(path.join(artifacts, 'requests.json'), JSON.stringify(server.requests, null, 2));
 
