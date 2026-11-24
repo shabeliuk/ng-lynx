@@ -26,7 +26,7 @@ declare function __CreateRawText(text: string): LynxElement;
 declare function __CreateList(
   parentComponentUniqueId: number,
   componentAtIndex: (list: LynxElement, listID: number, cellIndex: number, operationID: number) => number | undefined,
-  enqueueComponent: () => void,
+  enqueueComponent: (list: LynxElement, listID: number, sign: number) => void,
   info: Record<string, unknown>,
   componentAtIndexes: (list: LynxElement, listID: number, cellIndexes: number[], operationIDs: number[]) => void,
 ): LynxElement;

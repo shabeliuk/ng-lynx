@@ -1,6 +1,11 @@
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": { "noUnusedLocals": false, "experimentalDecorators": false, "types": [] },
+  "compilerOptions": {
+    "noUnusedLocals": false,
+    "experimentalDecorators": false,
+    "types": [],
+    "paths": { "ng-lynx": ["../../runtime/dist/index.d.ts"] }
+  },
   "angularCompilerOptions": { "strictTemplates": true },
   "include": [],
   "files": ["./bad.component.ts"]

@@ -5,6 +5,7 @@ import { GestureComponent } from './gesture.component.js';
 import { GestureLabComponent } from './gesture-lab.component.js';
 import { HomeComponent } from './home.component.js';
 import { InputComponent } from './input.component.js';
+import { LazyListComponent } from './lazy-list.component.js';
 import { ListComponent } from './list.component.js';
 import { MainThreadComponent } from './main-thread.component.js';
 import { MemoryComponent } from './memory.component.js';
@@ -17,6 +18,7 @@ export const routes: Routes = [
   { path: '', component: HomeComponent },
   { path: 'users/:id', component: UserComponent },
   { path: 'list', component: ListComponent },
+  { path: 'lazy-list', component: LazyListComponent },
   { path: 'input', component: InputComponent },
   { path: 'main-thread', component: MainThreadComponent },
   { path: 'gesture', component: GestureComponent },

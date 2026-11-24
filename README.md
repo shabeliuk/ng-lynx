@@ -115,7 +115,7 @@ What has been run where is in [41 — Device testing](docs/41-device-testing.md)
 | Build | `pluginAngularLynx`: dual-thread split, AOT (default) or JIT, partial-Ivy linking | [05](docs/05-build-integration.md) |
 | Typed templates | `LYNX_ELEMENTS`: every built-in element, typed attributes and `$event` | [18](docs/18-typed-templates.md) |
 | Events | `(tap)`, `(catchtap)`, `(capture-bindtap)`, `(global-bindtap)`, `(tap.self)`, `(window:x)` | [12](docs/12-events.md) |
-| Lists | Native `<list>` through `@for`; `LynxVirtualFor` for huge lists | [08](docs/08-lists.md), [30](docs/30-virtual-list.md) |
+| Lists | Native `<list>` through `@for`; `LynxLazyFor` (experimental) builds only the rows the list asks for | [08](docs/08-lists.md), [30](docs/30-virtual-list.md) |
 | Forms | `[(lynxModel)]`, `[(ngModel)]`, reactive forms, ten headless controls, optional theme | [09](docs/09-forms.md) |
 | Router & HTTP | `provideLynxRouter` (deep links, back button, lazy routes), `provideLynxHttpClient` | [15](docs/15-routing.md), [22](docs/22-http.md) |
 | Main thread | Worklets, inline `'main thread'` functions (experimental), `runOnMainThread`, `runOnBackground`, per-instance refs, `MainThread.Element`, gestures, `lynxAnimate` | [11](docs/11-worklets.md), [32](docs/32-gestures.md), [33](docs/33-animations.md) |

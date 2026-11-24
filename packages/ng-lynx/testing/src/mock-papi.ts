@@ -30,8 +30,11 @@ export interface MockEl {
   /** For <list>: native item callbacks + synthetic list id. */
   listCbs?: {
     componentAtIndex: (list: MockEl, listID: number, cellIndex: number, op: number) => number | undefined;
+    enqueueComponent?: (list: MockEl, listID: number, sign: number) => void;
   };
   listId?: number;
+  /** For <list>: every `update-list-info` not yet applied by {@link virtualizingList}, oldest first. */
+  listUpdates?: unknown[];
   /** Native gesture detectors registered via `__SetGestureDetector` (gesture id → detector). */
   gestures?: Record<number, { type: number; config: { callbacks: { name: string; callback: unknown }[] }; relationMap: unknown }>;
 }
@@ -659,11 +662,12 @@ export function installMockPapi(): void {
   };
   g.__CreateList = (
     _parentUid: number,
-    componentAtIndex: MockEl['listCbs'] extends { componentAtIndex: infer F } ? F : never,
+    componentAtIndex: NonNullable<MockEl['listCbs']>['componentAtIndex'],
+    enqueueComponent?: NonNullable<MockEl['listCbs']>['enqueueComponent'],
   ) => {
     const el = mk('list');
     el.listId = el.uid;
-    el.listCbs = { componentAtIndex };
+    el.listCbs = { componentAtIndex, enqueueComponent };
     return el;
   };
 
@@ -681,6 +685,7 @@ export function installMockPapi(): void {
     if (i >= 0) p.children.splice(i, 1);
   };
   g.__SetAttribute = (el: MockEl, key: string, value: unknown) => {
+    if (key === 'update-list-info' && value !== undefined) (el.listUpdates ??= []).push(value);
     if (key === 'text') el.text = value as string;
     else if (value === undefined) delete el.attrs[key];
     else el.attrs[key] = value;
@@ -956,6 +961,149 @@ export function driveList(listEl: MockEl): void {
   }
   // Consume the batch (the native side would not replay it).
   delete listEl.attrs['update-list-info'];
+}
+
+/** A native `<list>` that virtualizes, from {@link virtualizingList}. */
+export interface VirtualizingList {
+  /** Every item-key the list knows, in order. */
+  readonly keys: readonly string[];
+  /** What a device would report: duplicate item-keys, malformed actions, bad signs. */
+  readonly errors: readonly string[];
+  /** Every `componentAtIndex` call, by cell index. */
+  readonly requests: readonly number[];
+  /** Apply the pending `update-list-info`, then show cells `first` to `last`. */
+  layout(first: number, last: number): void;
+  /** The element shown in cell `index`, or `undefined` for an empty or hidden cell. */
+  cell(index: number): MockEl | undefined;
+  /** Cells on screen that show nothing. */
+  emptyCells(): number[];
+}
+
+/**
+ * Imitate a native `<list>` that virtualizes, as the iOS collection list and the
+ * C++ list container do (`driveList` imitates web-core, which doesn't): it keeps
+ * every item-key it's told about, asks `componentAtIndex` only for the cells on
+ * screen, lets go of cells that leave with `enqueueComponent`, and asks again for
+ * a cell on screen that an `updateAction` with `flush: true` names. It records
+ * what a device rejects: duplicate item-keys, an action without `item-key` or
+ * `type` (iOS stores both in arrays that can't hold nil), and an update whose
+ * `item-key` isn't the one at its position.
+ */
+export function virtualizingList(listEl: MockEl): VirtualizingList {
+  const keys: string[] = [];
+  const keySet = new Set<string>();
+  const errors: string[] = [];
+  const requests: number[] = [];
+  /** item-key → sign of the cell held for it; -1 for an empty cell. */
+  const held = new Map<string, number>();
+  const dirty = new Set<string>();
+  let first = 0;
+  let last = -1;
+  let operationId = 1;
+  const listId = listEl.listId ?? 0;
+
+  const release = (key: string): void => {
+    const sign = held.get(key);
+    if (sign === undefined) return;
+    held.delete(key);
+    // iOS recycles a cell's UI even when it has none, as sign 0.
+    listEl.listCbs?.enqueueComponent?.(listEl, listId, sign > 0 ? sign : 0);
+  };
+
+  const applyUpdates = (): void => {
+    const updates = listEl.listUpdates ?? [];
+    listEl.listUpdates = [];
+    delete listEl.attrs['update-list-info'];
+    for (const update of updates) applyUpdate(update as Parameters<typeof applyUpdate>[0]);
+  };
+
+  const applyUpdate = (info: {
+    insertAction?: Record<string, unknown>[];
+    removeAction?: unknown[];
+    updateAction?: Record<string, unknown>[];
+  }): void => {
+    (info.removeAction ?? []).forEach((position, i) => {
+      const index = (position as number) - i;
+      if (!Number.isInteger(index) || index < 0 || index >= keys.length) {
+        errors.push(`removeAction position ${String(position)} is out of range`);
+        return;
+      }
+      const key = keys.splice(index, 1)[0]!;
+      keySet.delete(key);
+      release(key);
+      dirty.delete(key);
+    });
+    for (const action of info.insertAction ?? []) {
+      const key = action['item-key'];
+      const position = action['position'] as number;
+      if (typeof key !== 'string' || key === '') {
+        errors.push(`insertAction at ${String(position)} has no item-key`);
+        continue;
+      }
+      if (typeof action['type'] !== 'string') errors.push(`insertAction for "${key}" has no type`);
+      if (keySet.has(key)) errors.push(`duplicated list item-key "${key}"`);
+      keySet.add(key);
+      keys.splice(Math.min(position, keys.length), 0, key);
+    }
+    for (const action of info.updateAction ?? []) {
+      const key = action['item-key'];
+      const from = action['from'];
+      if (typeof key !== 'string' || key === '' || typeof action['type'] !== 'string') {
+        errors.push(`updateAction at ${String(from)} needs item-key and type`);
+        continue;
+      }
+      if (typeof from !== 'number' || typeof action['to'] !== 'number' || typeof action['flush'] !== 'boolean') {
+        errors.push(`updateAction for "${key}" needs numeric from/to and a boolean flush`);
+        continue;
+      }
+      if (keys[from] !== key) errors.push(`updateAction at ${from} names "${key}", but the cell there is "${keys[from]}"`);
+      if (action['flush'] === true && held.has(key)) dirty.add(key);
+    }
+  };
+
+  const attached = (sign: number | undefined): MockEl | undefined => {
+    if (sign === undefined || sign <= 0) return undefined;
+    const el = elementsByUid.get(sign);
+    return el && listEl.children.includes(el) ? el : undefined;
+  };
+
+  return {
+    keys,
+    errors,
+    requests,
+    layout(from: number, to: number): void {
+      applyUpdates();
+      first = Math.max(0, from);
+      last = Math.min(keys.length - 1, to);
+      const visible = new Set(keys.slice(first, last + 1));
+      for (const key of [...held.keys()]) if (!visible.has(key)) release(key);
+      for (let index = first; index <= last; index++) {
+        const key = keys[index]!;
+        if (held.has(key) && !dirty.has(key)) continue;
+        dirty.delete(key);
+        // The C++ list container lets go of a cell before binding it again.
+        const previous = held.get(key);
+        if (previous !== undefined && previous > 0) listEl.listCbs?.enqueueComponent?.(listEl, listId, previous);
+        requests.push(index);
+        const answer = listEl.listCbs?.componentAtIndex(listEl, listId, index, operationId++);
+        const sign = typeof answer === 'number' ? answer : -1;
+        if (sign > 0 && !attached(sign)) {
+          errors.push(`componentAtIndex(${index}) answered with sign ${sign}, which isn't a cell of this list`);
+        }
+        held.set(key, sign);
+      }
+    },
+    cell(index: number): MockEl | undefined {
+      if (index < first || index > last) return undefined;
+      const key = keys[index];
+      return key === undefined ? undefined : attached(held.get(key));
+    },
+    emptyCells(): number[] {
+      const empty: number[] = [];
+      for (let index = first; index <= last; index++) if (!this.cell(index)) empty.push(index);
+      return empty;
+    },
+  };
 }
 
 // --- tree helpers ----------------------------------------------------------

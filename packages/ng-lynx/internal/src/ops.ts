@@ -359,6 +359,46 @@ export const RUN_ON_BACKGROUND_EVENT = '__ngRunOnBackground';
 export const FIRST_SCREEN_RESOLVED_EVENT = '__ngFirstScreenResolved';
 
 // ---------------------------------------------------------------------------
+// Lazy `<list>` — `LynxLazyFor` (runtime/src/lazy-for.ts) and
+// main-thread/src/list-apply.ts. See docs/30-virtual-list.md.
+// ---------------------------------------------------------------------------
+
+/**
+ * Attribute the Background Thread sets on a `<list>` to announce every row, built
+ * or not, as a {@link LazyRows}. It travels as an ordinary `SET_ATTR`, and the Main
+ * Thread keeps it instead of calling `__SetAttribute`. Removing it turns the list
+ * back into one that shows only the items it has.
+ */
+export const LAZY_ROWS_ATTR = '__ngLazyRows';
+
+/** Every row of a lazy `<list>`, in order. */
+export interface LazyRows {
+  /** Bumped on every change, and echoed back in {@link LazyListRange}. */
+  version: number;
+  /** Each row's `item-key`. */
+  keys: string[];
+  /** Each row's `estimated-main-axis-size-px`, or one size for all. */
+  sizes?: number | number[];
+}
+
+/**
+ * Main Thread → Background: the rows a lazy `<list>` holds or has asked for, as an
+ * inclusive range of row indices. The Background Thread builds those rows and a
+ * buffer around them, and may drop the rest.
+ */
+export const LAZY_LIST_RANGE_EVENT = '__ngLazyListRange';
+
+/** The payload of {@link LAZY_LIST_RANGE_EVENT}. */
+export interface LazyListRange {
+  /** The `<list>`'s element id. */
+  list: number;
+  /** The {@link LazyRows.version} these indices refer to. */
+  version: number;
+  start: number;
+  end: number;
+}
+
+// ---------------------------------------------------------------------------
 // Calls between the threads — `runOnMainThread` / `runOnBackground`.
 //
 // Lynx's own versions take any closure, because a compiler transform extracts
