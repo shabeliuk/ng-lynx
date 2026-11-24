@@ -71,7 +71,8 @@ included. Angular sets no Content-Type on a request without a body; Lynx's
 fetch adds it. Most servers ignore it, but strict ones refuse the request: HM
 Land Registry's SPARQL endpoint answers a GET carrying it with **415
 Unsupported Media Type**, while the same GET from a browser or Node gets 200.
-Found by a real app on Lynx Explorer 4.2 (iOS simulator).
+Found by a real app on Lynx Explorer 4.2 (iOS simulator); the same happens on
+Android (Explorer 4.2, emulator), which runs the same engine JavaScript.
 
 The cause is the engine's `Request` (lynx-core `modules/fetch/Request.ts`). When
 the headers have no `Content-Type` *in that exact spelling*, it sets one from
@@ -80,8 +81,9 @@ included, is `text/plain`. Nothing a caller passes avoids it: on the device,
 `body: undefined`, `body: null`, `headers: {}` and `Content-Type: ''` all
 still sent `text/plain`. The headers are a case-sensitive map, too, so a
 caller's `content-type` in another spelling got Lynx's `Content-Type` beside
-it, and iOS sent whichever came last: a raw POST with
-`content-type: application/json` arrived as `text/plain`.
+it. iOS sent only one of the two, whichever came last: a raw POST with
+`content-type: application/json` arrived as `text/plain`. Android sent both, so the
+server got `application/json` and `text/plain;charset=UTF-8` together.
 
 `lynx.fetch` builds each request with `new pageGlobal.Request(...)`, looked up
 at call time. So since 1.0.2 the shim, for the length of each engine fetch,
@@ -104,7 +106,9 @@ this.http.post(endpoint, body, { headers: { Accept: 'application/sparql-results+
 
 The device-tests `network` flow covers it: the screen's GET, DELETE and POSTs
 go to a server endpoint that echoes back the Content-Type each one arrived
-with, and `run.mjs` fails the run on a wrong one.
+with, and `run.mjs` fails the run on a wrong one. Without the fix it fails on
+both platforms: GET and DELETE arrive with `text/plain`, and on Android the
+lower-case POST arrives with two Content-Types.
 
 ### The stream caveat
 

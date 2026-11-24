@@ -209,8 +209,9 @@ function contentTypeName(headers: unknown): string | undefined {
  * headers have no `Content-Type` *in that exact spelling*: a GET or a DELETE
  * with no body included. Strict servers refuse it (HM Land Registry's SPARQL
  * endpoint answers 415). And a caller's `content-type` in another spelling gets
- * a second header beside it, of which iOS sends whichever its dictionary lists
- * last; on the simulator that was `text/plain`.
+ * a second header beside it: iOS sends whichever its dictionary lists last (on
+ * the simulator, `text/plain`), Android sends both. Same on both platforms,
+ * since they run the same lynx-core JavaScript.
  *
  * `lynx.fetch` looks the class up on the page's global each call
  * (`new pageGlobal.Request(input, init)`), synchronously, inside its promise's

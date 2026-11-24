@@ -21,7 +21,10 @@ import { BackButtonComponent } from './back-button.component.js';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [BackButtonComponent, LYNX_ELEMENTS],
+  // The page scrolls: on CI's 320x640 emulator the last header line is below the fold.
+  host: { class: 'fill' },
   template: `
+    <scroll-view class="fill" scroll-orientation="vertical">
     <view class="page">
       <app-back-button></app-back-button>
       <text class="title" [flatten]="false">Network</text>
@@ -38,7 +41,9 @@ import { BackButtonComponent } from './back-button.component.js';
       @for (check of headerChecks; track check.name) {
         <text class="line" [flatten]="false">{{ check.name }} sends: {{ check.sent() }}</text>
       }
+      <view class="scroll-room"></view>
     </view>
+    </scroll-view>
   `,
 })
 export class NetworkComponent {

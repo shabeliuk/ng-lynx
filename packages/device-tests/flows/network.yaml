@@ -21,13 +21,6 @@ appId: ${APP_ID}
 - extendedWaitUntil:
     visible: 'Network: normal'
     timeout: 5000
-- extendedWaitUntil:
-    visible: 'GET sends: none'
-    timeout: 10000
-- assertVisible: 'DELETE sends: none'
-- assertVisible: 'POST sends: application/json'
-- assertVisible: 'POST lower-case sends: application/json'
-- takeScreenshot: network-headers
 - tapOn: Drop network
 - extendedWaitUntil:
     visible: 'Network: dropped'
@@ -53,3 +46,15 @@ appId: ${APP_ID}
 - extendedWaitUntil:
     visible: 'Navigation: none'
     timeout: 5000
+# The headers lines sit below the fold on CI's 320x640 emulator.
+- scrollUntilVisible:
+    element: 'POST lower-case sends: .+'
+    direction: DOWN
+    timeout: 10000
+- extendedWaitUntil:
+    visible: 'POST lower-case sends: application/json'
+    timeout: 10000
+- assertVisible: 'GET sends: none'
+- assertVisible: 'DELETE sends: none'
+- assertVisible: 'POST sends: application/json'
+- takeScreenshot: network-headers

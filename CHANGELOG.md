@@ -17,7 +17,8 @@ queries HM Land Registry's SPARQL endpoint from Lynx Explorer 4.2 on the iOS sim
   without a body included, and strict servers refuse that (Land Registry answers 415).
   Lynx's own `Request` adds it whenever the headers lack a `Content-Type` in that exact
   spelling, and nothing a caller passes avoids it. A `content-type` in another spelling
-  got a second header beside it, and iOS could send Lynx's instead. During each engine
+  got a second header beside it: iOS could send Lynx's instead, and Android sent both.
+  Seen on Explorer 4.2 on the iOS simulator and the Android emulator. During each engine
   fetch, `provideLynxHttpClient()` now puts a `Request` on `globalThis` that drops the
   made-up header. It keeps the header the standard sets for a string or
   `URLSearchParams` body. `verify:http` fakes the engine's `Request`.
@@ -31,7 +32,8 @@ queries HM Land Registry's SPARQL endpoint from Lynx Explorer 4.2 on the iOS sim
 
 - The device `network` flow sends `HttpClient` requests to a server endpoint that
   echoes the Content-Type each one arrived with. The screen shows it, and `run.mjs`
-  fails the run when it's wrong. The device-tests app now uses `provideLynxHttpClient()`.
+  fails the run when it's wrong. The screen scrolls, since on CI's 320x640 emulator the
+  last line is below the fold. The device-tests app now uses `provideLynxHttpClient()`.
 
 ## [1.0.1] - 2026-11-22
 
