@@ -50,6 +50,10 @@ export function serve(root, port, { host = '127.0.0.1', main = 'main' } = {}) {
       sendServerEvents(res);
       return;
     }
+    if (pathname.startsWith('/__headers/')) {
+      echoContentType(req, res, requests);
+      return;
+    }
     const mode = /^\/__network\/(\w+)$/.exec(pathname)?.[1];
     if (mode) {
       const known = NETWORK_MODES.includes(mode);
@@ -79,6 +83,33 @@ export function serve(root, port, { host = '127.0.0.1', main = 'main' } = {}) {
   return new Promise((resolve, reject) => {
     server.once('error', reject);
     server.listen(port, host, () => resolve({ requests, close: () => server.close() }));
+  });
+}
+
+/**
+ * For the network screen's HttpClient requests: answers with the Content-Type the
+ * request arrived with, every copy of it, or `none`. `?expect=` is what the screen
+ * should have sent; run.mjs compares the two, so a wrong header fails the run even
+ * if the screen shows something else.
+ */
+function echoContentType(req, res, requests) {
+  const url = new URL(req.url, 'http://x');
+  const sent = [];
+  for (let i = 0; i < req.rawHeaders.length; i += 2) {
+    if (req.rawHeaders[i].toLowerCase() === 'content-type') sent.push(req.rawHeaders[i + 1]);
+  }
+  const contentType = sent.length ? sent.join(' + ') : 'none';
+  req.resume();
+  req.on('end', () => {
+    requests.push({
+      pathname: url.pathname,
+      status: 200,
+      method: req.method,
+      contentType,
+      expect: url.searchParams.get('expect'),
+    });
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' })
+      .end(JSON.stringify({ method: req.method, contentType }));
   });
 }
 

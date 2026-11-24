@@ -6,7 +6,32 @@ versions follow [Semantic Versioning](https://semver.org/). What a release promi
 which parts are experimental and may change in a minor release, is in
 [docs/43-stability.md](docs/43-stability.md).
 
-## [Unreleased]
+## [1.0.2] - Unreleased
+
+Found by MyAssets, a real app built from the published packages, adding a section that
+queries HM Land Registry's SPARQL endpoint from Lynx Explorer 4.2 on the iOS simulator.
+
+### Fixed
+
+- **`HttpClient` sent `Content-Type: text/plain` on every request on a device**, a GET
+  without a body included, and strict servers refuse that (Land Registry answers 415).
+  Lynx's own `Request` adds it whenever the headers lack a `Content-Type` in that exact
+  spelling, and nothing a caller passes avoids it. A `content-type` in another spelling
+  got a second header beside it, and iOS could send Lynx's instead. During each engine
+  fetch, `provideLynxHttpClient()` now puts a `Request` on `globalThis` that drops the
+  made-up header. It keeps the header the standard sets for a string or
+  `URLSearchParams` body. `verify:http` fakes the engine's `Request`.
+
+### Documentation
+
+- docs/22: the made-up Content-Type, where it comes from, and the form-POST workaround
+  for 1.0.1.
+
+### Tests
+
+- The device `network` flow sends `HttpClient` requests to a server endpoint that
+  echoes the Content-Type each one arrived with. The screen shows it, and `run.mjs`
+  fails the run when it's wrong. The device-tests app now uses `provideLynxHttpClient()`.
 
 ## [1.0.1] - 2026-11-22
 
@@ -205,7 +230,7 @@ Gestures: pan, tap, long press and fling run on iOS and Android. Lynx's engines 
 recognizer for `pinch` or `rotation`, so those never fire, and a dev build warns when you
 bind one. A fling's event is typed as `MainThreadFlingGestureEvent`.
 
-[Unreleased]: https://github.com/shabeliuk/ng-lynx/compare/v1.0.1...HEAD
+[1.0.2]: https://github.com/shabeliuk/ng-lynx/compare/v1.0.1...HEAD
 [1.0.1]: https://github.com/shabeliuk/ng-lynx/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/shabeliuk/ng-lynx/compare/v0.1.0-rc.0...v1.0.0
 [0.1.0-rc.0]: https://github.com/shabeliuk/ng-lynx/releases/tag/v0.1.0-rc.0

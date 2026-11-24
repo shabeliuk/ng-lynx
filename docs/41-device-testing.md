@@ -114,7 +114,7 @@ A flow passing on screen isn't enough, so `run.mjs` also fails the run on:
 | `gesture` | A native pan, dragged twice | The detector stopping after the first drag on Android |
 | `gesture-lab` | Tap and long-press detectors, a tap that waits for a long press, `ctx.gesture.fail()` and `end()` in a pan, and a fling after a fast swipe | `fail()`/`end()` throwing `not a function` |
 | `assets` | An image through `lynxAssetUrl()`, with no lazy chunk in the build, and two images imported as modules: one emitted as a file, one inlined as a `data:` URL | Asset URLs staying relative |
-| `network` | A lazy route whose chunk's connection is cut, then retried on a slow network | A failed chunk failing every later navigation too, without a request |
+| `network` | A lazy route whose chunk's connection is cut, then retried on a slow network; `HttpClient` GET, DELETE and POST to a server echo of their Content-Type, checked on screen and by `run.mjs` | A failed chunk failing every later navigation too, without a request; Lynx's fetch sending `Content-Type: text/plain` on a GET |
 | `page-exit` | Leaving the page | `(null) is not a function`, LynxError 20100 |
 | `host-data` | Init data from the host, through a data processor | `lynxInitData()` empty on every native engine |
 | `attributes` | `(longpress)`, `initial-scroll-index`, `default-value`, `<markdown>` drawing and `<filter-image>` loading (iOS only: Explorer 4.2.0's Android APK crashes on the first and lacks the second, see [18](18-typed-templates.md)), and the engine accepting the other typed attributes and events | Attributes the engine rejects |
