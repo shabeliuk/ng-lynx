@@ -113,12 +113,32 @@ export function resumeFlushing(): void {
   stopped = false;
 }
 
+let held = 0;
+
+/**
+ * Run `fn` and send what it renders as one batch. Angular ends every
+ * `detectChanges()` with `LynxRendererFactory2.end()`, which flushes, so a loop that
+ * creates and checks N views sends N batches: each is a `callLepusMethod`, and the
+ * engine warns (code 20401) past 800 calls of one method in 5 seconds.
+ */
+export function holdFlushes<T>(fn: () => T): T {
+  held++;
+  try {
+    return fn();
+  } finally {
+    held--;
+    if (held === 0) flushOps();
+  }
+}
+
 /**
  * Drain the ops buffer and ship it to the Main Thread. Idempotent: safe to call
  * even when nothing is buffered. Called both by the scheduled microtask and
  * synchronously by `LynxRendererFactory2.end()`.
  */
 export function flushOps(): void {
+  // Inside holdFlushes(): the one flush at its end sends everything.
+  if (held > 0) return;
   scheduled = false;
   // Serialize deferred style/class changes into the buffer first (once per
   // dirty element), so a batch whose only changes were styles isn't seen as

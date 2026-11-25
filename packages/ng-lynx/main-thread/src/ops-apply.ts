@@ -13,7 +13,14 @@
  * through `list-apply.ts`, worklets and main-thread refs through
  * `worklet-apply.ts`, gesture detectors through `gesture-apply.ts`.
  */
-import { APPEND_ANCHOR, OP, PAGE_ROOT_ID, resolveInterned } from 'ng-lynx/internal/ops';
+import {
+  APPEND_ANCHOR,
+  LAZY_ROWS_ATTR,
+  type LazyRows,
+  OP,
+  PAGE_ROOT_ID,
+  resolveInterned,
+} from 'ng-lynx/internal/ops';
 
 import { elements, pageUniqueId, setPageUniqueId } from './element-registry.js';
 import {
@@ -24,6 +31,7 @@ import {
   isPlatformInfoAttr,
   removeListItem,
   resetListState,
+  setLazyRows,
   setPlatformInfoProp,
 } from './list-apply.js';
 import { applySetGestureDetector } from './gesture-apply.js';
@@ -218,7 +226,10 @@ export function applyOps(rawOps: unknown[], epoch?: string): void {
         const id = ops[i++] as number;
         const key = ops[i++] as string;
         const value = ops[i++];
-        if (isPlatformInfoAttr(key)) {
+        if (key === LAZY_ROWS_ATTR) {
+          // A lazy list's rows (LynxLazyFor): kept, not set on the element.
+          setLazyRows(id, value as LazyRows);
+        } else if (isPlatformInfoAttr(key)) {
           // list-item placement attrs travel via update-list-info, not __SetAttribute.
           setPlatformInfoProp(id, key, value);
         } else {
@@ -239,7 +250,9 @@ export function applyOps(rawOps: unknown[], epoch?: string): void {
         const id = ops[i++] as number;
         const key = ops[i++] as string;
         const el = elements.get(id);
-        if (el) {
+        if (key === LAZY_ROWS_ATTR) {
+          setLazyRows(id, undefined);
+        } else if (el) {
           if (key.startsWith('data-')) __AddDataset(el, key.slice('data-'.length), undefined);
           // biome-ignore lint/suspicious/noExplicitAny: undefined clears an attribute in PAPI
           else __SetAttribute(el, key, undefined as any);

@@ -178,5 +178,6 @@ scrollToTop(): void {
   element for every row up front**, not just the visible ones — native
   `<list>` only virtualizes which elements get *attached*, not which get
   *created* (confirmed by reading `list-apply.ts`). For huge lists (10k+
-  rows), use [`LynxVirtualFor`](30-virtual-list.md) instead, which windows
-  both the Background-Thread and Main-Thread sides.
+  rows), use [`LynxLazyFor`](30-virtual-list.md#lynxlazyfor-the-list-asks-for-the-rows)
+  instead: the list knows every row, and only the rows it asks for are built,
+  on both threads.

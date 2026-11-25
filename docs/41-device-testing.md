@@ -109,6 +109,7 @@ A flow passing on screen isn't enough, so `run.mjs` also fails the run on:
 | `lazy-route` | A lazy chunk over the network, `Location.back()` | Chunks that never reach the device |
 | `route-param` | Router navigation with a param | Angular 22's router skipping every navigation |
 | `list` | Scrolling a native list far enough to recycle cells, both ways | Cells appended again on each request |
+| `lazy-list` | A `LynxLazyFor` list of 10,000 rows: six flings, a jump to row 5000, fewer than 100 rows built, and back up to row 4985 | The list stopping where the built rows end; cells the list asked for too early staying empty |
 | `input` | Typing on the native keyboard, Return firing `(confirm)`, and, on Android, typing into the middle of an `[(ngModel)]` field | `(confirm)` needing `confirm-type` on Android; the cursor jumping to the end. iOS has no key to move the cursor with |
 | `main-thread` | A worklet on a tap, `runOnBackground`, `runOnMainThread`; a worklet whose `stopPropagation()` keeps its tap from the box around it, reporting a live `currentTarget` with its `dataset` and `uid`; a `<lynx-slider>` dragged both ways on the Main Thread; two inline `'main thread'` functions, one bound to a tap and one called with `runOnMainThread` | Worklets not reaching the engine; the worklet runtime's event result or event targets breaking (docs/42); the slider's Main-Thread measurement; an inline function missing from one of the two bundles |
 | `gesture` | A native pan, dragged twice | The detector stopping after the first drag on Android |

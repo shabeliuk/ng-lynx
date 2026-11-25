@@ -23,6 +23,15 @@ which parts are experimental and may change in a minor release, is in
   say made this impossible. On by default; `inlineMainThread: false` turns it off.
   docs/11, a demo in `examples/worklet`, harnesses `verify:inline-main-thread`,
   `-transform` and `-build`, and the `main-thread` device flow.
+- **`LynxLazyFor` (experimental): a `<list>` that builds only the rows it asks for.** Put
+  `*lynxLazyFor="let row of rows(); trackBy: trackById; estimatedSize: 48"` on the
+  `<list-item>`. The list is told every row's `item-key` and estimated size, so it scrolls
+  its whole length, and the Main Thread tells the Background Thread which rows the list
+  holds, so only those and a buffer are built. Unlike `LynxVirtualFor` there's no
+  `(scroll)` wiring and no edge for a fling to stop at. A row the list asks for before it's
+  built shows as an empty cell until it arrives; an `updateAction` then makes the list ask
+  for it again. The web preview's list isn't virtualized, so there every row is built.
+  docs/30, harness `verify:lazy-list`, device flow `lazy-list`.
 
 ### Changed
 
@@ -31,6 +40,28 @@ which parts are experimental and may change in a minor release, is in
   being `undefined`. It's still a `MainThreadRefHandle<T>`, so existing code compiles.
 - `runOnMainThread` and `ToMainThread` accept a `'main thread'` function wherever they
   took a `defineMainThreadFunction` handle.
+
+### Fixed
+
+- **`LynxLazyFor` sent one batch per row it built when the window moved**, because Angular
+  flushes the renderer after every `detectChanges()`. In a very hard fling the engine
+  warned "CallLepusMethod called too frequently" (code 20401, `ngPatchUpdate`). A move is
+  one batch now (`holdFlushes()` in the runtime), and moves are throttled to one per
+  `lynxLazyForThrottle` (50 ms). `verify:lazy-list` flings 3,000 rows in half a second:
+  5,945 batches a second before, 17 after; the engine's limit is 160.
+- **A destroyed `<list>` kept its rows on the Main Thread.** Angular removes only the list,
+  not each row from it, so every row's element, `item-key` and platform info stayed in the
+  list registries for the rest of the session, and every later batch walked every list ever
+  created. Each visit to a list screen added to it. They're freed with the list now, and
+  `verify:lazy-list` checks the registries are empty afterwards.
+
+### Tests
+
+- The mock PAPI has `virtualizingList()`, a native list that virtualizes the way the iOS
+  collection list and the C++ list container do: it asks only for the cells on screen, lets
+  go of the ones that leave with `enqueueComponent`, asks again for a cell an `updateAction`
+  refreshes, and records what a device rejects. The mock's `<list>` now keeps
+  `enqueueComponent` and every `update-list-info` in order.
 
 ## [1.0.2] - Unreleased
 

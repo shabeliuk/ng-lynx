@@ -278,6 +278,17 @@ export { LynxSessionStorage } from './session-storage.js';
 export { LynxVirtualFor, LynxVirtualForContext } from './virtual-for.js';
 
 /**
+ * `LynxLazyFor` — the rows of a `<list>`, built only when the list asks for
+ * them. The list knows every row's key and estimated size, so it scrolls the
+ * whole extent, and the Main Thread tells the Background Thread which rows it
+ * needs. No `(scroll)` wiring, and no edge to fling into. See
+ * docs/30-virtual-list.md.
+ *
+ * @experimental
+ */
+export { LynxLazyFor, LynxLazyForContext } from './lazy-for.js';
+
+/**
  * `hotSwapComponent(type, next)` — state-preserving component hot-swap:
  * rebuild every live view of `type` with `next`'s template **in place**,
  * keeping component instances (signals, fields, injected services). The

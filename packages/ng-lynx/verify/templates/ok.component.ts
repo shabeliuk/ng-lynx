@@ -4,12 +4,13 @@
  * typed from `@lynx-js/types` that used to need `NO_ERRORS_SCHEMA`.
  */
 import { Component } from '@angular/core';
+import { LynxLazyFor } from 'ng-lynx';
 import { LYNX_ELEMENTS, type LynxListAnimationEvent, type LynxListAnimationUpdateEvent } from 'ng-lynx/elements';
 
 @Component({
   selector: 'app-ok',
   standalone: true,
-  imports: [LYNX_ELEMENTS],
+  imports: [LYNX_ELEMENTS, LynxLazyFor],
   template: `
     <view
       [consume-slide-event]="[[-30, 30]]"
@@ -50,9 +51,17 @@ import { LYNX_ELEMENTS, type LynxListAnimationEvent, type LynxListAnimationUpdat
     <scroll-coordinator ios-scroll-exclude="A,B" [ios-scroll-view-filter]="0.3" [android-consume-gesture]="true"></scroll-coordinator>
     <blur-view [experimental-update-blur-radius]="true"></blur-view>
     <webview [ios-hide-keyboard-accessory-view]="true" [params]="{ a: 1 }" initjs="1" [cookies]="[{ name: 'a', value: 'b' }]" [use-osr]="false"></webview>
+    <list>
+      <list-item *lynxLazyFor="let row of rows; trackBy: byId; estimatedSize: sizeOf; buffer: 30; let i = index; let last = last">
+        <text>{{ row.name.toUpperCase() }} {{ i + 1 }} {{ last ? 'end' : '' }}</text>
+      </list-item>
+    </list>
   `,
 })
 export class OkComponent {
+  rows: { id: number; name: string }[] = [];
+  byId = (_index: number, row: { id: number }): number => row.id;
+  sizeOf = (_index: number, row: { name: string }): number => (row.name.length > 20 ? 72 : 48);
   played = '';
   progress = 0;
   onAnimation(event: LynxListAnimationEvent): void {

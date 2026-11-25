@@ -48,6 +48,7 @@ export class HomeComponent {
     { label: 'Open lazy page', path: '/lazy' },
     { label: 'Open user 7', path: '/users/7' },
     { label: 'Open list', path: '/list' },
+    { label: 'Open lazy list', path: '/lazy-list' },
     { label: 'Open input', path: '/input' },
     { label: 'Open main thread', path: '/main-thread' },
     { label: 'Open gesture', path: '/gesture' },

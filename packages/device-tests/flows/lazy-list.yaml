@@ -1,0 +1,52 @@
+# A LynxLazyFor list of 10,000 rows: the native list knows every row while only a
+# window is built. Flings past where LynxVirtualFor's window used to stop, jumps to
+# row 5000 (empty cells the Background Thread then fills), checks the window stays
+# small, and scrolls back up past the window's edge.
+appId: ${APP_ID}
+---
+- runFlow:
+    file: shared/open.yaml
+    env:
+      BUNDLE: main
+      READY: 'Count: 0'
+- scrollUntilVisible:
+    element: Open lazy list
+    direction: DOWN
+    timeout: 10000
+- tapOn: Open lazy list
+- extendedWaitUntil:
+    visible: 'Lazy rows: 10000'
+    timeout: 5000
+- assertVisible: Row 0
+- repeat:
+    times: 6
+    commands:
+      - swipe:
+          start: 50%, 75%
+          end: 50%, 30%
+          duration: 120
+# Row 100 and beyond: past the 20 rows built for the first frame.
+- extendedWaitUntil:
+    visible: 'Row [1-9][0-9]{2,}'
+    timeout: 5000
+- tapOn: Jump to row 5000
+- extendedWaitUntil:
+    visible: Row 5000
+    timeout: 5000
+- extendedWaitUntil:
+    visible: 'Built: [1-9][0-9]? rows'
+    timeout: 5000
+- takeScreenshot: lazy-list
+# Back up past the window's lower edge (about row 4980), so rows have to be built on the
+# way. Slow swipes that start inside the list: scrollUntilVisible swipes from the
+# screen's centre, which on CI's 320x640 screen is the button above the list.
+- repeat:
+    while:
+      notVisible: Row 4950
+    times: 30
+    commands:
+      - swipe:
+          start: 50%, 70%
+          end: 50%, 92%
+          duration: 600
+- assertVisible: Row 4950
