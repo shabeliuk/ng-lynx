@@ -63,18 +63,6 @@ project.
 | `examples/threejs-rpg-skeleton/public/resources/robot/RobotExpressive.glb` | Model by Tomás Laulhé ([Quaternius](https://www.patreon.com/quaternius)), with changes by Don McCurdy, from the [three.js examples](https://github.com/mrdoob/three.js/tree/dev/examples/models/gltf/RobotExpressive) | CC0 1.0, stated in that folder's README | ✅ Confirmed |
 | `packages/device-tests/public/square.png` | Made for the tests | This project's licence | ✅ |
 
-Three files were replaced on 2026-11-09. Git history still holds them until the repository is
-recreated before going public:
-
-- A capybara drawing in the primitives example, from freesvgdownload.com, licensed for personal
-  use only (from `144fd51`).
-- `wonders.mp3` in the media example, from Pixabay, whose licence forbids distributing its files
-  on their own (from `a7bb818`).
-- `nature.mp4` in the media and primitives examples, from Pexels (from `a7bb818`).
-
-`examples/threejs-rpg-skeleton/public/resources/robot/RobotExpressive.glb` stays: the three.js
-folder's README gives it as "CC0 1.0", and asks you to consider supporting the creator's Patreon.
-
 `examples/threejs-water` reimplements the physics of
 [threejs-water](https://github.com/jeantimex/threejs-water) (MIT; Evan Wallace, Yong Su) on
 the CPU. It contains none of that project's code.
