@@ -41,6 +41,7 @@ import {
   type LazyRows,
 } from 'ng-lynx/internal/ops';
 
+import { holdFlushes } from './flush.js';
 import type { ShadowElement } from './shadow-element.js';
 import { isWebPlatform } from './system-info.js';
 
@@ -160,6 +161,15 @@ export class LynxLazyFor<T> implements DoCheck, OnDestroy {
   /** Rows built for the first frame, before the list has asked for any. */
   @Input() lynxLazyForInitialCount = 20;
 
+  /**
+   * The shortest time between two moves of the window, in milliseconds. A hard fling
+   * reports a new range every few milliseconds, and each move is a batch of creates and
+   * destroys; the engine warns (code 20401) past 800 calls of one method in 5 seconds.
+   * The newest range always wins, so the list ends on the right rows. 0 moves it at every
+   * report.
+   */
+  @Input() lynxLazyForThrottle = 50;
+
   private differ?: IterableDiffer<T>;
   private items: T[] = [];
   private keys: string[] = [];
@@ -172,6 +182,9 @@ export class LynxLazyFor<T> implements DoCheck, OnDestroy {
   private windowStart = 0;
   private windowEnd = 0;
   private readonly built = new Map<string, BuiltRow<T>>();
+  private lastMove = 0;
+  private waiting: LazyListRange | undefined;
+  private timer: ReturnType<typeof setTimeout> | undefined;
 
   static ngTemplateContextGuard<T>(_dir: LynxLazyFor<T>, ctx: unknown): ctx is LynxLazyForContext<T> {
     return true;
@@ -221,6 +234,22 @@ export class LynxLazyFor<T> implements DoCheck, OnDestroy {
    */
   onListRange(range: LazyListRange): void {
     if (range.version !== this.version) return;
+    const wait = this.lastMove + this.lynxLazyForThrottle - Date.now();
+    if (wait <= 0 && this.timer === undefined) {
+      this.moveWindow(range);
+      return;
+    }
+    // Too soon after the last move: keep the newest range for when the time is up.
+    this.waiting = range;
+    this.timer ??= setTimeout(() => {
+      this.timer = undefined;
+      const latest = this.waiting;
+      this.waiting = undefined;
+      if (latest && latest.version === this.version) this.moveWindow(latest);
+    }, Math.max(0, wait));
+  }
+
+  private moveWindow(range: LazyListRange): void {
     const count = this.items.length;
     const start = Math.max(0, Math.min(range.start, range.end));
     const end = Math.min(count - 1, Math.max(range.start, range.end));
@@ -232,7 +261,9 @@ export class LynxLazyFor<T> implements DoCheck, OnDestroy {
     if (lowOk && highOk) return;
     this.windowStart = Math.max(0, start - buffer);
     this.windowEnd = Math.min(count, end + 1 + buffer);
-    this.applyWindow(true);
+    this.lastMove = Date.now();
+    // One batch for the whole move: each row's detectChanges() would otherwise flush.
+    holdFlushes(() => this.applyWindow(true));
   }
 
   private attach(): void {
@@ -333,6 +364,8 @@ export class LynxLazyFor<T> implements DoCheck, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.timer !== undefined) clearTimeout(this.timer);
+    this.timer = undefined;
     this.built.clear();
     if (!this.list || !this.lazy) return;
     if (lazyLists.get(this.list.id) === (this as LynxLazyFor<unknown>)) lazyLists.delete(this.list.id);

@@ -32,6 +32,7 @@ import {
   driveList,
   findAllByClass,
   findByType,
+  getOpsLog,
   getPage,
   installMockPapi,
   type MockEl,
@@ -98,9 +99,14 @@ function textOf(el: MockEl | undefined): string {
   return text;
 }
 
-/** Let the range report (a Main-Thread timer), the Background reply and its flush all happen. */
+/**
+ * Let the range report (a Main-Thread timer), the throttle (50 ms by default), the
+ * Background reply and its flush all happen.
+ */
 async function settle(): Promise<void> {
-  for (let i = 0; i < 8; i++) await tick();
+  for (let i = 0; i < 4; i++) await tick();
+  await new Promise((resolve) => setTimeout(resolve, 70));
+  for (let i = 0; i < 4; i++) await tick();
 }
 
 function range(first: number, last: number): number[] {
@@ -198,6 +204,27 @@ async function main(): Promise<void> {
   console.log('\n=== the list only ever asked for cells on screen ===');
   const asked = new Set(native.requests);
   assert(asked.size < 120, `${asked.size} distinct cells asked for, of ${ROW_COUNT}`);
+  assert(native.errors.length === 0, `nothing a device would reject (got: ${native.errors.join('; ')})`);
+
+  console.log('\n=== a very hard fling doesn\'t flood the Main Thread with batches ===');
+  // The engine warns (code 20401) at 800 calls of one method in 5 s, 160 a second.
+  // A fling moves the list 10 rows per step, a turn of the event loop apart, which is
+  // faster than any thumb. Every window move is a batch of creates and destroys.
+  const flingBatches = getOpsLog().length;
+  const flingStarted = Date.now();
+  for (let step = 0; step < 300; step++) {
+    native.layout(1000 + step * 10, 1009 + step * 10);
+    await tick();
+  }
+  await settle();
+  native.layout(1000 + 299 * 10, 1009 + 299 * 10);
+  await settle();
+  const flingMs = Date.now() - flingStarted;
+  const sent = getOpsLog().length - flingBatches;
+  const perSecond = Math.round((sent / flingMs) * 1000);
+  console.log(`    ${sent} batches in ${flingMs} ms: ${perSecond} a second`);
+  assert(perSecond < 60, `under 60 batches a second, a third of the engine's limit (got ${perSecond})`);
+  assert(native.emptyCells().length === 0, `and the screen the fling ended on is filled (empty: ${native.emptyCells().join(',')})`);
   assert(native.errors.length === 0, `nothing a device would reject (got: ${native.errors.join('; ')})`);
 
   console.log('\n=== removing the directive empties the list; adding it back fills it ===');

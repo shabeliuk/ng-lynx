@@ -64,6 +64,7 @@ are typed (`row` is a `Contact`), and the context has `index`, `count`, `first`,
 | `lynxLazyForEstimatedSize` | `estimatedSize` | none | `estimated-main-axis-size-px` for rows not built yet. |
 | `lynxLazyForBuffer` | `buffer` | `20` | Rows kept built beyond those the list holds, on each side. |
 | `lynxLazyForInitialCount` | `initialCount` | `20` | Rows built for the first frame, before the list has asked for any. |
+| `lynxLazyForThrottle` | `throttle` | `50` | The shortest time between two moves of the window, in milliseconds. `0` moves it at every report. |
 
 `builtRange` (`{ start, end }`, end exclusive) says which rows are built right now:
 useful for a status line or a test.
@@ -86,7 +87,12 @@ useful for a status line or a test.
    Thread the range of rows they span, at most once per Main-Thread task.
 5. **The window follows.** Once that range comes within half a buffer of the
    window's edge, the window becomes the range plus a buffer on each side: rows
-   leaving it are destroyed, rows entering it are built, in one batch.
+   leaving it are destroyed, rows entering it are built, in one batch. It moves at
+   most once per `throttle` (50 ms), on the newest range: a hard fling reports a new
+   range every few milliseconds, each move is a call to the Main Thread, and the engine
+   warns (code 20401, "CallLepusMethod called too frequently") past 800 calls of one
+   method in 5 seconds. So a cell can stay empty up to 50 ms longer after a very fast
+   fling or a jump.
 6. **The empty cells are filled.** When a row the list asked for arrives, the Main
    Thread sends an `updateAction` with `flush: true` for it, and the list asks for
    that cell again: the iOS collection list reloads a visible cell, and the C++ list

@@ -43,6 +43,12 @@ which parts are experimental and may change in a minor release, is in
 
 ### Fixed
 
+- **`LynxLazyFor` sent one batch per row it built when the window moved**, because Angular
+  flushes the renderer after every `detectChanges()`. In a very hard fling the engine
+  warned "CallLepusMethod called too frequently" (code 20401, `ngPatchUpdate`). A move is
+  one batch now (`holdFlushes()` in the runtime), and moves are throttled to one per
+  `lynxLazyForThrottle` (50 ms). `verify:lazy-list` flings 3,000 rows in half a second:
+  5,945 batches a second before, 17 after; the engine's limit is 160.
 - **A destroyed `<list>` kept its rows on the Main Thread.** Angular removes only the list,
   not each row from it, so every row's element, `item-key` and platform info stayed in the
   list registries for the rest of the session, and every later batch walked every list ever
