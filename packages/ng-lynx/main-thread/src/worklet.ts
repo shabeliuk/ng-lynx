@@ -38,4 +38,5 @@ export {
   type Worklet,
   type WorkletContext,
   type WorkletHandle,
+  ɵregisterInlineMainThread,
 } from './worklet-apply.js';

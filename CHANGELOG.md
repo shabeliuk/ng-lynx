@@ -6,6 +6,32 @@ versions follow [Semantic Versioning](https://semver.org/). What a release promi
 which parts are experimental and may change in a minor release, is in
 [docs/43-stability.md](docs/43-stability.md).
 
+## [Unreleased]
+
+### Added
+
+- **Inline `'main thread'` functions (experimental).** Write a worklet or a main-thread
+  function in the component, with `'main thread'` as the first statement of its body,
+  and `pluginAngularLynx` moves the body to the Main-Thread bundle: no Main-Thread
+  module, `defineWorklet` or `bindWorklet`. Bind it with `[lynxMainThread]` or
+  `[lynxGesture]`, call it with `runOnMainThread`, or pass it to another one. Imports
+  it uses are imported again on the Main Thread; other names from the file, and
+  `this.name`, are captured when it's bound or called, and cross like `bindWorklet`
+  params. The build rejects what can't work (assigning to `this.x`, a plain helper
+  function, an import from `ng-lynx` or `@angular/*`), pointing at the line. Under AOT
+  the plugin wraps the input file system ngtsc reads through, which docs/05 used to
+  say made this impossible. On by default; `inlineMainThread: false` turns it off.
+  docs/11, a demo in `examples/worklet`, harnesses `verify:inline-main-thread`,
+  `-transform` and `-build`, and the `main-thread` device flow.
+
+### Changed
+
+- `mainThreadRef()` returns a `MainThreadRef<T>`, so `current` is typed inside a
+  `'main thread'` function. Reading it on the Background Thread throws, rather than
+  being `undefined`. It's still a `MainThreadRefHandle<T>`, so existing code compiles.
+- `runOnMainThread` and `ToMainThread` accept a `'main thread'` function wherever they
+  took a `defineMainThreadFunction` handle.
+
 ## [1.0.2] - Unreleased
 
 Found by MyAssets, a real app built from the published packages, adding a section that

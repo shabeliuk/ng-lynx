@@ -755,7 +755,13 @@ function fromWire(value: unknown): unknown {
     const handle = value as MainThreadRefHandle;
     return liveRef(handle._refId, handle._init ?? null);
   }
-  if ('_mtFnId' in value) return mainThreadFunction((value as MainThreadFunctionHandle)._mtFnId);
+  if ('_mtFnId' in value) {
+    const fn = mainThreadFunction((value as MainThreadFunctionHandle)._mtFnId);
+    // A 'main thread' function from a component, with what it captured.
+    if (!('_c' in value)) return fn;
+    const captured = fromWire((value as { _c: unknown })._c);
+    return (...args: never[]) => (fn as (...a: unknown[]) => unknown)(captured, ...args);
+  }
   if ('_bgFnId' in value) return value;
   const out: Record<string, unknown> = {};
   for (const key of Object.keys(value)) out[key] = fromWire((value as Record<string, unknown>)[key]);
@@ -803,6 +809,33 @@ export function defineMainThreadFunction(idOrFn: string | AnyFunction, maybeFn?:
   const { id, fn } = resolveIdAndFn(idOrFn, maybeFn);
   mainThreadFunctions.set(id, fn);
   return { _mtFnId: id };
+}
+
+/**
+ * Register a function marked `'main thread'` in a component, under the id the
+ * Background Thread binds it by. Written by `pluginAngularLynx` (plugin/src/
+ * inline-main-thread.cts), not by hand. `factory` builds the function from what it
+ * captured on the Background Thread, once per binding: as a worklet that's its
+ * `ctx.params`, and as a function the first argument of each call.
+ *
+ * @internal
+ */
+export function ɵregisterInlineMainThread(id: string, factory: (captured: Record<string, unknown>) => AnyFunction): void {
+  const built = new WeakMap<object, AnyFunction>();
+  const empty = {};
+  const build = (captured: unknown): AnyFunction => {
+    const key = captured !== null && typeof captured === 'object' ? captured : empty;
+    let fn = built.get(key);
+    if (!fn) {
+      fn = factory(key as Record<string, unknown>);
+      built.set(key, fn);
+    }
+    return fn;
+  };
+  mainThreadFunctions.set(id, ((captured: unknown, ...args: never[]) => build(captured)(...args)) as AnyFunction);
+  registerWorklet(id, (ctx) => {
+    (build(ctx.params) as (ctx: unknown) => unknown)(ctx);
+  });
 }
 
 /** JSON or nothing: a value can't cross the threads otherwise. */

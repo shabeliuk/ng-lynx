@@ -6,7 +6,8 @@ must track a finger — drag, pinch, scroll-linked effects. A **worklet** is a
 function that runs on the **Main Thread**, right where the UI is, so it can read
 the event and mutate the element with zero cross-thread latency.
 
-See the runnable [`examples/worklet`](../examples/worklet) and
+See the runnable [`examples/worklet`](../examples/worklet) (its
+`inline-playground.component.ts` has the [inline form](#inline-main-thread-functions)) and
 [`examples/product-detail`](../examples/product-detail), the official
 [Product Detail tutorial](https://lynxjs.org/learn/product-detail) in Angular. The
 checks are `npm run verify:worklet` and `npm run verify:main-thread-api`. Two features
@@ -20,7 +21,7 @@ worklet can call).
 | ReactLynx | ng-lynx |
 | --- | --- |
 | `main-thread:bindtap={fn}` | `[lynxMainThread]="{ tap: fn }"` |
-| A `'main thread'` closure | `defineWorklet` in a Main-Thread module. Pass what it would capture through [`bindWorklet`](#state-for-each-instance-bindworklet-and-mainthreadref) |
+| A `'main thread'` closure | [A `'main thread'` function](#inline-main-thread-functions), in the component. Or `defineWorklet` in a Main-Thread module, with [`bindWorklet`](#state-for-each-instance-bindworklet-and-mainthreadref) for what it would capture |
 | `useMainThreadRef(value)` | `mainThreadRef(value)`, or `defineMainThreadRef(id, value)` for one shared ref |
 | `main-thread:ref={ref}` | `[lynxMainThreadRef]="ref"` |
 | `runOnMainThread(fn)(...args)` | [`runOnMainThread(fn)(...args)`](#calling-across-the-threads), with `fn` from `defineMainThreadFunction` |
@@ -28,11 +29,111 @@ worklet can call).
 | `MainThread.Element` | [`MainThreadElement`](#the-element-api), the same methods |
 | Main-thread `lynx.querySelector`, … | [`mainThreadLynx`](#mainthreadlynx-the-rest-of-the-main-thread-api) |
 
-## The model
+## Inline `'main thread'` functions
 
-ng-lynx uses an **explicit** worklet model: you write the worklet in a
-Main-Thread module and bind it from a component. Use `defineWorklet` for a
-**typed reference** (recommended) or `registerWorklet` for a string id.
+Write the function in the component, and start its body with the `'main thread'`
+directive. `pluginAngularLynx` moves the body to the Main-Thread bundle: no
+Main-Thread module, no `defineWorklet`, no `bindWorklet`.
+
+```ts
+import { Component } from '@angular/core';
+import { backgroundFunction, LynxMainThread, LynxMainThreadRef, mainThreadRef } from 'ng-lynx';
+import { runOnBackground, type MainThreadElement, type MainThreadTouchEvent, type WorkletContext } from 'ng-lynx/worklet';
+
+const MAX_SHIFT = 120;
+
+@Component({
+  imports: [LynxMainThread, LynxMainThreadRef],
+  template: `<view [lynxMainThreadRef]="card" [lynxMainThread]="{ touchmove: onMove, touchend: onEnd }">…</view>`,
+})
+export class CardComponent {
+  readonly onMove = (ctx: WorkletContext<MainThreadTouchEvent>) => {
+    'main thread';
+    const x = Math.min(ctx.event.touches[0]!.clientX, MAX_SHIFT);
+    this.card.current?.setStyleProperty('transform', `translateX(${x}px)`);
+    this.lastX.current = x;
+  };
+
+  onEnd(): void {
+    'main thread';
+    void runOnBackground(this.settled)(this.lastX.current);
+  }
+
+  readonly card = mainThreadRef<MainThreadElement | null>(null);
+  readonly lastX = mainThreadRef(0);
+  readonly settled = backgroundFunction((x: number) => console.log('settled at', x));
+}
+```
+
+Bind one with `[lynxMainThread]` or as a [`[lynxGesture]`](32-gestures.md) callback,
+call one with `runOnMainThread(this.fn)(…args)`, or pass one to another `'main thread'`
+function, or in `bindWorklet` params, where it arrives callable. An arrow function, a
+`function`, a method or a top-level `function` declaration can be marked.
+
+### What the body can use
+
+| In the body | On the Main Thread |
+| --- | --- |
+| Its own parameters and locals | As written |
+| Globals: `Math`, `console`, `lynx`, `setTimeout` | The Main Thread's |
+| A name the file imports | Imported again, from the same module: what `ng-lynx/worklet` exports, and your main-thread modules. `ng-lynx`, `@angular/*` and `rxjs` run on the Background Thread, and the build says so |
+| Any other name in the file, and `this.name` | **Captured:** read on the Background Thread when the function is bound or called, and sent across |
+
+What's captured crosses like [`bindWorklet`](#state-for-each-instance-bindworklet-and-mainthreadref)
+params: a `mainThreadRef` arrives live, another `'main thread'` function arrives
+callable, a `backgroundFunction` handle works with `runOnBackground`, and the rest
+crosses as JSON. Because it's read when the function is bound, a field declared after
+the function is set by then, and each instance of a component gets its own. It also
+means:
+
+- **State that changes lives in a `mainThreadRef`.** A captured number is a copy. The
+  build rejects `this.x = …` and assigning to a captured name, since the change would
+  stay on the Main Thread. A `mainThreadRef`'s `current` is typed for these functions,
+  and throws if the Background Thread reads it.
+- **A signal can't cross.** Read it into a `const` outside the function, or keep the
+  value in a ref. A dev build names the capture that can't.
+- **A helper is marked too.** A plain function or class declared in the file can't
+  cross, and the build says so: mark the function `'main thread'`, or import it from a
+  main-thread module.
+- **`this` only as `this.name`,** and no `super`.
+
+### What the build does to them
+
+When the build starts, the plugin looks for the directive in the `.ts` files under
+`src/` (the project root, without one), leaving out tests and `mainThreadModules`.
+None found, nothing changes, and no worklet runtime is added.
+
+- **Background Thread.** Each function becomes a stand-in that carries an id and reads
+  what it captures, so a method turns into a field of the same name, and a `function`
+  declaration into a `const`. Called directly, the stand-in throws. AOT reads sources
+  through its own TypeScript system, not the loaders, so the plugin wraps the input
+  file system that system reads from: see
+  [05 — Build integration](05-build-integration.md#how-inline-main-thread-functions-get-through-aot).
+  The original function stays as the stand-in's argument, for its type, so the
+  editor and the compiler see the same types.
+- **Main Thread.** Each file's functions are registered from `file.ts?ng-lynx-main-thread`,
+  a module of the function's text unchanged, on its original line, so a Main-Thread
+  stack trace points at your source.
+
+Ids are `__ngInline:<file>:<line>:<column>`.
+
+**Limits.** Restart the dev server after adding the first one to an app: the worklet
+runtime goes in when the build starts. Not in dynamic-component bundles.
+
+Checked by `npm run verify:inline-main-thread` (the functions running against the
+mock engine), `verify:inline-main-thread-transform` (the transform, and every use it
+rejects) and `verify:inline-main-thread-build` (a real AOT build). On a real engine,
+the `main-thread` device flow binds one to a tap, capturing a field declared after
+it and a Background function, and calls a method with `runOnMainThread`. It passes on
+the iOS simulator and the Android emulator (Explorer 4.2, AOT, 2026-11-24). A JIT
+build (`aot: false`) puts both halves in the bundle too, and hasn't run on an engine.
+
+## Worklets in a Main-Thread module
+
+The explicit model: write the worklet in a Main-Thread module and bind it from a
+component. Use `defineWorklet` for a **typed reference** (recommended) or
+`registerWorklet` for a string id. It's what inline functions compile to, and what to
+use for worklets several components share.
 
 **1. Define the worklet (Main-Thread module):**
 
@@ -207,9 +308,9 @@ export const startX = defineMainThreadRef('startX', 0);
 ## State for each instance: `bindWorklet` and `mainThreadRef`
 
 `defineMainThreadRef('card')` is one ref with one id, so two copies of a component
-would share it. In ReactLynx, a closure gives each instance its own state. An AOT
-build can't extract a closure ([why](05-build-integration.md#why-inline-main-thread-worklets-arent-possible-under-aot)),
-so pass that state instead:
+would share it. In ReactLynx, a closure gives each instance its own state, and so does
+an [inline `'main thread'` function](#inline-main-thread-functions). A worklet in a
+Main-Thread module gets it passed instead:
 
 - `mainThreadRef(value?)`, from a component, makes a new ref per instance. In a field,
   it's released with the component.
@@ -371,9 +472,14 @@ does with each event, and what it leaves out.
   package uses; there's no Background ops batch for a pure MT mutation —
   asserted by `verify:worklet`).
 - `runOnBackground` hops back to the BG through the bridge the background
-  bootstrap installs (`entry-background.ts`). ReactLynx's cross-thread closure
-  system isn't needed: worklets here are always plain, explicitly-authored
-  top-level functions with no captured component-scope state.
+  bootstrap installs (`entry-background.ts`).
+- An inline `'main thread'` function is registered by `ɵregisterInlineMainThread` as
+  a factory of what it captured: as a worklet, `ctx.params` is the captures and the
+  function is built once per binding; as a main-thread function, the captures come
+  first in the arguments. On the Background Thread, `toWorkletRef` sends the captures
+  as `_params`, `runOnMainThread` puts them before the arguments, and anywhere else
+  the stand-in's `toJSON` sends `{ _mtFnId, _c }`, which the Main Thread revives as a
+  callable function.
 
 ### Bug history: an earlier version of this was a no-op on a real engine
 
@@ -461,15 +567,10 @@ exercises this path.
 
 ## ⚠️ Status & limitations
 
-- **Explicit definition only (no inline `'main thread'`).** You author the
-  worklet in a Main-Thread module (`defineWorklet`/`registerWorklet`) and bind a
-  reference — the ergonomic ceiling under this build pipeline (typed, no magic
-  strings, works in AOT + JIT). The inline form — marking a closure
-  `'main thread'` and letting the compiler extract it (as in ReactLynx) — isn't
-  possible here; see
-  [05 — Build integration](05-build-integration.md#why-inline-main-thread-worklets-arent-possible-under-aot)
-  for why. Worklets can't capture Background-Thread variables either, so pass them
-  through [`bindWorklet`](#state-for-each-instance-bindworklet-and-mainthreadref).
+- **Inline functions capture by value, at binding time.** See
+  [what the body can use](#what-the-body-can-use). A worklet in a Main-Thread module
+  captures nothing: pass state through
+  [`bindWorklet`](#state-for-each-instance-bindworklet-and-mainthreadref).
 - **Values cross as JSON.** `ctx.params` and the arguments of `runOnMainThread` and
   `runOnBackground` can hold refs, handles and JSON-serializable values, not arbitrary
   objects.

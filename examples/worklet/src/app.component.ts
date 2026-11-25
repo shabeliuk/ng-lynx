@@ -6,6 +6,7 @@ import {
 } from '@angular/core';
 import { LynxGesture, type LynxGestures, LynxMainThread, LynxMainThreadRef, runOnMainThread } from 'ng-lynx';
 
+import { InlinePlaygroundComponent } from './inline-playground.component.js';
 import {
   cardRef,
   checkElementApi,
@@ -31,11 +32,12 @@ import {
   selector: 'app-root',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LynxGesture, LynxMainThread, LynxMainThreadRef],
+  imports: [InlinePlaygroundComponent, LynxGesture, LynxMainThread, LynxMainThreadRef],
   schemas: [NO_ERRORS_SCHEMA],
   template: `
     <view class="app">
       <text class="title">Main-thread worklets</text>
+      <app-inline-playground class="inline-host"></app-inline-playground>
       <text class="description">
         Tapping the card runs a worklet ON the Main Thread (no Background-Thread
         round-trip): it dims the card to a fixed opacity — not a toggle, so

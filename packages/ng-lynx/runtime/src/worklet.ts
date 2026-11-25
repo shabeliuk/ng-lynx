@@ -8,13 +8,11 @@
  * Thread only binds an event to that id.
  *
  * @remarks
- * This is ng-lynx's **explicit** worklet model: author the worklet in a
- * Main-Thread module (with `defineWorklet` for a typed reference, or
- * `registerWorklet` for a string id) and bind it via `[lynxMainThread]`. The
- * inline `'main thread'` directive that auto-extracts a closure (as in ReactLynx)
- * isn't possible here — the AOT compiler (`@ngtools/webpack`) reads component
- * sources from disk, bypassing any build transform, and a closure can't be
- * relocated into the separate Main-Thread bundle. See docs/11-worklets.md.
+ * Author the worklet in a Main-Thread module (with `defineWorklet` for a typed
+ * reference, or `registerWorklet` for a string id), or inline in a component as a
+ * function marked `'main thread'`, which `pluginAngularLynx` moves to the
+ * Main-Thread bundle (inline-main-thread.ts). Bind either via `[lynxMainThread]`.
+ * See docs/11-worklets.md.
  */
 import {
   Directive,
@@ -32,18 +30,26 @@ import { type BoundWorklet, OP, type WorkletHandle } from 'ng-lynx/internal/ops'
 
 import { register, unregister } from './event-registry.js';
 import { scheduleFlush } from './flush.js';
+import { inlineCaptures, isInlineMainThread } from './inline-main-thread.js';
 import { pushOp } from './ops.js';
 import type { ShadowElement } from './shadow-element.js';
 
 export type { WorkletHandle };
 
 /**
- * Map of native event name → worklet: a string id (matching a
- * `registerWorklet(id, …)` call), a {@link WorkletHandle} from `defineWorklet`, or
- * one from `bindWorklet`, which gives this binding its own `ctx.params`.
- * e.g. `{ tap: 'onTapMT' }`, `{ tap: onTapMT }`, `{ tap: bindWorklet(onTapMT, state) }`.
+ * A function marked `'main thread'`, written in a component: `pluginAngularLynx`
+ * moves its body to the Main Thread. See docs/11-worklets.md.
  */
-export type MainThreadEvents = Record<string, string | WorkletHandle<never>>;
+export type MainThreadInlineFunction = (ctx: never) => unknown;
+
+/**
+ * Map of native event name → worklet: a string id (matching a
+ * `registerWorklet(id, …)` call), a {@link WorkletHandle} from `defineWorklet`, one
+ * from `bindWorklet`, which gives this binding its own `ctx.params`, or a function
+ * marked `'main thread'`.
+ * e.g. `{ tap: 'onTapMT' }`, `{ tap: onTapMT }`, `{ tap: bindWorklet(onTapMT, state) }`, `{ tap: this.onTap }`.
+ */
+export type MainThreadEvents = Record<string, string | WorkletHandle<never> | MainThreadInlineFunction>;
 
 /** Serialized reference to a main-thread worklet, sent across the wire. */
 export interface WorkletRef {
@@ -55,8 +61,21 @@ export interface WorkletRef {
 }
 
 /** The wire form of one entry of a {@link MainThreadEvents}. */
-export function toWorkletRef(worklet: string | WorkletHandle<never>, bgCallbackId: string): WorkletRef {
+export function toWorkletRef(
+  worklet: string | WorkletHandle<never> | MainThreadInlineFunction,
+  bgCallbackId: string,
+): WorkletRef {
   if (typeof worklet === 'string') return { _wkltId: worklet, _bgCallbackId: bgCallbackId };
+  if (typeof worklet === 'function') {
+    if (!isInlineMainThread(worklet)) {
+      throw new Error(
+        '[ng-lynx] A function bound as a worklet must start with the \'main thread\' directive, '
+          + 'and be compiled by pluginAngularLynx. See docs/11-worklets.md.',
+      );
+    }
+    // What it captured is its `ctx.params`: the Main Thread builds the function from them.
+    return { _wkltId: worklet._wkltId, _bgCallbackId: bgCallbackId, _params: inlineCaptures(worklet) };
+  }
   const params = (worklet as Partial<BoundWorklet<unknown>>)._params;
   return params === undefined
     ? { _wkltId: worklet._wkltId, _bgCallbackId: bgCallbackId }

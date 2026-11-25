@@ -46,8 +46,17 @@ export {
   LynxMainThread,
   LynxMainThreadRef,
   type MainThreadEvents,
+  type MainThreadInlineFunction,
   type WorkletHandle,
 } from './worklet.js';
+
+/**
+ * What `pluginAngularLynx` rewrites a `'main thread'` function into. Not for
+ * hand-written code. See docs/11-worklets.md#inline-main-thread-functions.
+ *
+ * @internal
+ */
+export { ɵinlineMainThread } from './inline-main-thread.js';
 
 /**
  * Calls between the threads: `runOnMainThread` calls a function from

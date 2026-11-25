@@ -4,6 +4,9 @@
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+
 import * as esbuild from 'esbuild';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -34,6 +37,34 @@ const aliasPlugin = {
       const target = aliasMap[args.path];
       if (target) return { path: target };
       return null;
+    });
+  },
+};
+
+// pluginAngularLynx's inline 'main thread' transforms, for the fixture
+// harness-inline-main-thread.ts uses: the Background form of each file, and its
+// Main-Thread half for `file.ts?ng-lynx-main-thread`. From the built plugin, so
+// run `npm run build` first.
+const inlineFixtures = resolve(here, 'fixtures/inline-main-thread');
+const inlinePlugin = {
+  name: 'ng-lynx-inline-main-thread',
+  setup(build) {
+    const core = createRequire(import.meta.url)('../plugin/dist/inline-main-thread.cjs');
+    const ts = core.loadTypeScript(pkg);
+    build.onResolve({ filter: /\?ng-lynx-main-thread$/ }, (args) => ({
+      path: resolve(args.resolveDir, args.path.replace(/\?ng-lynx-main-thread$/, '')),
+      namespace: 'ng-lynx-main-thread',
+    }));
+    build.onLoad({ filter: /.*/, namespace: 'ng-lynx-main-thread' }, (args) => ({
+      contents: core.extractForMainThread(ts, args.path, readFileSync(args.path, 'utf8'), core.relativeId(pkg, args.path)),
+      loader: 'ts',
+      resolveDir: dirname(args.path),
+    }));
+    build.onLoad({ filter: /\.ts$/ }, (args) => {
+      if (!args.path.startsWith(inlineFixtures)) return undefined;
+      const text = readFileSync(args.path, 'utf8');
+      const out = core.transformForBackground(ts, args.path, text, core.relativeId(pkg, args.path));
+      return out === undefined ? undefined : { contents: out, loader: 'ts' };
     });
   },
 };
@@ -94,7 +125,7 @@ await esbuild.build({
       useDefineForClassFields: false,
     },
   },
-  plugins: [aliasPlugin],
+  plugins: [aliasPlugin, inlinePlugin],
 });
 
 // Run it.

@@ -110,3 +110,53 @@
   line-height: 22px;
   color: rgba(255, 255, 255, 0.7);
 }
+
+/* Inline 'main thread' functions (inline-playground.component.ts). */
+.inline-host {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+}
+
+.inline-panel {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  border-radius: 12px;
+  background-color: #14203a;
+}
+
+.inline-title {
+  font-size: 15px;
+  font-weight: bold;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.inline-box {
+  width: 80px;
+  height: 80px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background-color: #3a7bd5;
+}
+
+.inline-button {
+  align-items: center;
+  padding: 10px;
+  margin-top: 8px;
+  border-radius: 10px;
+  background-color: #2a1f44;
+}
+
+.inline-label {
+  font-size: 14px;
+  color: #ffffff;
+}
+
+.inline-line {
+  font-size: 13px;
+  color: #ffffff;
+  margin-top: 8px;
+}

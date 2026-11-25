@@ -110,7 +110,7 @@ A flow passing on screen isn't enough, so `run.mjs` also fails the run on:
 | `route-param` | Router navigation with a param | Angular 22's router skipping every navigation |
 | `list` | Scrolling a native list far enough to recycle cells, both ways | Cells appended again on each request |
 | `input` | Typing on the native keyboard, Return firing `(confirm)`, and, on Android, typing into the middle of an `[(ngModel)]` field | `(confirm)` needing `confirm-type` on Android; the cursor jumping to the end. iOS has no key to move the cursor with |
-| `main-thread` | A worklet on a tap, `runOnBackground`, `runOnMainThread`; a worklet whose `stopPropagation()` keeps its tap from the box around it, reporting a live `currentTarget` with its `dataset` and `uid`; a `<lynx-slider>` dragged both ways on the Main Thread | Worklets not reaching the engine; the worklet runtime's event result or event targets breaking (docs/42); the slider's Main-Thread measurement |
+| `main-thread` | A worklet on a tap, `runOnBackground`, `runOnMainThread`; a worklet whose `stopPropagation()` keeps its tap from the box around it, reporting a live `currentTarget` with its `dataset` and `uid`; a `<lynx-slider>` dragged both ways on the Main Thread; two inline `'main thread'` functions, one bound to a tap and one called with `runOnMainThread` | Worklets not reaching the engine; the worklet runtime's event result or event targets breaking (docs/42); the slider's Main-Thread measurement; an inline function missing from one of the two bundles |
 | `gesture` | A native pan, dragged twice | The detector stopping after the first drag on Android |
 | `gesture-lab` | Tap and long-press detectors, a tap that waits for a long press, `ctx.gesture.fail()` and `end()` in a pan, and a fling after a fast swipe | `fail()`/`end()` throwing `not a function` |
 | `assets` | An image through `lynxAssetUrl()`, with no lazy chunk in the build, and two images imported as modules: one emitted as a file, one inlined as a `data:` URL | Asset URLs staying relative |
@@ -366,7 +366,10 @@ production build, set `output.assetPrefix` and serve `static/js/async/`.
 chip: it follows the finger, and the last phase reads `onEnd`, on every drag. Tap "Check
 MainThread.Element": the line below it should read `attribute worklet, names true, items 4,
 scrollTo ok, text width true, border 2px` (a fraction on Android), the box fades in with a border,
-and its list scrolls. Run a production build too: worklet ids come from function names.
+and its list scrolls. Run a production build too: worklet ids come from function names. In the inline
+panel at the top: drag the box, which follows the finger and stops at 200 px, and "Released at" shows
+where it was let go; "Fade" dims the button; "runOnMainThread" shows 42. Checked in the web preview
+with touch input (2026-11-25), not yet on a device.
 
 **`product-detail`.** The official tutorial. Swipe each carousel: the page follows the finger and
 snaps with its own timing (`easeInOut` above, slower and linear below), and each row of dots

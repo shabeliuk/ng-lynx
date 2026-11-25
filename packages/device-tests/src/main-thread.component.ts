@@ -1,17 +1,21 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { LynxMainThread, runOnMainThread } from 'ng-lynx';
+import { backgroundFunction, LynxMainThread, mainThreadRef, runOnMainThread } from 'ng-lynx';
 import { LYNX_ELEMENTS } from 'ng-lynx/elements';
 import { LynxSlider } from 'ng-lynx/forms';
+import { runOnBackground, type WorkletContext } from 'ng-lynx/worklet';
 
 import { addOnMainThread, countTap, stopTap } from './worklets.js';
 
 import { BackButtonComponent } from './back-button.component.js';
 
+const INLINE_STEP = 1;
+
 /**
  * A worklet bound to a tap, a call across to the Main Thread and back, a
- * worklet that stops its tap from reaching the box around it, and a
- * `<lynx-slider>`, which drags on the Main Thread in a build with worklets.
+ * worklet that stops its tap from reaching the box around it, a
+ * `<lynx-slider>`, which drags on the Main Thread in a build with worklets, and
+ * two 'main thread' functions written in this component.
  */
 @Component({
   selector: 'app-main-thread',
@@ -60,6 +64,14 @@ import { BackButtonComponent } from './back-button.component.js';
         <lynx-slider [min]="0" [max]="100" [step]="10" [(ngModel)]="volume" />
       </view>
       <text class="line" [flatten]="false">Volume: {{ volume() }}</text>
+      <view class="button" [flatten]="false" accessibility-label="Inline tap" [lynxMainThread]="{ tap: inlineTap }">
+        <text class="button-label">Inline tap</text>
+      </view>
+      <text class="line" [flatten]="false">Inline taps: {{ inlineTaps() }}</text>
+      <view class="button" [flatten]="false" accessibility-label="Call inline" (tap)="callInline()">
+        <text class="button-label">Call inline</text>
+      </view>
+      <text class="line" [flatten]="false">Inline result: {{ inlineResult() }}</text>
       <view class="scroll-room"></view>
     </view>
     </scroll-view>
@@ -73,6 +85,32 @@ export class MainThreadComponent {
   protected readonly outerTaps = signal(0);
   protected readonly stopReport = signal<unknown>('none');
   protected readonly volume = signal(50);
+  protected readonly inlineResult = signal('none');
+
+  // Written here, run on the Main Thread: pluginAngularLynx moves the body there.
+  // Declared before the fields it reads, which are read when it's bound.
+  protected readonly inlineTap = (_ctx: WorkletContext) => {
+    'main thread';
+    this.inlineCount.current += INLINE_STEP;
+    void runOnBackground(this.onInlineTap)(this.inlineCount.current);
+  };
+
+  private readonly inlineCount = mainThreadRef(0);
+  protected readonly inlineTaps = signal(0);
+  private readonly onInlineTap = backgroundFunction((count: number) => this.inlineTaps.set(count));
+  private readonly factor = 2;
+
+  protected double(value: number): number {
+    'main thread';
+    return value * this.factor;
+  }
+
+  protected callInline(): void {
+    runOnMainThread(this.double)(21).then(
+      (value) => this.inlineResult.set(String(value)),
+      (err: Error) => this.inlineResult.set(`failed: ${err.message}`),
+    );
+  }
 
   protected call(): void {
     runOnMainThread(addOnMainThread)(40, 2).then(

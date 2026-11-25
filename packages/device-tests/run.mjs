@@ -5,6 +5,9 @@
 // Usage:  node run.mjs --platform <ios|android> [--flow <name>] [--timeout <minutes>]
 //                     [--screen <ci|device>]
 //
+// DEVICE_TESTS_DIST=<folder> builds and serves there instead of dist/, which
+// `npm run dev` writes to.
+//
 // The app's build is run first, so build ng-lynx before this. Android needs a
 // booted emulator or device; iOS boots its own simulator and leaves yours alone.
 //
@@ -221,6 +224,9 @@ function checkLog(file) {
 rmSync(artifacts, { recursive: true, force: true });
 mkdirSync(artifacts, { recursive: true });
 
+// DEVICE_TESTS_DIST builds somewhere else (lynx.config.ts reads it too), so a run
+// leaves alone the dist/ that `npm run dev` may be writing to.
+const dist = process.env.DEVICE_TESTS_DIST ? path.resolve(process.env.DEVICE_TESTS_DIST) : path.join(here, 'dist');
 console.log('Building the test app');
 run('pnpm', ['exec', 'rspeedy', 'build'], { cwd: here, env: { ...process.env, NODE_ENV: 'production', DO_NOT_TRACK: '1' } });
 console.log('Preparing the tools and the device');
@@ -229,7 +235,7 @@ const device = await prepareDevice();
 const logFile = path.join(artifacts, 'engine.log');
 const logStream = createWriteStream(logFile);
 device.log.stdout.pipe(logStream);
-const server = await serve(path.join(here, 'dist'), PORT);
+const server = await serve(dist, PORT);
 
 console.log(`Running the flows on ${platform} (${device.id})`);
 const flowsPassed = await runMaestro(maestro, device.id);
