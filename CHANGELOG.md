@@ -28,6 +28,10 @@ queries HM Land Registry's SPARQL endpoint from Lynx Explorer 4.2 on the iOS sim
 - docs/22: the made-up Content-Type, where it comes from, and the form-POST workaround
   for 1.0.1.
 
+### Changed
+
+- Both packages are at 1.0.2, and the templates require `ng-lynx@^1.0.2`.
+
 ### Tests
 
 - The device `network` flow sends `HttpClient` requests to a server endpoint that
