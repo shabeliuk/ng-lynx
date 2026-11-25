@@ -184,6 +184,89 @@ function decodeUtf8(bytes: Uint8Array): string {
 // eslint-disable-next-line no-var
 declare var lynx: { fetch?: FetchLike } | null | undefined;
 
+type RequestClass = new (input: unknown, init?: unknown) => { headers: { delete(name: string): void } };
+
+/** Lynx's `Request`, the class its fetch builds each request with, and the subclass used in its place. */
+let lynxRequest: { base: RequestClass; withoutDefault: RequestClass; built: boolean; warned: boolean } | undefined;
+
+/** The spelling of the Content-Type header among a request's headers, if it has one. */
+function contentTypeName(headers: unknown): string | undefined {
+  if (!headers || typeof headers !== 'object') return undefined;
+  const h = headers as { keys?: () => Iterable<string> };
+  const names = Array.isArray(headers)
+    ? headers.map((entry: [string, unknown]) => entry[0])
+    : typeof h.keys === 'function'
+      ? Array.from(h.keys())
+      : Object.keys(headers);
+  return names.find((name) => String(name).toLowerCase() === 'content-type');
+}
+
+/**
+ * Call the engine's fetch without the Content-Type it makes up.
+ *
+ * Lynx's `Request` constructor (lynx-core `modules/fetch/Request.ts`, Explorer
+ * 4.2) adds `Content-Type: text/plain;charset=UTF-8` to every request whose
+ * headers have no `Content-Type` *in that exact spelling*: a GET or a DELETE
+ * with no body included. Strict servers refuse it (HM Land Registry's SPARQL
+ * endpoint answers 415). And a caller's `content-type` in another spelling gets
+ * a second header beside it: iOS sends whichever its dictionary lists last (on
+ * the simulator, `text/plain`), Android sends both. Same on both platforms,
+ * since they run the same lynx-core JavaScript.
+ *
+ * `lynx.fetch` looks the class up on the page's global each call
+ * (`new pageGlobal.Request(input, init)`), synchronously, inside its promise's
+ * executor. So for the length of that call this puts a subclass there that
+ * deletes the header again, then puts the original back. It's kept where the
+ * standard would set one too: a string or `URLSearchParams` body and no
+ * Content-Type from the caller.
+ */
+function callWithoutDefaultContentType(original: FetchLike, args: unknown[]): Promise<FetchLikeResponse> {
+  const [input, init] = args as [{ headers?: unknown } | undefined, { headers?: unknown; body?: unknown } | undefined];
+  const named = contentTypeName(init?.headers ?? (typeof input === 'object' ? input?.headers : undefined));
+  const body = init?.body;
+  const Params = (globalThis as { URLSearchParams?: new () => object }).URLSearchParams;
+  const standardDefault = typeof body === 'string' || (Params !== undefined && body instanceof Params);
+  // Lynx keeps the caller's own `Content-Type`, and adds what the standard adds.
+  if (named === 'Content-Type' || (named === undefined && standardDefault)) return original(...args);
+
+  const g = globalThis as { Request?: RequestClass };
+  const base = g.Request;
+  if (typeof base !== 'function') return original(...args);
+  if (lynxRequest?.base !== base) {
+    const created = {
+      base,
+      built: false,
+      warned: false,
+      withoutDefault: class extends base {
+        constructor(input: unknown, init?: unknown) {
+          super(input, init);
+          created.built = true;
+          // Map-backed and case-sensitive: this is Lynx's header, never the caller's.
+          this.headers.delete('Content-Type');
+        }
+      },
+    };
+    lynxRequest = created;
+  }
+  const state = lynxRequest;
+  state.built = false;
+  g.Request = state.withoutDefault;
+  let sent: Promise<FetchLikeResponse>;
+  try {
+    sent = original(...args);
+  } finally {
+    g.Request = base;
+  }
+  if (__DEV__ && !state.built && !state.warned) {
+    state.warned = true;
+    console.warn(
+      "[ng-lynx] provideLynxHttpClient: this engine's fetch didn't build its request with "
+        + 'globalThis.Request, so a request without a Content-Type may arrive with text/plain.',
+    );
+  }
+  return sent;
+}
+
 /** The engine's own fetch, bound: `lynx.fetch`, which the bundle wrapper's `fetch` is. */
 function lynxFetch(): FetchLike | undefined {
   const l = typeof lynx !== 'undefined' ? lynx : undefined;
@@ -198,7 +281,9 @@ function lynxFetch(): FetchLike | undefined {
  *
  * - **No global `fetch`** (a device): install `lynx.fetch`, wrapped so each
  *   response is read through `text()` and never through `.body`, which on Lynx
- *   uses the body up (see `withTextBody`).
+ *   uses the body up (see `withTextBody`), and so a request without a body
+ *   doesn't go out with the `Content-Type: text/plain` Lynx adds to it (see
+ *   `callWithoutDefaultContentType`).
  * - **A global `fetch`** (the web preview, or a compliant engine): responses
  *   that arrive without a readable stream get one built from `arrayBuffer()`.
  *
@@ -238,7 +323,7 @@ export function installStreamlessFetchShim(): boolean {
   const original = typeof global === 'function' ? global : engine;
   if (!original) return false;
   const wrapped = async (...args: unknown[]): Promise<FetchLikeResponse> => {
-    const response = await original(...args);
+    const response = await (fromEngine ? callWithoutDefaultContentType(original, args) : original(...args));
     if (!response) return response;
     if (fromEngine) return withTextBody(response);
     if (!response.body && typeof response.arrayBuffer === 'function') {

@@ -1,6 +1,11 @@
 # A lazy route on a bad network. With the chunk's connection cut, the navigation must
 # fail, with an error, instead of hanging; the app stays usable. On a slow network,
 # the retry then loads the page. run.mjs's server does the slowing and cutting.
+#
+# The screen's HttpClient requests show the Content-Type the server saw: none for a
+# request without a body (Lynx's fetch adds text/plain to every request that has
+# none, and strict servers refuse it), and exactly one for a POST, whatever its
+# spelling. run.mjs checks the same thing on the server side.
 appId: ${APP_ID}
 ---
 - runFlow:
@@ -41,3 +46,15 @@ appId: ${APP_ID}
 - extendedWaitUntil:
     visible: 'Navigation: none'
     timeout: 5000
+# The headers lines sit below the fold on CI's 320x640 emulator.
+- scrollUntilVisible:
+    element: 'POST lower-case sends: .+'
+    direction: DOWN
+    timeout: 10000
+- extendedWaitUntil:
+    visible: 'POST lower-case sends: application/json'
+    timeout: 10000
+- assertVisible: 'GET sends: none'
+- assertVisible: 'DELETE sends: none'
+- assertVisible: 'POST sends: application/json'
+- takeScreenshot: network-headers

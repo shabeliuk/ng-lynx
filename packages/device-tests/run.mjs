@@ -164,6 +164,7 @@ const SERVED = [
   { flow: 'assets', label: 'the image imported as a module', test: /^\/static\/image\/imported-photo\.[0-9a-f]+\.png$/ },
   { flow: 'platform', label: 'the server-sent events stream', test: /^\/sse$/ },
   { flow: 'network', label: 'the lazy chunk on a slow network', test: /^\/static\/js\/async\/lazy-route\.[^/]+\.js$/ },
+  { flow: 'network', label: "HttpClient's GET to the headers echo", test: /^\/__headers\/get$/ },
 ];
 
 function checkRequests(requests) {
@@ -172,6 +173,12 @@ function checkRequests(requests) {
     if (args.flow && args.flow !== flow) continue;
     if (!requests.some(({ pathname, status }) => status === 200 && test.test(pathname))) {
       failures.push(`The server never served ${label}.`);
+    }
+  }
+  // The network screen's HttpClient requests, each with the Content-Type it should carry.
+  for (const { pathname, contentType, expect } of requests) {
+    if (expect != null && contentType !== expect) {
+      failures.push(`${pathname} arrived with Content-Type: ${contentType}, expected ${expect}.`);
     }
   }
   for (const { pathname, status } of requests) {

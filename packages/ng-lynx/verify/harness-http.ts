@@ -13,7 +13,9 @@
  *  - a functional interceptor (`withInterceptors`) mutates the outgoing
  *    request — asserted on the headers the fetch mock actually received;
  *  - a 500 response surfaces as `HttpErrorResponse` with the parsed error
- *    body.
+ *    body;
+ *  - on the engine's fetch, a request without a body goes out with no
+ *    Content-Type, though Lynx's `Request` adds `text/plain` to it.
  *
  * Run with: `npm run verify:http`.
  */
@@ -124,6 +126,7 @@ async function main(): Promise<void> {
 
   await verifyStreamlessShim(app);
   await verifyLynxEngineFetch(app);
+  await verifyLynxContentType(app);
 
   console.log('\n✅ All HttpClient assertions passed — provideLynxHttpClient works.\n');
 }
@@ -275,6 +278,111 @@ async function verifyLynxEngineFetch(app: import('@angular/core').ApplicationRef
   assert((failure as { status?: number })?.status === 0, 'a network failure is an HttpErrorResponse with status 0');
 
   g['fetch'] = realFetch;
+  if (hadLynx) g['lynx'] = realLynx;
+  else delete g['lynx'];
+}
+
+/**
+ * Lynx's `Request` adds `Content-Type: text/plain;charset=UTF-8` to every request
+ * whose headers lack that exact spelling, a GET included (lynx-core
+ * `modules/fetch/Request.ts`; seen on Explorer 4.2, where HM Land Registry's
+ * SPARQL endpoint refused a GET with 415). Its headers are a case-sensitive
+ * Map, and `lynx.fetch` builds each request with `new pageGlobal.Request(...)`
+ * inside its promise's executor. This fakes both, the way the engine does them.
+ */
+async function verifyLynxContentType(app: import('@angular/core').ApplicationRef): Promise<void> {
+  console.log("\n=== The engine fetch doesn't send Lynx's made-up Content-Type ===");
+  const g = globalThis as Record<string, unknown>;
+  const realFetch = g['fetch'];
+  const realRequest = g['Request'];
+  const hadLynx = 'lynx' in g;
+  const realLynx = g['lynx'];
+
+  class LynxHeaders {
+    private readonly map = new Map<string, string>();
+    constructor(init?: Record<string, string>) {
+      for (const name of Object.getOwnPropertyNames(init ?? {})) this.map.set(name, String(init![name]));
+    }
+    get(name: string): string | null {
+      return this.map.get(name) ?? null;
+    }
+    set(name: string, value: string): void {
+      this.map.set(name, String(value));
+    }
+    delete(name: string): void {
+      this.map.delete(name);
+    }
+    entries(): IterableIterator<[string, string]> {
+      return this.map.entries();
+    }
+  }
+  class LynxRequest {
+    readonly headers: LynxHeaders;
+    constructor(_input: unknown, options: { headers?: Record<string, string>; body?: unknown } = {}) {
+      this.headers = new LynxHeaders(options.headers);
+      if (!this.headers.get('Content-Type')) {
+        if (typeof options.body === 'string') this.headers.set('Content-Type', 'text/plain;charset=UTF-8');
+        else if (options.body instanceof URLSearchParams) {
+          this.headers.set('Content-Type', 'application/x-www-form-urlencoded;charset=UTF-8');
+        } else if (options.body instanceof ArrayBuffer) {
+          // none
+        } else this.headers.set('Content-Type', 'text/plain;charset=UTF-8');
+      }
+    }
+  }
+  const sent: Record<string, Record<string, string>> = {};
+  const engine = {
+    fetch(url: string, init?: { headers?: Record<string, string>; body?: unknown }) {
+      return new Promise((resolve) => {
+        const request = new (g['Request'] as typeof LynxRequest)(url, init);
+        sent[url] = Object.fromEntries(request.headers.entries());
+        resolve({ ok: true, status: 200, statusText: 'OK', url, headers: new Headers(), text: async () => '{}' });
+      });
+    },
+  };
+  delete g['fetch'];
+  g['Request'] = LynxRequest;
+  g['lynx'] = { ...(realLynx as object), fetch: engine.fetch };
+  assert(installStreamlessFetchShim() === true, 'the shim installed over the engine fetch');
+
+  const http = app.injector.get(HttpClient);
+  const send = (method: string, url: string, options: { body?: unknown; headers?: Record<string, string> } = {}) =>
+    new Promise((resolve, reject) => http.request(method, url, options).subscribe({ next: resolve, error: reject }));
+  await send('GET', 'https://example.test/get');
+  await send('DELETE', 'https://example.test/delete');
+  await send('POST', 'https://example.test/json', { body: { a: 1 } });
+  await send('POST', 'https://example.test/lower', { body: { a: 1 }, headers: { 'content-type': 'application/json' } });
+  await send('POST', 'https://example.test/own', { body: 'q=1', headers: { 'Content-Type': 'application/sparql-query' } });
+  const shimmed = g['fetch'] as (url: string, init?: unknown) => Promise<unknown>;
+  await shimmed('https://example.test/text', { method: 'POST', body: 'hello' });
+  await shimmed('https://example.test/bare');
+
+  const contentTypes = (url: string) =>
+    Object.entries(sent[url] ?? {}).filter(([name]) => name.toLowerCase() === 'content-type');
+  const show = (url: string) => JSON.stringify(contentTypes(url));
+  assert(contentTypes('https://example.test/get').length === 0, `HttpClient's GET has no Content-Type (${show('https://example.test/get')})`);
+  assert(contentTypes('https://example.test/delete').length === 0, `HttpClient's DELETE has no Content-Type (${show('https://example.test/delete')})`);
+  assert(contentTypes('https://example.test/bare').length === 0, `a bare fetch(url) has no Content-Type (${show('https://example.test/bare')})`);
+  assert(
+    show('https://example.test/json') === '[["Content-Type","application/json"]]',
+    `a JSON POST has exactly Angular's Content-Type (${show('https://example.test/json')})`,
+  );
+  assert(
+    show('https://example.test/lower') === '[["content-type","application/json"]]',
+    `a lower-case content-type is the only one sent (${show('https://example.test/lower')})`,
+  );
+  assert(
+    show('https://example.test/own') === '[["Content-Type","application/sparql-query"]]',
+    `the caller's own Content-Type is kept (${show('https://example.test/own')})`,
+  );
+  assert(
+    show('https://example.test/text') === '[["Content-Type","text/plain;charset=UTF-8"]]',
+    `a string body with no Content-Type keeps text/plain, as the standard has it (${show('https://example.test/text')})`,
+  );
+  assert(g['Request'] === LynxRequest, "the engine's Request is put back after each call");
+
+  g['fetch'] = realFetch;
+  g['Request'] = realRequest;
   if (hadLynx) g['lynx'] = realLynx;
   else delete g['lynx'];
 }

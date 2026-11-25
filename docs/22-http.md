@@ -63,6 +63,53 @@ no global fetch, a `lynx.fetch` whose `body` getter uses the body up.
 The harnesses before 1.0.1 ran against Node's `fetch` and the web preview, which
 both have a global `fetch` and streaming bodies: that is how this got through.
 
+### On a device: a Content-Type on every request (fixed in 1.0.2)
+
+Through 1.0.1, every `HttpClient` request on a device reached the server with
+`Content-Type: text/plain;charset=UTF-8`, a GET or a DELETE with no body
+included. Angular sets no Content-Type on a request without a body; Lynx's
+fetch adds it. Most servers ignore it, but strict ones refuse the request: HM
+Land Registry's SPARQL endpoint answers a GET carrying it with **415
+Unsupported Media Type**, while the same GET from a browser or Node gets 200.
+Found by a real app on Lynx Explorer 4.2 (iOS simulator); the same happens on
+Android (Explorer 4.2, emulator), which runs the same engine JavaScript.
+
+The cause is the engine's `Request` (lynx-core `modules/fetch/Request.ts`). When
+the headers have no `Content-Type` *in that exact spelling*, it sets one from
+the body, and its fallback for anything it doesn't recognise, no body at all
+included, is `text/plain`. Nothing a caller passes avoids it: on the device,
+`body: undefined`, `body: null`, `headers: {}` and `Content-Type: ''` all
+still sent `text/plain`. The headers are a case-sensitive map, too, so a
+caller's `content-type` in another spelling got Lynx's `Content-Type` beside
+it. iOS sent only one of the two, whichever came last: a raw POST with
+`content-type: application/json` arrived as `text/plain`. Android sent both, so the
+server got `application/json` and `text/plain;charset=UTF-8` together.
+
+`lynx.fetch` builds each request with `new pageGlobal.Request(...)`, looked up
+at call time. So since 1.0.2 the shim, for the length of each engine fetch,
+puts a subclass of that `Request` on `globalThis` that deletes the made-up
+header, then puts the original back. It's left in place where the fetch
+standard sets one too: a string or `URLSearchParams` body with no Content-Type
+from the caller. A Content-Type the caller set, in any spelling, is the only
+one sent.
+
+This covers `HttpClient` through `provideLynxHttpClient()`, and anything else
+that calls `globalThis.fetch` once it's installed. Code that calls the
+bundle's own `fetch` or `lynx.fetch` directly still gets Lynx's behaviour. On
+1.0.1 the workaround is to avoid a bodiless request: send the query as a form
+POST, with a body Lynx recognises and labels correctly:
+
+```ts
+const body = new HttpParams().set('query', sparql);
+this.http.post(endpoint, body, { headers: { Accept: 'application/sparql-results+json' } });
+```
+
+The device-tests `network` flow covers it: the screen's GET, DELETE and POSTs
+go to a server endpoint that echoes back the Content-Type each one arrived
+with, and `run.mjs` fails the run on a wrong one. Without the fix it fails on
+both platforms: GET and DELETE arrive with `text/plain`, and on Android the
+lower-case POST arrives with two Content-Types.
+
 ### The stream caveat
 
 `FetchBackend` reads bodies **exclusively** through
@@ -141,4 +188,6 @@ For assets served alongside your own bundle, use `lynxAssetUrl()`, as
 read path executes — `AbortController` setup, the stream-reader loop,
 `TextDecoder` decoding, JSON parsing. Asserted: a typed JSON GET renders, a
 functional interceptor's header reaches the wire, a 500 surfaces as
-`HttpErrorResponse` with the parsed error body.
+`HttpErrorResponse` with the parsed error body. It also fakes Lynx's engine
+fetch and its `Request`, and checks that a GET has no Content-Type and a POST
+exactly one.
