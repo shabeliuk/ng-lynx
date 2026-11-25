@@ -107,7 +107,7 @@ or for engines ng-lynx doesn't support:
 
 | In Lynx's runtime | Why ng-lynx doesn't need it |
 | --- | --- |
-| Walking `ctx` for captured closures (`_c`), nested worklets, `_wvid` refs and `_jsFn` handles | Those are what the `'main thread'` directive compiles to. ng-lynx's `ctx` is its own: `bindWorklet`'s params carry `_refId`, `_mtFnId` and `_bgFnId` handles, made live by `worklet-apply.ts`. |
+| Walking `ctx` for captured closures (`_c`), nested worklets, `_wvid` refs and `_jsFn` handles | Those are what ReactLynx's `'main thread'` directive compiles to. ng-lynx's `ctx` is its own: `bindWorklet`'s params, and what an inline `'main thread'` function captures, carry `_refId`, `_mtFnId` and `_bgFnId` handles, made live by `worklet-apply.ts`. |
 | `MainThreadRef` / `MainThreadObject` storage and init-value patches | ng-lynx's refs are bound with `SET_REF` ops and resolved from the element registry. |
 | First-screen hydration (`_hydrateCtx`, negative ref ids, delayed `runOnBackground`) | ng-lynx's first screen is a byte-identical snapshot of the first batch, so nothing needs hydrating. See [20 — First screen](20-first-screen.md). |
 | `JsFunctionLifecycleManager` and `Lynx.Worklet.releaseBackgroundWorkletCtx` | Releases ReactLynx's `runOnBackground` closures when they're collected. ng-lynx's `backgroundFunction` handles end with their owner. |

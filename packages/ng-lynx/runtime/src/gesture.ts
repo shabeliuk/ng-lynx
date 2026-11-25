@@ -42,7 +42,7 @@ import { register, unregister } from './event-registry.js';
 import { scheduleFlush } from './flush.js';
 import { pushOp } from './ops.js';
 import type { ShadowElement } from './shadow-element.js';
-import { toWorkletRef, type WorkletHandle, type WorkletRef } from './worklet.js';
+import { type MainThreadInlineFunction, toWorkletRef, type WorkletHandle, type WorkletRef } from './worklet.js';
 
 /**
  * Numeric gesture-type codes the native `__SetGestureDetector` PAPI expects —
@@ -85,8 +85,11 @@ export type LynxGestureType = keyof typeof GESTURE_TYPE;
  */
 export interface LynxGestureDescriptor {
   type: LynxGestureType;
-  /** Gesture-phase name → worklet (a `defineWorklet` or `bindWorklet` handle, or a string id for `registerWorklet`). */
-  callbacks: Record<string, string | WorkletHandle<never>>;
+  /**
+   * Gesture-phase name → worklet: a `defineWorklet` or `bindWorklet` handle, a string id for
+   * `registerWorklet`, or a function marked `'main thread'`.
+   */
+  callbacks: Record<string, string | WorkletHandle<never> | MainThreadInlineFunction>;
   /** Native gesture-specific tuning (e.g. pan direction/distance) — passed through as-is. */
   config?: Record<string, unknown>;
   /** Local keys this gesture must wait to lose to before it can activate. */
@@ -118,7 +121,7 @@ let nextGestureId = 1;
  * to this directive's `(mainThreadCallback)` output.
  */
 function workletRef(
-  worklet: string | WorkletHandle<never>,
+  worklet: string | WorkletHandle<never> | MainThreadInlineFunction,
   elId: number,
   bgCallbackId: string,
   gestureId: number,

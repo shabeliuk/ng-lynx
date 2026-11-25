@@ -439,7 +439,8 @@ export interface MainThreadRef<T = unknown> extends MainThreadRefHandle<T> {
 /**
  * The Background Thread's form of a value the Main Thread sees as `T`: a
  * {@link MainThreadRef} is sent as its handle, a function as its
- * {@link MainThreadFunctionHandle}. Everything else has to be JSON-serializable.
+ * {@link MainThreadFunctionHandle} or as a function marked `'main thread'`.
+ * Everything else has to be JSON-serializable.
  *
  * @public
  */
@@ -448,7 +449,7 @@ export type ToMainThread<T> = T extends MainThreadRef<infer V>
   : T extends BackgroundFunctionHandle<infer A, infer R>
     ? BackgroundFunctionHandle<A, R>
     : T extends (...args: infer A) => infer R
-      ? MainThreadFunctionHandle<A, R>
+      ? MainThreadFunctionHandle<A, R> | ((...args: A) => R)
       : T extends readonly unknown[]
         ? { [K in keyof T]: ToMainThread<T[K]> }
         : T extends object

@@ -73,8 +73,8 @@ The dev server prints three URLs:
     sets `globalThis.SystemInfo` and assigns `renderPage`/`processData`, and the
     worklet modules call `registerWorklet`, which needs the runtime in place.
     The runtime (about 4 kB minified) is only bundled when `mainThreadModules`
-    is non-empty — its only documented use is worklet registration modules, so
-    an app that never sets it doesn't pay for a feature it doesn't use.
+    is non-empty or the app has [inline `'main thread'` functions](11-worklets.md#inline-main-thread-functions),
+    whose registrations come last, so an app with no worklets doesn't pay for them.
 - Marks the main-thread asset `lynx:main-thread: true` and forces its startup so
   the MT bundle actually executes (`AngularMarkMainThreadPlugin`).
 - Packs both with `@lynx-js/template-webpack-plugin`, wraps the background bundle
@@ -346,45 +346,36 @@ compiler unavailable" at runtime) — that was the one gotcha.
 > Initializer APIs (`viewChild()`, `input()`, `model()`) work under **AOT** but
 > not JIT — see [10 — Element queries](10-element-queries.md).
 
-### Why inline `'main thread'` worklets aren't possible under AOT
+### How inline `'main thread'` functions get through AOT
 
 ReactLynx lets you write a worklet *inline*, marked with a `'main thread'`
-string literal as the first statement of a closure, right where you use it —
-a build-time SWC transform detects the marker, extracts the closure (capturing
-any outer variables it references into a `_c` object), and relocates it into
-the separate Main-Thread bundle, leaving a small registered-reference
-descriptor behind in the Background bundle. ng-lynx's worklets
-([11 — Worklets](11-worklets.md)) are **explicit** instead — authored in a
-dedicated Main-Thread module, loaded via `mainThreadModules` — for two reasons
-specific to this AOT pipeline:
+directive as the first statement of a closure: a build-time SWC transform extracts
+the closure (capturing the outer variables it reads into a `_c` object), moves it
+into the Main-Thread bundle, and leaves a small descriptor in the Background bundle.
+ng-lynx does the same ([11 — Worklets](11-worklets.md#inline-main-thread-functions)),
+which takes two things under AOT:
 
-1. **AOT reads component source from disk, not through rspack's loader
-   chain.** `AngularWebpackPlugin` (the `ngtools` loader registered above) does
-   its own file reads via its internal `ts.Program`/`ts.CompilerHost` —
-   confirmed by testing it directly. A transform that needs to see and rewrite
-   a component's source *before* Angular compiles it (the way the SWC plugin
-   does for ReactLynx) never gets that chance: whatever
-   an `enforce: 'pre'` loader hands back for that file is discarded in favor of
-   AOT's own read, regardless of what the inline marker looks like syntactically
-   — a `'main thread'` string literal, a decorator (`@MainThread() onTap()`),
-   anything.
-2. **Relocating the closure means owning the chunking, not just parsing an
-   AST.** The real transform's output isn't just "move a function" — it's a
-   cross-chunk code-splitting decision made *during* compilation (a descriptor
-   object stays in one bundle, a `registerWorkletInternal(...)` call lands in a
-   *different*, physically separate one). That requires hooking into ngtsc's
-   own compilation pass, the way the SWC/Babel plugins hook into their
-   compilers' transform pipelines — and Angular's compiler doesn't expose an
-   equivalent extension point for a third party to add custom compile-time
-   behavior keyed off an arbitrary marker, the way `@Component`/`@Input` are
-   handled by code baked into ngtsc itself. A decorator wouldn't change this:
-   it's still source text needing the same detection-extraction-relocation
-   step, which has nowhere to run under AOT either way.
+1. **Getting the rewritten source to ngtsc.** `AngularWebpackPlugin` doesn't read
+   component sources through rspack's loaders: whatever an `enforce: 'pre'` loader
+   returns for a file is discarded for AOT's own read. But that read goes through a
+   TypeScript system `@ngtools/webpack` builds on `compiler.inputFileSystem`
+   (`createWebpackSystem`, in its `thisCompilation` hook). `pluginAngularLynx`
+   registers a plugin just before it that wraps `readFileSync` there: a `.ts` file
+   with the directive comes back with each function rewritten as
+   `ɵinlineMainThread(id, () => ({ …captured }), <the function>)`. ngtsc compiles and
+   type-checks that, lines unchanged. In a JIT build the same rewrite is a loader.
+2. **Putting the function in the other bundle.** Each file with the directive has a
+   Main-Thread half, `file.ts?ng-lynx-main-thread`, which a loader writes from the same
+   source: the functions, unchanged and on their own lines, registered by id, and the
+   imports they use. One generated index module imports every half, and goes into the
+   Main-Thread entry after the worklet runtime. Both halves come from one analysis of
+   the file (`plugin/src/inline-main-thread.cts`, with a TypeScript checker for that
+   file alone, to tell where each name is declared), so they agree on the ids:
+   `__ngInline:<file>:<line>:<column>`. The ngtools loader skips the `?ng-lynx-main-thread`
+   modules.
 
-Both are pipeline-level constraints, not something `pluginAngularLynx` can
-work around from outside ngtsc. The explicit model is the ergonomic ceiling
-here — see [11 — Worklets](11-worklets.md#naming-worklets) for how close it
-gets (a named function's id is derived automatically, no string to keep in
-sync).
+Up to 1.0 this page said inline worklets weren't possible under AOT. The first point
+is why: it was found by testing the loader route, which doesn't work. The input file
+system was there the whole time.
 
 Next: [07 — Verifying](07-verifying.md).

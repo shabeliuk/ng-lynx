@@ -82,6 +82,16 @@ export const pressFade = defineWorklet(pressFadeMT);
 <view [lynxMainThread]="{ tap: pressFade }" (mainThreadCallback)="onPressed($event)"></view>
 ```
 
+Or write it in the component, marked `'main thread'` (experimental), and the build moves
+its body to the Main Thread, capturing what it reads:
+
+```ts
+readonly pressFade = (ctx: WorkletContext) => {
+  'main thread';
+  ctx.setStyle(`opacity: ${this.pressedOpacity}`);
+};
+```
+
 The same model drives `[lynxGesture]`, `runOnMainThread()`, `MainThread.Element` and
 `lynxAnimate`. See [11 — Main-thread worklets](docs/11-worklets.md).
 
@@ -108,7 +118,7 @@ What has been run where is in [41 — Device testing](docs/41-device-testing.md)
 | Lists | Native `<list>` through `@for`; `LynxVirtualFor` for huge lists | [08](docs/08-lists.md), [30](docs/30-virtual-list.md) |
 | Forms | `[(lynxModel)]`, `[(ngModel)]`, reactive forms, ten headless controls, optional theme | [09](docs/09-forms.md) |
 | Router & HTTP | `provideLynxRouter` (deep links, back button, lazy routes), `provideLynxHttpClient` | [15](docs/15-routing.md), [22](docs/22-http.md) |
-| Main thread | Worklets, `runOnMainThread`, `runOnBackground`, per-instance refs, `MainThread.Element`, gestures, `lynxAnimate` | [11](docs/11-worklets.md), [32](docs/32-gestures.md), [33](docs/33-animations.md) |
+| Main thread | Worklets, inline `'main thread'` functions (experimental), `runOnMainThread`, `runOnBackground`, per-instance refs, `MainThread.Element`, gestures, `lynxAnimate` | [11](docs/11-worklets.md), [32](docs/32-gestures.md), [33](docs/33-animations.md) |
 | Host integration | `lynxInitData()`, `lynxGlobalProps()`, `LynxGlobalEvents`, `lynxForeground()`, native modules | [17](docs/17-host-data.md), [23](docs/23-app-events.md), [27](docs/27-native-modules.md) |
 | Platform APIs | Selector queries, exposure, `@defer` triggers, performance, session storage, `lynx.*` | [10](docs/10-element-queries.md), [24](docs/24-visibility.md), [25](docs/25-performance.md), [29](docs/29-platform-apis.md) |
 | Styling | CSS files, Sass, Tailwind, `@media`, parent-state rules | [13](docs/13-styling.md) |

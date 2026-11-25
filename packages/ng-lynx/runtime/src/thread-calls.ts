@@ -11,13 +11,14 @@ import {
   type BackgroundFunctionHandle,
   MAIN_THREAD_RESULT_EVENT,
   type MainThreadFunctionHandle,
-  type MainThreadRefHandle,
+  type MainThreadRef,
   RELEASE_MAIN_THREAD_REF_METHOD,
   RUN_ON_MAIN_THREAD_METHOD,
   type ToMainThread,
 } from 'ng-lynx/internal/ops';
 
 import { flushOps } from './flush.js';
+import { inlineCaptures, isInlineMainThread } from './inline-main-thread.js';
 
 interface CrossThreadContext {
   addEventListener(type: string, listener: (event: { data: unknown }) => void): void;
@@ -78,8 +79,25 @@ function onContextDestroy(callback: () => void): void {
  */
 export function runOnMainThread<A extends unknown[], R>(
   fn: MainThreadFunctionHandle<A, R>,
-): (...args: ToMainThread<A>) => Promise<Awaited<R>> {
-  return (...args) =>
+): (...args: ToMainThread<A>) => Promise<Awaited<R>>;
+/**
+ * Call a function marked `'main thread'` on the Main Thread and get its result.
+ * What it captured is read now and sent along. See docs/11-worklets.md.
+ */
+export function runOnMainThread<A extends unknown[], R>(
+  fn: (...args: A) => R,
+): (...args: ToMainThread<A>) => Promise<Awaited<R>>;
+export function runOnMainThread(
+  fn: MainThreadFunctionHandle<unknown[], unknown> | ((...args: never[]) => unknown),
+): (...args: unknown[]) => Promise<unknown> {
+  if (typeof fn === 'function' && !isInlineMainThread(fn)) {
+    throw new Error(
+      '[ng-lynx] runOnMainThread takes a function from defineMainThreadFunction, or one marked \'main thread\' '
+        + 'and compiled by pluginAngularLynx. See docs/11-worklets.md.',
+    );
+  }
+  const id = (fn as MainThreadFunctionHandle<unknown[], unknown>)._mtFnId;
+  return (...callArgs) =>
     new Promise((resolve, reject) => {
       const app = typeof lynx !== 'undefined' ? lynx?.getNativeApp?.() : undefined;
       if (!app?.callLepusMethod) {
@@ -89,7 +107,9 @@ export function runOnMainThread<A extends unknown[], R>(
       flushOps();
       const callId = ++nextCallId;
       pendingCalls.set(callId, { resolve: resolve as (value: unknown) => void, reject });
-      app.callLepusMethod(RUN_ON_MAIN_THREAD_METHOD, { id: fn._mtFnId, args: JSON.stringify(args), callId }, () => {});
+      // An inline function is registered as a factory of what it captured.
+      const args = isInlineMainThread(fn) ? [inlineCaptures(fn), ...callArgs] : callArgs;
+      app.callLepusMethod(RUN_ON_MAIN_THREAD_METHOD, { id, args: JSON.stringify(args), callId }, () => {});
     });
 }
 
@@ -127,8 +147,9 @@ let nextRefId = 0;
  * of a component gets its own: what `useMainThreadRef` gives a ReactLynx component.
  * Bind it to an element with `[lynxMainThreadRef]`, or give it a starting value and use
  * it to hold state. Pass it to a worklet through `bindWorklet`, or to a function through
- * `runOnMainThread`. Its `current` exists on the Main Thread only. In a component or
- * service field it's released with its owner.
+ * `runOnMainThread`, or read it in a `'main thread'` function. Its `current` exists on
+ * the Main Thread only: it's typed, for those functions, and reading it on the
+ * Background Thread throws. In a component or service field it's released with its owner.
  *
  * ```ts
  * readonly track = mainThreadRef();
@@ -137,13 +158,21 @@ let nextRefId = 0;
  *
  * @public
  */
-export function mainThreadRef<T = unknown>(initial?: T): MainThreadRefHandle<T> {
+export function mainThreadRef<T = unknown>(initial?: T): MainThreadRef<T> {
   const id = `ng-ref:${++nextRefId}`;
   onContextDestroy(() => {
     const app = typeof lynx !== 'undefined' ? lynx?.getNativeApp?.() : undefined;
     app?.callLepusMethod?.(RELEASE_MAIN_THREAD_REF_METHOD, { id }, () => {});
   });
-  return initial === undefined ? { _refId: id } : { _refId: id, _init: initial };
+  const handle = initial === undefined ? { _refId: id } : { _refId: id, _init: initial };
+  // Not enumerable, so the handle still crosses the threads as `_refId` and `_init`.
+  const mainThreadOnly = (): never => {
+    throw new Error(
+      `[ng-lynx] ${id}: a mainThreadRef's current lives on the Main Thread. Read it in a worklet or a 'main thread' function.`,
+    );
+  };
+  Object.defineProperty(handle, 'current', { get: mainThreadOnly, set: mainThreadOnly, enumerable: false });
+  return handle as MainThreadRef<T>;
 }
 
 /** Listen for the Main Thread's half of these calls. Called by entry-background. */

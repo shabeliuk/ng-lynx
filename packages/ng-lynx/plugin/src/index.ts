@@ -32,7 +32,7 @@
  * ```
  */
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -47,6 +47,16 @@ import {
 } from '@lynx-js/template-webpack-plugin';
 import { RuntimeWrapperWebpackPlugin } from '@lynx-js/runtime-wrapper-webpack-plugin';
 
+import {
+  contentHash,
+  hasMainThreadMarker,
+  isScannable,
+  loadTypeScript,
+  MAIN_THREAD_QUERY,
+  relativeId,
+  scanForMainThreadFiles,
+  transformForBackground,
+} from './inline-main-thread.cjs';
 import { LAYERS } from './layers.js';
 
 export { LAYERS };
@@ -200,6 +210,15 @@ export interface PluginAngularLynxOptions {
    * `ng-lynx/worklet`. @defaultValue []
    */
   mainThreadModules?: string[];
+  /**
+   * Run functions marked `'main thread'` on the Main Thread, though they're
+   * written in components: the plugin moves each one's body to the Main-Thread
+   * bundle and leaves a stand-in on the Background Thread. Files under `src/`
+   * (or the project root, without one) are scanned when the build starts; with
+   * none found, nothing is added. See docs/11-worklets.md#inline-main-thread-functions.
+   * @defaultValue true
+   */
+  inlineMainThread?: boolean;
   /**
    * Compile templates **ahead of time** with `ngtsc` (via `@ngtools/webpack`)
    * instead of bundling `@angular/compiler` for JIT. Smaller bundles, faster
@@ -471,7 +490,7 @@ interface RsbuildApiLike {
     ) => void,
   ): void;
   /** Populated once the dev server is listening; absent for `build`. */
-  context: { devServer?: { hostname: string; port: number; https: boolean }; action?: string };
+  context: { devServer?: { hostname: string; port: number; https: boolean }; action?: string; rootPath?: string };
   /** What another plugin published with `api.expose` (e.g. `pluginLynxConfig`'s config). */
   useExposed?<T>(id: symbol): T | undefined;
 }
@@ -503,6 +522,7 @@ export function pluginAngularLynx(
     nativeElements = [],
     debugInfoOutside = true,
     mainThreadModules = [],
+    inlineMainThread: inlineMainThreadOption = true,
     aot = true,
     tsconfig = 'tsconfig.json',
     firstScreen,
@@ -527,6 +547,16 @@ export function pluginAngularLynx(
     pre: ['lynx:rsbuild:plugin-api', 'lynx:config'],
 
     setup(api) {
+      // Inline 'main thread' functions: found once here, because whether the
+      // Main-Thread bundle needs the worklet runtime is decided now. The index
+      // module rescans while the dev server runs.
+      const rootPath = api.context.rootPath ?? process.cwd();
+      const inline = inlineMainThreadOption && !dynamicComponent
+        ? resolveInlineMainThread(rootPath, mainThreadModules)
+        : undefined;
+      // The worklet runtime goes in for worklet modules or inline functions.
+      const hasWorklets = mainThreadModules.length > 0 || Boolean(inline?.files.length);
+
       // ① Global defines + engine target.
       api.modifyRsbuildConfig((config, { mergeRsbuildConfig }) =>
         mergeRsbuildConfig(config, {
@@ -564,9 +594,10 @@ export function pluginAngularLynx(
               __NATIVE_ELEMENTS__: JSON.stringify(nativeElements),
               // Read by slider.ts (Background Thread): whether the Main-Thread
               // bundle has the worklet runtime (applyEntry bundles it for a
-              // non-empty `mainThreadModules`), so `<lynx-slider>` can drag
+              // non-empty `mainThreadModules` or inline 'main thread'
+              // functions), so `<lynx-slider>` can drag
               // there. A dynamic component's Main-Thread part is a stub.
-              __WORKLET_RUNTIME__: String(mainThreadModules.length > 0 && !dynamicComponent),
+              __WORKLET_RUNTIME__: String(hasWorklets && !dynamicComponent),
             },
           },
           tools: {
@@ -787,7 +818,7 @@ export function pluginAngularLynx(
       });
 
       // ② Angular compilation (AOT/ngtsc by default, JIT with `aot: false`).
-      applyAngularCompiler(api, { aot, tsconfig });
+      applyAngularCompiler(api, { aot, tsconfig, inline });
 
       // ②.5 Link the package's partial-Ivy declarations to full Ivy against the
       // app's Angular version (version-independent package output).
@@ -827,6 +858,8 @@ export function pluginAngularLynx(
         targetSdkVersion,
         debugInfoOutside,
         mainThreadModules,
+        hasWorklets,
+        inline,
         aot,
         asyncChunks,
         dynamicComponent,
@@ -1192,6 +1225,107 @@ function applyI18nInlining(
   });
 }
 
+// ---------------------------------------------------------------------------
+// Inline 'main thread' functions (inline-main-thread.cts, docs/11-worklets.md).
+// ---------------------------------------------------------------------------
+
+const INLINE_MAIN_THREAD_LOADER = path.join(_dirname, 'inline-main-thread-loader.cjs');
+
+/** Where inline 'main thread' functions are looked for, and what was found. */
+interface InlineMainThread {
+  /** The project root: ids are file paths from here. */
+  root: string;
+  /** The folders scanned. */
+  roots: string[];
+  /** `mainThreadModules`, absolute: already Main-Thread code. */
+  exclude: string[];
+  /** Files with a `'main thread'` function when the build started. */
+  files: string[];
+  /** The module the Main-Thread index is generated from. */
+  index: string;
+}
+
+function resolveInlineMainThread(rootPath: string, mainThreadModules: readonly string[]): InlineMainThread {
+  const src = path.join(rootPath, 'src');
+  const roots = [existsSync(src) ? src : rootPath];
+  const exclude = mainThreadModules.map((file) => path.resolve(rootPath, file));
+  const files = scanForMainThreadFiles(roots, new Set(exclude));
+  // Real path: rules match the resolved path, and macOS's temp folder is a symlink
+  // (/var → /private/var), so the rule for this module would never match.
+  const index = realpathSync(
+    writeGeneratedModule(
+      'ng-lynx-inline-main-thread',
+      'index',
+      '// Replaced by inline-main-thread-loader.cjs: the imports of every file\'s Main-Thread half.\n',
+    ),
+  );
+  return { root: rootPath, roots, exclude, files, index };
+}
+
+const WRAPPED = Symbol.for('ng-lynx.inlineMainThread');
+
+/**
+ * Show AOT each file with its `'main thread'` functions rewritten for the
+ * Background Thread. ngtsc reads sources through its own TypeScript system, not
+ * the loaders, but that system reads through `compiler.inputFileSystem`
+ * (`@ngtools/webpack`'s `createWebpackSystem`), wrapped here before
+ * `AngularWebpackPlugin` takes it. A file that can't be rewritten is left as it
+ * is: its Main-Thread half reports why.
+ */
+class InlineMainThreadPlugin {
+  constructor(private readonly inline: InlineMainThread) {}
+
+  // biome-ignore lint/suspicious/noExplicitAny: webpack/rspack Compiler not typed here
+  apply(compiler: any): void {
+    const { root, files } = this.inline;
+    const exclude = new Set(this.inline.exclude);
+    const cache = new Map<string, { hash: string; out: string | undefined }>();
+    let ts: ReturnType<typeof loadTypeScript> | undefined;
+    let warned = false;
+    compiler.hooks.thisCompilation.tap('ng-lynx-inline-main-thread', () => {
+      const fs = compiler.inputFileSystem;
+      if (!fs || fs[WRAPPED] || typeof fs.readFileSync !== 'function') return;
+      const readFileSync = fs.readFileSync.bind(fs);
+      fs.readFileSync = (file: unknown, ...rest: unknown[]): unknown => {
+        const data = readFileSync(file, ...rest);
+        if (
+          typeof file !== 'string'
+          || !isScannable(file)
+          || file.includes(`${path.sep}node_modules${path.sep}`)
+          || exclude.has(file)
+        ) {
+          return data;
+        }
+        const text = typeof data === 'string' ? data : (data as Buffer).toString('utf8');
+        if (!hasMainThreadMarker(text)) return data;
+        const hash = contentHash(text);
+        let entry = cache.get(file);
+        if (entry?.hash !== hash) {
+          ts ??= loadTypeScript(root);
+          let out: string | undefined;
+          try {
+            out = transformForBackground(ts, file, text, relativeId(root, file));
+          } catch {
+            out = undefined; // Its Main-Thread half reports the error.
+          }
+          entry = { hash, out };
+          cache.set(file, entry);
+          if (out && files.length === 0 && !warned) {
+            warned = true;
+            console.warn(
+              `[ng-lynx] ${relativeId(root, file)} has a 'main thread' function, but the build started without any, `
+                + 'so the Main-Thread bundle has no worklet runtime for it. Restart the dev server.',
+            );
+          }
+        }
+        if (entry.out === undefined) return data;
+        return typeof data === 'string' ? entry.out : Buffer.from(entry.out, 'utf8');
+      };
+      fs[WRAPPED] = true;
+    });
+  }
+}
+
 /**
  * Configure Angular compilation.
  *
@@ -1228,8 +1362,25 @@ function loadNgtools(): {
 
 function applyAngularCompiler(
   api: RsbuildApiLike,
-  opts: { aot: boolean; tsconfig: string },
+  opts: { aot: boolean; tsconfig: string; inline?: InlineMainThread },
 ): void {
+  if (!opts.aot && opts.inline) {
+    // JIT: SWC compiles each file through the loaders, so a loader can rewrite it.
+    const { root, exclude } = opts.inline;
+    api.modifyBundlerChain((chain) => {
+      // biome-ignore lint/suspicious/noExplicitAny: rspack-chain isn't typed here
+      const rule = (chain as any).module.rule('ng-lynx-inline-main-thread-background');
+      rule.test(/\.[cm]?ts$/);
+      rule.exclude.add(/node_modules/);
+      for (const file of exclude) rule.exclude.add(file);
+      rule
+        .resourceQuery({ not: [new RegExp(MAIN_THREAD_QUERY)] })
+        .enforce('pre')
+        .use('inline-main-thread')
+        .loader(INLINE_MAIN_THREAD_LOADER)
+        .options({ mode: 'background', root });
+    });
+  }
   if (!opts.aot) {
     api.modifyRsbuildConfig((config, { mergeRsbuildConfig }) =>
       mergeRsbuildConfig(config, {
@@ -1266,12 +1417,16 @@ function applyAngularCompiler(
     c.module
       .rule('angular-aot-ts')
       .test(/\.[cm]?ts$/)
+      // A file's Main-Thread half is its 'main thread' functions, not its AOT output.
+      .resourceQuery({ not: [new RegExp(MAIN_THREAD_QUERY)] })
       .enforce('pre')
       .use('ngtools')
       .loader(AngularWebpackLoaderPath)
       .end();
     // Compat shim runs before AngularWebpackPlugin (see class doc).
     c.plugin('angular-rspack-compat').use(RspackResolverCompatPlugin, []).end();
+    // Before AngularWebpackPlugin too: it reads files through the wrapped system.
+    if (opts.inline) c.plugin('ng-lynx-inline-main-thread').use(InlineMainThreadPlugin, [opts.inline]).end();
     c.plugin('angular-webpack-plugin')
       .use(AngularWebpackPlugin, [
         { tsconfig: tsconfigPath, jitMode: false, directTemplateLoading: true },
@@ -1316,6 +1471,9 @@ function applyEntry(
     targetSdkVersion: string;
     debugInfoOutside: boolean;
     mainThreadModules: string[];
+    /** Whether the Main-Thread bundle needs the worklet runtime. */
+    hasWorklets: boolean;
+    inline?: InlineMainThread;
     aot: boolean;
     asyncChunks: boolean;
     firstScreenModule?: string;
@@ -1393,9 +1551,32 @@ function applyEntry(
     // an app that never touches `[lynxMainThread]` doesn't pay for it: about
     // 10 kB of Lynx bundle, measured on examples/ng-forms. `<lynx-slider>`
     // drags on the Main Thread when it's there (`__WORKLET_RUNTIME__`).
-    const workletRuntime = opts.mainThreadModules.length > 0
+    const workletRuntime = opts.hasWorklets
       ? path.resolve(angularLynxRoot, 'main-thread/dist/worklet-runtime/init.js')
       : undefined;
+
+    // Each file's 'main thread' functions, registered on the Main Thread through
+    // one index module that imports every file's half.
+    const inline = opts.inline?.files.length && !opts.dynamicComponent ? opts.inline : undefined;
+    if (inline) {
+      // biome-ignore lint/suspicious/noExplicitAny: rspack-chain isn't typed here
+      const rules = (chain as any).module;
+      rules
+        .rule('ng-lynx-inline-main-thread')
+        .resourceQuery(new RegExp(MAIN_THREAD_QUERY))
+        .enforce('pre')
+        .use('extract')
+        .loader(INLINE_MAIN_THREAD_LOADER)
+        .options({ mode: 'main-thread', root: inline.root })
+        .end();
+      rules
+        .rule('ng-lynx-inline-main-thread-index')
+        .test(inline.index)
+        .use('index')
+        .loader(INLINE_MAIN_THREAD_LOADER)
+        .options({ mode: 'index', root: inline.root, roots: inline.roots, exclude: inline.exclude })
+        .end();
+    }
 
     for (const [entryName, entryPoint] of Object.entries(entries)) {
       const imports: string[] = [];
@@ -1429,6 +1610,7 @@ function applyEntry(
         : workletRuntime
           ? [entryMain, workletRuntime, ...opts.mainThreadModules]
           : [entryMain, ...opts.mainThreadModules];
+      if (inline) mtImports.push(inline.index);
       // The first-screen module must evaluate after entryMain (it imports
       // setFirstScreenOps from it); renderPage runs later, at engine time.
       if (opts.firstScreenModule && !opts.dynamicComponent) mtImports.push(opts.firstScreenModule);
