@@ -10,6 +10,23 @@ which parts are experimental and may change in a minor release, is in
 
 ### Added
 
+- **`lynxEnter` / `lynxLeave` (experimental).** Enter and leave animations from CSS classes, what
+  Angular's `animate.enter` / `animate.leave` do on the web (they compile, but do nothing on Lynx:
+  Angular turns them on only with a DOM). `lynxEnter` puts classes on a new element and takes them
+  off at its own `animationend` or `transitionend`; `lynxLeave` puts classes on a removed element
+  and keeps it on screen until its animation ends, then removes and destroys it. Each has a timeout,
+  2 s by default. `examples/hello-world`'s list animates its items in and out. docs/33, harness
+  `verify:transition`, and the `transition` device flow.
+- **Element-to-template source mapping.** In a development build (`templateSourceMap`, on by
+  default outside production, AOT only), each element carries the place in its template that
+  created it. Angular's compiler records it (the flag the Angular CLI's dev server sets), the
+  element gets it as `data-ng-source-location`, which Lynx DevTool's Elements panel and the web
+  preview's browser DevTools show, and it is created with a `nodeIndex` the engine keeps for
+  DevTool. Each index's file, line and column go into the `uiSourceMap` of `debug-metadata.json`,
+  the format ReactLynx's `enableUiSourceMap` produces. Checked on Explorer 4.2 on the iOS
+  simulator: a tap's `event.target.nodeIndex` came back as the index `debug-metadata.json` maps to
+  the tapped element's line. docs/26, harnesses `verify:template-source-map` and
+  `verify:template-source-map-off`.
 - **`lynx.fetchBundle` (experimental).** `fetchBundle(url, { sync?, timeout? })` is the Promise
   form of the engine's loader (engine 3.9, the one ReactLynx's own lazy bundles use): it resolves
   once the bundle is in the engine's cache, caches a success and not a failure, and rejects with a
@@ -58,6 +75,10 @@ which parts are experimental and may change in a minor release, is in
 
 ### Fixed
 
+- **Animation and transition listeners leaked.** Angular never unlistens a template's
+  `(animationend)`, `(transitionend)` or other `animation*` / `transition*` listener when it destroys
+  the view: on the web the browser drops it with the element. On Lynx each stayed in the event registry
+  for good. The renderer now drops an element's listeners when it destroys the element.
 - **`LynxLazyFor` sent one batch per row it built when the window moved**, because Angular
   flushes the renderer after every `detectChanges()`. In a very hard fling the engine
   warned "CallLepusMethod called too frequently" (code 20401, `ngPatchUpdate`). A move is

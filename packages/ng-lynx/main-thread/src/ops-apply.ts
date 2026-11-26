@@ -20,6 +20,7 @@ import {
   OP,
   PAGE_ROOT_ID,
   resolveInterned,
+  SOURCE_LOCATION_ATTR,
 } from 'ng-lynx/internal/ops';
 
 import { elements, pageUniqueId, setPageUniqueId } from './element-registry.js';
@@ -86,19 +87,23 @@ const KNOWN_LYNX_TAGS = new Set([
  * `LynxCreateUIException: … ui not found when create UI` for a tag it doesn't
  * recognize — there is no generic native fallback to rely on.
  */
-function createTypedElement(type: string, parentComponentUniqueId: number): LynxElement {
+function createTypedElement(
+  type: string,
+  parentComponentUniqueId: number,
+  info?: { nodeIndex: number },
+): LynxElement {
   switch (type) {
     case 'view':
-      return __CreateView(parentComponentUniqueId);
+      return __CreateView(parentComponentUniqueId, info);
     case 'text':
-      return __CreateText(parentComponentUniqueId);
+      return __CreateText(parentComponentUniqueId, info);
     case 'image':
-      return __CreateImage(parentComponentUniqueId);
+      return __CreateImage(parentComponentUniqueId, info);
     case 'scroll-view':
-      return __CreateScrollView(parentComponentUniqueId);
+      return __CreateScrollView(parentComponentUniqueId, info);
     default:
-      if (KNOWN_LYNX_TAGS.has(type)) return __CreateElement(type, parentComponentUniqueId);
-      return __CreateView(parentComponentUniqueId);
+      if (KNOWN_LYNX_TAGS.has(type)) return __CreateElement(type, parentComponentUniqueId, info);
+      return __CreateView(parentComponentUniqueId, info);
   }
 }
 
@@ -153,16 +158,21 @@ export function applyOps(rawOps: unknown[], epoch?: string): void {
     if (code !== OP.DESTROY && code !== OP.SET_REF) changed = true;
 
     switch (code) {
-      case OP.CREATE: {
+      case OP.CREATE:
+      case OP.CREATE_MAPPED: {
         const id = ops[i++] as number;
         const type = ops[i++] as string;
+        // CREATE_MAPPED (a `templateSourceMap` build) carries the index Lynx
+        // DevTool maps back to the template. The engine takes it only here, at
+        // creation; 0 means the element isn't in a template.
+        const nodeIndex = code === OP.CREATE_MAPPED ? (ops[i++] as number) : 0;
         let el: LynxElement;
         if (type === 'list') {
           // Native virtualized list (created with item callbacks).
           el = createListElement(id);
           if (__ENABLE_SELECTOR_QUERIES__ === true) __SetAttribute(el, `ng-ref-${id}`, 1);
         } else {
-          el = createTypedElement(type, pageUniqueId);
+          el = createTypedElement(type, pageUniqueId, nodeIndex ? { nodeIndex } : undefined);
           // Associate with CSS scope 0 (global CSS) so class selectors match.
           __SetCSSId([el], 0);
           // Selector attribute for BG-thread selector queries — skippable via
@@ -236,6 +246,9 @@ export function applyOps(rawOps: unknown[], epoch?: string): void {
           const el = elements.get(id);
           if (el) {
             if (key === 'id') __SetID(el, value == null ? undefined : String(value));
+            // Angular's template source location: an attribute, for DevTool's
+            // Elements panel, not a dataset entry every event would carry.
+            else if (key === SOURCE_LOCATION_ATTR) __SetAttribute(el, key, value);
             // `event.target.dataset` is built from the dataset model only; a
             // plain attribute named `data-x` never shows up there.
             else if (key.startsWith('data-')) __AddDataset(el, key.slice('data-'.length), value);

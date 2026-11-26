@@ -211,3 +211,44 @@
   flex: 1;
   min-height: 200px;
 }
+
+/* transition.component.ts: lynxEnter / lynxLeave and a CSS transition. */
+.transition-panel {
+  background-color: #2d6a4f;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.panel-in {
+  animation: panel-in 400ms ease-out;
+}
+
+/* Still for most of its 3 s, so Maestro, which waits for the screen to settle
+   after a tap, can see the panel still there while it leaves. */
+.panel-out {
+  animation: panel-out 3000ms linear forwards;
+}
+
+@keyframes panel-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0px); }
+}
+
+@keyframes panel-out {
+  0% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0.2; }
+}
+
+.transition-box {
+  width: 60px;
+  height: 30px;
+  margin-bottom: 12px;
+  background-color: #e76f51;
+  opacity: 1;
+  transition: opacity 300ms;
+}
+
+.transition-box.faded {
+  opacity: 0.3;
+}

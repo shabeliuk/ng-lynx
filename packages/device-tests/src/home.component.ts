@@ -59,5 +59,6 @@ export class HomeComponent {
     { label: 'Open network', path: '/network' },
     { label: 'Open memory', path: '/memory' },
     { label: 'Open bundle', path: '/bundle' },
+    { label: 'Open transition', path: '/transition' },
   ];
 }

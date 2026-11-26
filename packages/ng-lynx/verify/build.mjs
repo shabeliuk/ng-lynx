@@ -113,6 +113,9 @@ await esbuild.build({
     // `mainThreadModules` does. `WORKLET_RUNTIME=false` runs a harness as a
     // build without it (`<lynx-slider>`'s Background path).
     __WORKLET_RUNTIME__: process.env.WORKLET_RUNTIME === 'false' ? 'false' : 'true',
+    // `templateSourceMap` (off, as in a production build); `TEMPLATE_SOURCE_MAP=true`
+    // runs a harness as a development build.
+    __NG_LYNX_TEMPLATE_SOURCE_MAP__: process.env.TEMPLATE_SOURCE_MAP === 'true' ? 'true' : 'false',
   },
   // GenUI stays unbundled: typedoc (used by the catalog extractor) breaks
   // under bundling, and @preact/signals must stay a single runtime instance —

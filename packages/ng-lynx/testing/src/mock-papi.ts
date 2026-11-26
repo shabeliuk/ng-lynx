@@ -23,6 +23,8 @@ export interface MockEl {
   attrs: Record<string, unknown>;
   /** What `__AddDataset` stored: `event.target.dataset` on a real engine. */
   dataset?: Record<string, unknown>;
+  /** The `nodeIndex` the element was created with (`templateSourceMap`), for Lynx DevTool. */
+  nodeIndex?: number;
   // sign is a string for BG handlers, a function for main-thread worklet handlers.
   events: Record<string, { type: string; sign: string | ((e: unknown) => unknown) }>;
   children: MockEl[];
@@ -43,8 +45,9 @@ let uidCounter = 1;
 /** Every element by uid: a list's `componentAtIndex` answers with a uid. */
 const elementsByUid = new Map<number, MockEl>();
 
-function mk(type: string): MockEl {
+function mk(type: string, info?: { nodeIndex?: unknown }): MockEl {
   const el: MockEl = { uid: uidCounter++, type, attrs: {}, events: {}, children: [] };
+  if (typeof info?.nodeIndex === 'number') el.nodeIndex = info.nodeIndex;
   elementsByUid.set(el.uid, el);
   return el;
 }
@@ -626,10 +629,11 @@ export function installMockPapi(): void {
     g.__MOCK_PAGE__ = el;
     return el;
   };
-  g.__CreateView = () => mk('view');
-  g.__CreateText = () => mk('text');
-  g.__CreateImage = () => mk('image');
-  g.__CreateScrollView = () => mk('scroll-view');
+  // The info argument's `nodeIndex` is kept, as the engine does (`Element::SetNodeIndex`).
+  g.__CreateView = (_parent: number, info?: { nodeIndex?: unknown }) => mk('view', info);
+  g.__CreateText = (_parent: number, info?: { nodeIndex?: unknown }) => mk('text', info);
+  g.__CreateImage = (_parent: number, info?: { nodeIndex?: unknown }) => mk('image', info);
+  g.__CreateScrollView = (_parent: number, info?: { nodeIndex?: unknown }) => mk('scroll-view', info);
   // The real native engine throws `LynxCreateUIException: ... ui not found
   // when create UI` for a tag outside Lynx's fixed built-in vocabulary, with
   // no generic fallback (confirmed on-device). `createTypedElement`
@@ -645,7 +649,7 @@ export function installMockPapi(): void {
     'webview', 'video', 'markdown', 'filter-image', 'inline-text', 'inline-image',
     'inline-truncation', 'list-row',
   ]);
-  g.__CreateElement = (type: string) => {
+  g.__CreateElement = (type: string, _parent?: number, info?: { nodeIndex?: unknown }) => {
     if (!KNOWN_LYNX_TAGS.has(type)) {
       throw new Error(
         `__CreateElement('${type}'): not a real Lynx tag — the native engine has no generic `
@@ -653,7 +657,7 @@ export function installMockPapi(): void {
           + '__CreateView instead.',
       );
     }
-    return mk(type);
+    return mk(type, info);
   };
   g.__CreateRawText = (text: string) => {
     const el = mk('#raw-text');

@@ -283,9 +283,9 @@ have nothing to act on in an Angular app:
   on the Background Thread only. The Main Thread bundle is ng-lynx's executor plus
   your worklet modules, so there are no duplicated app strings to merge.
 - **`enableUiSourceMap`.** It's produced by ReactLynx's Main Thread JSX transform,
-  which maps each element to the JSX that created it, for Lynx DevTool. Angular
-  templates compile on the Background Thread and ng-lynx has no such transform.
-  Mapping elements back to their template would be a separate feature.
+  which maps each element to the JSX that created it, for Lynx DevTool. ng-lynx has
+  its own option for the same result, `templateSourceMap`, on by default in a
+  development build: see [26 — Debugging](26-debugging.md#from-an-element-to-its-template).
 
 Passing one of these to `pluginAngularLynx` is a type error.
 

@@ -70,10 +70,36 @@
   margin-top: 24px;
 }
 
+.list-hint {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 4px;
+}
+
 .item {
   font-size: 16px;
   color: #e0e0e0;
   margin-top: 6px;
+}
+
+/* lynxEnter / lynxLeave (docs/33-animations.md): the classes are on while the
+   item animates, and a removed item stays until its animation ends. */
+.item-in {
+  animation: item-in 300ms ease-out;
+}
+
+.item-out {
+  animation: item-out 250ms ease-in forwards;
+}
+
+@keyframes item-in {
+  from { opacity: 0; transform: translateX(-16px); }
+  to { opacity: 1; transform: translateX(0px); }
+}
+
+@keyframes item-out {
+  from { opacity: 1; transform: translateX(0px); }
+  to { opacity: 0; transform: translateX(16px); }
 }
 
 .add {

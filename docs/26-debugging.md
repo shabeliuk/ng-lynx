@@ -33,6 +33,68 @@ JavaScriptCore (the settings page shows "Current BTS engine"). That matters on
 a real iPhone, where JavaScriptCore has no WebAssembly: check anything
 engine-sensitive with DevTool off as well.
 
+## From an element to its template
+
+In a development build each element knows where it came from. Select one in
+DevTool's Elements panel and its `data-ng-source-location` attribute names the
+template and the place in it:
+
+```
+<view class="counter" data-ng-source-location="src/app.component.ts@o:1246,l:34,c:6">
+```
+
+That reads: `src/app.component.ts`, character offset 1246, line 34 and column 6,
+both counted from 0 (line 35, column 7 in an editor). An inline template's
+location is in the component's `.ts` file; a `templateUrl`'s is in its `.html`.
+The web preview's browser DevTools show the same attribute.
+
+The same information goes where DevTool's own source mapping reads it:
+
+- Each element is created with a `nodeIndex`, as ReactLynx's elements are, which
+  the engine keeps for DevTool (`DOM.getOriginalNodeSourceInfo`).
+- The build writes each index's file, line and column to the `uiSourceMap` of
+  `dist/.rspeedy/<entry>/debug-metadata.json`, the format ReactLynx's
+  `enableUiSourceMap` produces. `npx @lynx-js/debug-metadata remap --ui tree.json`
+  annotates a UI tree the engine dumped with those locations.
+
+It's the `templateSourceMap` option of `pluginAngularLynx`, on by default in a
+development build (`rspeedy dev`, or `--mode development`) and off in a
+production one, where it would cost an attribute per element:
+
+```ts
+pluginAngularLynx({ templateSourceMap: false }) // off in development too
+```
+
+How it works: Angular's compiler can already record where each element is in
+its template, for the Angular CLI's dev server. ng-lynx switches that on in the
+compiler ngtsc runs, so each compiled template ends with one call,
+`ɵɵattachSourceLocations(templatePath, [[slot, offset, line, column], …])`,
+which sets the attribute. The engine only takes a `nodeIndex` when an element is
+created, and Angular sets the location just after, in the same pass, so the
+renderer fills it into the element's create op while the op is still waiting to
+be sent (`CREATE_MAPPED`, see [04 — Wire protocol](04-wire-protocol.md)). The
+index is a hash of the attribute's value, which the build computes from the same
+call in ngtsc's output.
+
+A [first-screen snapshot](20-first-screen.md) is captured without mapping, and
+it's compared byte-for-byte with the first batch. So in a development build the
+first batch also travels without its mapping, and that is what is compared; on a
+match the snapshot's elements stay, and get their `data-ng-source-location`
+attributes. They have no `nodeIndex`, since the snapshot created them. Checked in
+`hello-world`'s web preview: "snapshot matched", and all 13 elements have their
+locations.
+
+What was checked: on Explorer 4.2 on the iOS simulator, with the page flag that
+puts `nodeIndex` on event targets (`enableEventTargetInfoNodeIndex`), a tap on
+`hello-world`'s counter came back with the index `debug-metadata.json` maps to
+its line, and its `<text>` with the next line's. Whether the DevTool desktop app
+jumps from an element to that line by itself wasn't checked: that depends on its
+version, and the attribute is there either way.
+
+Not covered: `aot: false` (JIT compiles templates on the device, without
+locations), and elements that no template creates, such as a component's host
+element made by `ViewContainerRef.createComponent`.
+
 ## Op-stream logger
 
 Every render the renderer ships a batch of **ops** to the Main Thread

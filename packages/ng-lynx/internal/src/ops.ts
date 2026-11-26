@@ -27,6 +27,7 @@
  *   DESTROY:       [12, id]                        // node destroyed — free it from the MT registry
  *   SET_REF:       [13, id, refId]                 // bind element to a main-thread ref; -id unbinds it (worklet element access)
  *   SET_GESTURE_DETECTOR: [14, id, gestureId, gestureType, config, relationMap] // main-thread gesture (see gesture.ts)
+ *   CREATE_MAPPED: [15, id, type, nodeIndex]       // CREATE, plus the template source index (templateSourceMap builds only)
  *
  * This is the Angular analog of vue-lynx's op protocol.
  *
@@ -52,6 +53,7 @@ export const OP = {
   DESTROY: 12,
   SET_REF: 13,
   SET_GESTURE_DETECTOR: 14,
+  CREATE_MAPPED: 15,
 } as const;
 
 export type OpCode = (typeof OP)[keyof typeof OP];
@@ -73,6 +75,7 @@ export const OP_ARITY: Record<number, number> = {
   [OP.DESTROY]: 1,
   [OP.SET_REF]: 2,
   [OP.SET_GESTURE_DETECTOR]: 5,
+  [OP.CREATE_MAPPED]: 3,
 };
 
 export interface OpRecord {
@@ -136,6 +139,7 @@ export function coalesceOps(flat: unknown[]): unknown[] {
  */
 const INTERNABLE_ARGS: Partial<Record<number, readonly number[]>> = {
   [OP.CREATE]: [1], // type
+  [OP.CREATE_MAPPED]: [1], // type (not nodeIndex — a number)
   [OP.SET_ATTR]: [1], // key (not value — see above)
   [OP.REMOVE_ATTR]: [1], // key
   [OP.SET_TEXT]: [1], // text
@@ -592,4 +596,57 @@ export interface SliderParams {
   onValue: BackgroundFunctionHandle<[number], void>;
   /** The drag is over: the final value, and the control was touched. */
   onCommit: BackgroundFunctionHandle<[number], void>;
+}
+
+// ---------------------------------------------------------------------------
+// Template source mapping (docs/26-debugging.md#from-an-element-to-its-template).
+// ---------------------------------------------------------------------------
+
+/**
+ * The attribute Angular's `ɵɵattachSourceLocations` instruction sets on each
+ * element of a template compiled with source locations on:
+ * `<template path>@o:<offset>,l:<line>,c:<column>`, with a 0-based line and column.
+ */
+export const SOURCE_LOCATION_ATTR = 'data-ng-source-location';
+
+/**
+ * The `nodeIndex` the engine stores for an element, from its
+ * {@link SOURCE_LOCATION_ATTR} value. The runtime computes it from the
+ * attribute and the build plugin from the compiled template, so both must call
+ * this. FNV-1a, kept within 1..2^31-1: positive, and never 0, which the
+ * Main Thread reads as "no index".
+ */
+export function sourceLocationNodeIndex(location: string): number {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < location.length; i++) {
+    hash ^= location.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 1) || 1;
+}
+
+/**
+ * A batch without its template source mapping: `CREATE_MAPPED` back to `CREATE`,
+ * and the {@link SOURCE_LOCATION_ATTR} ops taken out into `locations`. A
+ * first-screen snapshot is captured without mapping, so a development build's
+ * first batch is compared with it in this form (docs/20-first-screen.md). On a
+ * match the snapshot's elements stay, and only `locations` still has to be applied.
+ */
+export function splitSourceMap(flat: unknown[]): { plain: unknown[]; locations: unknown[] } {
+  const plain: unknown[] = [];
+  const locations: unknown[] = [];
+  let i = 0;
+  while (i < flat.length) {
+    const code = flat[i] as number;
+    const end = i + 1 + (OP_ARITY[code] ?? 0);
+    if (code === OP.CREATE_MAPPED) {
+      plain.push(OP.CREATE, flat[i + 1], flat[i + 2]);
+    } else if (code === OP.SET_ATTR && flat[i + 2] === SOURCE_LOCATION_ATTR) {
+      for (let j = i; j < end; j++) locations.push(flat[j]);
+    } else {
+      for (let j = i; j < end; j++) plain.push(flat[j]);
+    }
+    i = end;
+  }
+  return { plain, locations };
 }

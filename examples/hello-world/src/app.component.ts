@@ -4,6 +4,7 @@ import {
   computed,
   signal,
 } from '@angular/core';
+import { LynxEnter, LynxLeave } from 'ng-lynx';
 import { LYNX_ELEMENTS } from 'ng-lynx/elements';
 
 /**
@@ -19,12 +20,15 @@ import { LYNX_ELEMENTS } from 'ng-lynx/elements';
  *    registers a dependency, and writing it schedules a change-detection pass
  *    that flushes ops to the Main Thread.
  *  - There is no Zone.js.
+ *  - List items animate in and out with `lynxEnter` / `lynxLeave` and CSS
+ *    keyframes (app.css): Angular's own `animate.enter` / `animate.leave` need a
+ *    DOM, which Lynx doesn't have. Tap an item to remove it.
  */
 @Component({
   selector: 'app-root',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LYNX_ELEMENTS],
+  imports: [LYNX_ELEMENTS, LynxEnter, LynxLeave],
   template: `
     <view class="app">
       <view class="banner">
@@ -42,8 +46,9 @@ import { LYNX_ELEMENTS } from 'ng-lynx/elements';
       </text>
 
       <view class="list">
+        <text class="list-hint">Tap an item to remove it</text>
         @for (item of items(); track item) {
-          <text class="item">• {{ item }}</text>
+          <text class="item" lynxEnter="item-in" lynxLeave="item-out" (tap)="removeItem(item)">• {{ item }}</text>
         } @empty {
           <text class="item">No items yet</text>
         }
@@ -59,12 +64,18 @@ export class AppComponent {
   readonly count = signal(0);
   readonly isEven = computed(() => this.count() % 2 === 0);
   readonly items = signal<string[]>(['Lynx', 'Angular']);
+  /** Numbers new items, so a name never comes back after a removal (`track item`). */
+  private added = 0;
 
   increment(): void {
     this.count.update((n) => n + 1);
   }
 
   addItem(): void {
-    this.items.update((list) => [...list, `Item ${list.length + 1}`]);
+    this.items.update((list) => [...list, `Item ${++this.added}`]);
+  }
+
+  removeItem(item: string): void {
+    this.items.update((list) => list.filter((it) => it !== item));
   }
 }

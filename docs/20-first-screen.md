@@ -92,6 +92,10 @@ expecting/teardown bookkeeping is page-lifetime (reset by `renderPage`).
   screen to be data-independent (skeletons count) for the full benefit.
 - **Taps before the Background Thread is ready are queued, not dropped** —
   see [Pre-boot event queueing](#pre-boot-event-queueing) below.
+- A **development build** maps elements to their templates (`templateSourceMap`,
+  see [26 — Debugging](26-debugging.md#from-an-element-to-its-template)), which
+  the snapshot doesn't have. Its first batch is compared without that mapping, so
+  it still matches.
 - A **stale snapshot** (component changed, capture not re-run) is safe — it
   hits the mismatch path. Wire `npm run capture` into your build to avoid
   paying the fallback.

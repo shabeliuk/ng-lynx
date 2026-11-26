@@ -22,18 +22,29 @@ import {
   type RendererType2,
 } from '@angular/core';
 
-import { APPEND_ANCHOR, OP } from 'ng-lynx/internal/ops';
+import { APPEND_ANCHOR, OP, SOURCE_LOCATION_ATTR, sourceLocationNodeIndex } from 'ng-lynx/internal/ops';
 
-import { addElementListener, type LynxEventRegType } from './element-events.js';
+import { addElementListener, dropElementListeners, type LynxEventRegType } from './element-events.js';
 import { flushOps, scheduleFlush, whenFlushed } from './flush.js';
 import { writeInputValue } from './input-value.js';
-import { pushOp } from './ops.js';
+import { pushMappedCreate, pushOp, setPendingNodeIndex } from './ops.js';
 import {
   clearPendingStyleClass,
   markClassDirty,
   markStyleDirty,
 } from './pending-style.js';
-import { getPageRoot, isGlobalTarget, ShadowElement } from './shadow-element.js';
+import { getPageRoot, isGlobalTarget, ShadowElement, sourceLocated } from './shadow-element.js';
+import { isLeaving, startLeave } from './transition.js';
+
+/**
+ * `templateSourceMap` (plugin/src/index.ts), replaced at build time: whether the
+ * templates were compiled with their source locations, so each element is
+ * created with the `nodeIndex` Lynx DevTool maps back to its template. Read
+ * through `typeof` so a bundle built without the define (a test runner) works.
+ */
+declare const __NG_LYNX_TEMPLATE_SOURCE_MAP__: boolean;
+const TEMPLATE_SOURCE_MAP =
+  typeof __NG_LYNX_TEMPLATE_SOURCE_MAP__ !== 'undefined' && __NG_LYNX_TEMPLATE_SOURCE_MAP__;
 
 // ---------------------------------------------------------------------------
 // Event prop classification
@@ -110,6 +121,24 @@ function isSentTo(parent: ShadowElement, node: ShadowElement): boolean {
   return parent.type !== 'list' || node.kind === 'element';
 }
 
+/** Free `node` and everything under it on the Main Thread. */
+function destroySubtree(node: ShadowElement): void {
+  const stack: ShadowElement[] = [node];
+  while (stack.length > 0) {
+    const n = stack.pop() as ShadowElement;
+    // Drop any pending style/class serialization for this node so the flush
+    // doesn't emit a set op targeting a Main-Thread element we're freeing.
+    clearPendingStyleClass(n);
+    // Comment anchors never reached the Main Thread (see createComment).
+    if (n.kind !== 'comment') {
+      pushOp(OP.DESTROY, n.id);
+      dropElementListeners(n.id);
+    }
+    for (let c = n.firstChild; c; c = c.next) stack.push(c);
+  }
+  scheduleFlush();
+}
+
 // ---------------------------------------------------------------------------
 // Renderer
 // ---------------------------------------------------------------------------
@@ -148,22 +177,15 @@ class LynxRenderer2 extends Renderer2 {
   // node. DESTROY is idempotent on the Main Thread, so re-visiting a node (if
   // Angular also descends) is harmless.
   override destroyNode = (node: ShadowElement): void => {
-    const stack: ShadowElement[] = [node];
-    while (stack.length > 0) {
-      const n = stack.pop() as ShadowElement;
-      // Drop any pending style/class serialization for this node so the flush
-      // doesn't emit a set op targeting a Main-Thread element we're freeing.
-      clearPendingStyleClass(n);
-      // Comment anchors never reached the Main Thread (see createComment).
-      if (n.kind !== 'comment') pushOp(OP.DESTROY, n.id);
-      for (let c = n.firstChild; c; c = c.next) stack.push(c);
-    }
-    scheduleFlush();
+    // Still on screen for its leave animation: destroyed when that ends.
+    if (isLeaving(node)) return;
+    destroySubtree(node);
   };
 
   override createElement(name: string, _namespace?: string | null): ShadowElement {
     const el = new ShadowElement(name, 'element');
-    pushOp(OP.CREATE, el.id, name);
+    if (TEMPLATE_SOURCE_MAP) pushMappedCreate(el, el.id, name);
+    else pushOp(OP.CREATE, el.id, name);
     scheduleFlush();
     return el;
   }
@@ -241,6 +263,8 @@ class LynxRenderer2 extends Renderer2 {
     realParent.removeChild(oldChild);
     // Nodes that were never sent to the Main Thread get no REMOVE either.
     if (!isSentTo(realParent, oldChild)) return;
+    // `lynxLeave`: removed once its animation is over. A list removes its own items.
+    if (realParent.type !== 'list' && startLeave(oldChild, parentId, destroySubtree)) return;
     pushOp(OP.REMOVE, parentId, oldChild.id);
     scheduleFlush();
   }
@@ -284,6 +308,13 @@ class LynxRenderer2 extends Renderer2 {
       markStyleDirty(el);
     } else {
       if (name === 'id') el.domId = value;
+      else if (name === SOURCE_LOCATION_ATTR) {
+        // Angular sets this right after creating the element's template, so its
+        // CREATE_MAPPED op is still in the batch: the engine gets the index at
+        // creation, the only time it takes one.
+        sourceLocated.add(el);
+        if (TEMPLATE_SOURCE_MAP) setPendingNodeIndex(el, sourceLocationNodeIndex(value));
+      }
       pushOp(OP.SET_ATTR, el.id, name, value);
     }
     scheduleFlush();

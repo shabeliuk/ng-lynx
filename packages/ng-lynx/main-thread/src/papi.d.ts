@@ -15,11 +15,13 @@ declare const console: { log(...args: unknown[]): void; warn(...args: unknown[])
 type LynxElement = unknown;
 
 declare function __CreatePage(componentId: string, cssId: number): LynxElement;
-declare function __CreateView(parentComponentUniqueId: number): LynxElement;
-declare function __CreateText(parentComponentUniqueId: number): LynxElement;
-declare function __CreateImage(parentComponentUniqueId: number): LynxElement;
-declare function __CreateScrollView(parentComponentUniqueId: number): LynxElement;
-declare function __CreateElement(type: string, parentComponentUniqueId: number): LynxElement;
+/** `info.nodeIndex`: the element's source index, which Lynx DevTool maps to its template. */
+type LynxCreateInfo = { nodeIndex: number } | undefined;
+declare function __CreateView(parentComponentUniqueId: number, info?: LynxCreateInfo): LynxElement;
+declare function __CreateText(parentComponentUniqueId: number, info?: LynxCreateInfo): LynxElement;
+declare function __CreateImage(parentComponentUniqueId: number, info?: LynxCreateInfo): LynxElement;
+declare function __CreateScrollView(parentComponentUniqueId: number, info?: LynxCreateInfo): LynxElement;
+declare function __CreateElement(type: string, parentComponentUniqueId: number, info?: LynxCreateInfo): LynxElement;
 declare function __CreateRawText(text: string): LynxElement;
 
 /** Native virtualized list. The runtime drives item creation via the callbacks. */

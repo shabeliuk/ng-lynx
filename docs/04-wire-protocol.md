@@ -35,6 +35,7 @@ Each op is `code` followed by a fixed number of arguments.
 | 12 | `DESTROY` | `id` | frees the element from the MT `elements` registry on node destruction (see [renderer internals](03-renderer-internals.md)). The free is applied **after the whole batch**: Angular's hot-swap path ([31 — Hot-swap](31-hot-swap.md)) destroys a view before detaching it, so a same-batch `REMOVE` may follow the `DESTROY` and still needs the id. Safe because ids are never reused within a session. |
 | 13 | `SET_REF` | `id, refId` (`-id` unbinds that element) | binds the element to a main-thread ref so worklets can reach it (see [11 — Worklets](11-worklets.md)). |
 | 14 | `SET_GESTURE_DETECTOR` | `id, gestureId, gestureType, config, relationMap` | `__SetGestureDetector` (see [32 — Gestures](32-gestures.md)). |
+| 15 | `CREATE_MAPPED` | `id, type, nodeIndex` | `CREATE`, with `{ nodeIndex }` passed to the create call when it isn't 0. Sent instead of `CREATE` in a `templateSourceMap` build (see [26 — Debugging](26-debugging.md#from-an-element-to-its-template)). |
 
 Constants: `APPEND_ANCHOR = -1`, `PAGE_ROOT_ID = 1`, `PATCH_METHOD =
 'ngPatchUpdate'`.
