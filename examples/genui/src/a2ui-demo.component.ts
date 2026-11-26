@@ -1,15 +1,21 @@
 /**
- * A2UI demo: a scripted in-process "agent" pushes protocol messages into a
+ * A2UI demo: a scripted in-process "agent" pushes A2UI v1.0 messages into a
  * `MessageStore`, `<a2ui-surface>` renders them from the Angular basic
  * catalog, and user actions loop back to the agent — the full client loop
  * from the a2ui docs ("push messages in, render, send actions out"), no
  * network required.
+ *
+ * Every message carries `version: '1.0'`; `createSurface` names the catalog
+ * (`A2UI_DEFAULT_CATALOG_ID`, which `<a2ui-surface>` registers its catalog
+ * under) and carries the first components and data model inline. Bindings
+ * are `{ '@path': ... }`, function calls `{ '@call': ..., args }`.
  */
 import { ChangeDetectionStrategy, Component, NO_ERRORS_SCHEMA, signal } from '@angular/core';
 
 import { basicFunctions } from '@lynx-js/genui/a2ui/functions';
 import {
   A2UI_BASIC_CATALOG,
+  A2UI_DEFAULT_CATALOG_ID,
   A2uiSurface,
   createMessageStore,
   defineA2uiCatalog,
@@ -18,38 +24,38 @@ import {
 } from 'ng-lynx/genui';
 
 const INITIAL_MESSAGES = [
-  { createSurface: { surfaceId: 'shop' } },
   {
-    updateComponents: {
+    version: '1.0',
+    createSurface: {
       surfaceId: 'shop',
+      catalogId: A2UI_DEFAULT_CATALOG_ID,
       components: [
         { id: 'root', component: 'Column', children: ['title', 'card', 'qty-row', 'buy', 'status'] },
         { id: 'title', component: 'Text', text: 'Lynx Gear Shop', variant: 'headline' },
         { id: 'card', component: 'Card', child: 'card-body' },
         { id: 'card-body', component: 'Column', children: ['name', 'price', 'badges'] },
-        { id: 'name', component: 'Text', text: { path: '/product/name' } },
-        { id: 'price', component: 'Text', text: { path: '/product/price' } },
+        { id: 'name', component: 'Text', text: { '@path': '/product/name' } },
+        {
+          id: 'price',
+          component: 'Text',
+          text: { '@call': 'formatString', args: { value: 'Price: ${/product/price}' } },
+        },
         { id: 'badges', component: 'Row', children: { path: '/product/badges', componentId: 'badge-tpl' } },
-        { id: 'badge-tpl', component: 'Text', text: { path: 'label' } },
+        { id: 'badge-tpl', component: 'Text', text: { '@path': 'label' } },
         { id: 'qty-row', component: 'Row', children: ['qty-label', 'qty'] },
         { id: 'qty-label', component: 'Text', text: 'Qty' },
-        { id: 'qty', component: 'Slider', value: { path: '/order/qty' }, minValue: 1, maxValue: 5 },
+        { id: 'qty', component: 'Slider', value: { '@path': '/order/qty' }, minValue: 1, maxValue: 5 },
         { id: 'buy-label', component: 'Text', text: 'Add to cart' },
         {
           id: 'buy',
           component: 'Button',
           child: 'buy-label',
-          action: { event: { name: 'add-to-cart', context: { qty: { path: '/order/qty' } } } },
+          action: { event: { name: 'add-to-cart', context: { qty: { '@path': '/order/qty' } } } },
+          '@accessibility': { label: 'Add to cart' },
         },
-        { id: 'status', component: 'Text', text: { path: '/order/status' } },
+        { id: 'status', component: 'Text', text: { '@path': '/order/status' } },
       ],
-    },
-  },
-  {
-    updateDataModel: {
-      surfaceId: 'shop',
-      path: '/',
-      value: {
+      dataModel: {
         product: {
           name: 'Lynx Hoodie',
           price: '$49',
@@ -89,6 +95,7 @@ export class A2uiDemoComponent {
       const qty = Number(action.context['qty'] ?? 1);
       this.store.push([
         {
+          version: '1.0',
           updateDataModel: {
             surfaceId: 'shop',
             path: '/order/status',

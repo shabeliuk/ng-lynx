@@ -9,7 +9,7 @@ sub-entry:
 | --- | --- | --- |
 | `a2ui-prompt` | Node: build A2UI system prompts from catalogs | **As-is** — framework-agnostic |
 | `a2ui-catalog-extractor` | Node + TypeDoc: `@a2uiCatalog` interfaces → catalog JSON | **As-is** — framework-agnostic |
-| `a2ui` | A2UI v0.9 client runtime (protocol store + ReactLynx renderer) | Store reused as-is; **renderer ported to Angular** |
+| `a2ui` | A2UI v1.0 client runtime (protocol store + ReactLynx renderer) | Store reused as-is; **renderer ported to Angular** |
 | `openui` | OpenUI-language runtime (lang-core parser + ReactLynx renderer) | Parser reused as-is (via `@openuidev/lang-core`); **renderer ported to Angular** |
 
 Verified by six harnesses (`npm run verify:genui-tools`,
@@ -20,27 +20,33 @@ driven by a **real LLM** (Gemini through a dev-server proxy), with the A2UI and
 OpenUI protocol demos as extra tabs. Everything also runs offline on canned
 agents, with no keys needed; see its [README](../examples/genui/README.md).
 
-Dependencies: `@lynx-js/genui` (0.7+), `@openuidev/lang-core` (0.3+), and `zod` are
-**optional peers** of ng-lynx — only apps importing `ng-lynx/genui`
-need them installed. What moved in GenUI 0.7 is in
-[40 — The Lynx 4.2 upgrade](40-lynx-4-2.md#genui-07).
+Dependencies: `@lynx-js/genui` (0.8.1 up to, not including, 0.9), `@openuidev/lang-core`
+(0.3+), and `zod` are **optional peers** of ng-lynx — only apps importing
+`ng-lynx/genui` need them installed. What moved in GenUI 0.7 is in
+[40 — The Lynx 4.2 upgrade](40-lynx-4-2.md#genui-07); the move to A2UI v1.0 is
+[below](#migrating-from-a2ui-v09).
 
 ## A2UI — agent-driven JSON → trusted Angular components
 
+ng-lynx speaks **A2UI v1.0**, the version the
+[A2UI spec](https://a2ui.org/specification/v1.0-a2ui/) marks current, and the only one
+`@lynx-js/genui` 0.8 accepts.
+
 The upstream package splits cleanly: `@lynx-js/genui/a2ui/store` is "pure
 data logic, no React" (`MessageStore`, `MessageProcessor`, `SignalStore`,
-`Resource`, the payload normalizers, `FunctionRegistry`), and
+`Resource`, the payload normalizers, function execution), and
 `@lynx-js/genui/a2ui/functions` (the basic-catalog client functions) is also
 React-free. ng-lynx consumes both directly. Only the render layer —
-`<A2UI>`, `NodeRenderer`, and the four hooks — is React, and that's what
+`<A2UI>`, `NodeRenderer`, and its hooks — is React, and that's what
 `ng-lynx/genui` re-creates:
 
 | Upstream (ReactLynx) | ng-lynx |
 | --- | --- |
-| `<A2UI messageStore catalogs onAction>` | `<a2ui-surface [messageStore] [catalog] (action)>` |
+| `<A2UI messageStore catalogs catalogId onAction onMessage>` | `<a2ui-surface [messageStore] [catalog] [catalogId] (action) [messageHandler]>` |
 | `NodeRenderer` | `A2uiNode` (`<ng-container [a2uiNode]="..." [a2uiNodeSurface]="...">`) |
-| `defineCatalog` / `defineFunction` | `defineA2uiCatalog` (accepts upstream function entries unchanged, e.g. `basicFunctions`) |
-| `GenericComponentProps` prop spread + `useAction`/`useDataBinding`/`useResolvedProps` | `A2UI_NODE_CONTEXT` injection token: `props()` signal, `setValue()`, `sendAction()` |
+| `defineCatalog` / `defineFunction` / `serializeCatalog` | `defineA2uiCatalog` (accepts upstream function entries unchanged, e.g. `basicFunctions`) / `serializeA2uiCatalog` |
+| `GenericComponentProps` prop spread + `useAction` / `useResolvedProps` / `useChecks` | `A2UI_NODE_CONTEXT` injection token: `props()`, `checks()`, `setValue()`, `sendAction()` |
+| `accessibilityProps(props)` spread on each root | the `a2uiA11y` directive on each root |
 | 20 built-in catalog components | **20/20 Angular ports** (the full catalog): Text, Button, Row, Column, Card, Divider, Image, List, Loading, TextField, CheckBox, Slider, Icon, RadioGroup, ChoicePicker, Modal, Tabs, DateTimeInput, LineChart, PieChart |
 
 ```ts
@@ -54,12 +60,69 @@ const catalog = defineA2uiCatalog([...A2UI_BASIC_CATALOG, ...basicFunctions]);
 ```
 
 ```html
-<a2ui-surface [messageStore]="store" [catalog]="catalog" (action)="sendToAgent($event)" />
+<a2ui-surface
+  [messageStore]="store"
+  [catalog]="catalog"
+  [messageHandler]="sendToAgent"
+  (action)="onAction($event)"
+/>
 ```
 
 The client loop is upstream's exactly: your transport pushes protocol
-messages into the store, the surface renders them, user actions come out of
-`(action)`, and agent responses go back into the same store.
+messages into the store, the surface renders them, and agent responses go
+back into the same store. A v1.0 stream looks like this:
+
+```ts
+store.push([
+  {
+    version: '1.0',
+    createSurface: {
+      surfaceId: 'shop',
+      catalogId: A2UI_DEFAULT_CATALOG_ID, // the id <a2ui-surface> registers its catalog under
+      components: [
+        { id: 'root', component: 'Column', children: ['name', 'buy'] },
+        { id: 'name', component: 'Text', text: { '@path': '/product/name' } },
+        { id: 'buy-label', component: 'Text', text: 'Buy' },
+        {
+          id: 'buy', component: 'Button', child: 'buy-label',
+          action: { event: { name: 'buy', context: { sku: { '@path': '/product/sku' } } } },
+        },
+      ],
+      dataModel: { product: { name: 'Lynx Hoodie', sku: 'LX-1' } },
+    },
+  },
+]);
+```
+
+Every message carries `version: '1.0'`; anything else is rejected with an
+`UNSUPPORTED_VERSION` error. Bindings are `{ '@path': '/a/b' }` (relative paths
+resolve against a template item), function calls `{ '@call': 'name', args }`.
+`@@key` writes a literal key that starts with `@`. Component envelope fields
+are `@catalogId`, `@checks`, `@metadata` and `@accessibility`; `children: {
+path, componentId }` templates keep a bare `path`. In `updateDataModel`, a
+`null` value deletes.
+
+**What the renderer sends.** `messageHandler` receives every message the
+renderer sends the agent, as `{ message, metadata }`: `action` (user events),
+`error` (validation and expression failures), `callAgentFunction` (a function
+the catalog declares without an implementation) and `rendererFunctionResponse`
+(answers to the agent's `callRendererFunction`). `metadata` carries the data
+model of surfaces created with `sendDataModel: true`. Return a promise to
+settle the send; a rejection fails any pending agent function call. `(action)`
+is a shortcut that emits just the user actions.
+
+**Catalogs are registered by id.** `<a2ui-surface>` registers `catalog` on its
+processor under `catalogId` (default `A2UI_DEFAULT_CATALOG_ID`, upstream's
+published Lynx catalog). A surface renders only from the catalog its
+`createSurface.catalogId` names (or a component's `@catalogId`), and `@call`
+finds functions there too: an unknown id renders "Unsupported component"
+notices, as upstream does. To tell an agent about your catalog, send it
+`serializeA2uiCatalog(catalog, id)` (every component needs a `schema` for
+that; the catalog extractor produces them).
+
+**Swapping stores.** `[messageStore]="null"` renders nothing. Passing a
+different store starts a new session: a new processor, with the new store's
+messages replayed from the start.
 
 ### Custom catalog components
 
@@ -67,53 +130,70 @@ An Angular catalog component injects its runtime contract instead of
 receiving a prop spread:
 
 ```ts
-@Component({ /* … */ })
+@Component({
+  imports: [A2uiAccessibility],
+  template: `<view a2uiA11y (tap)="buy()"><text>{{ title() }}</text></view>`,
+})
 export class ProductCard {
   private readonly ctx = inject(A2UI_NODE_CONTEXT);
   readonly title = computed(() => String(this.ctx.props()['title'] ?? ''));
   buy(): void {
-    this.ctx.sendAction({ event: { name: 'buy', context: { sku: { path: '/sku' } } } });
+    void this.ctx.sendAction({ event: { name: 'buy', context: { sku: { '@path': '/sku' } } } });
   }
 }
-// register: defineA2uiCatalog([{ name: 'ProductCard', component: ProductCard }, …])
+// register: defineA2uiCatalog([{ name: 'ProductCard', component: ProductCard, schema }, …])
 ```
 
-`ctx.props()` is a signal holding the *resolved* protocol props — plain
-data bindings become current data-model values and function calls execute
-through the shared `functionRegistry`, re-resolving when bound signals
-change. `ctx.setValue('value', v)` writes back through a prop's binding
-(how TextField/CheckBox/Slider persist input); `ctx.sendAction(a)` resolves
-the action's dynamic context and dispatches a `UserActionPayload`.
+`ctx.props()` is a signal holding the *resolved* protocol props: `@path`
+bindings become current data-model values and `@call`s run through the
+catalog's functions. With a `schema` for the component, values are coerced to
+their declared `DynamicString` / `DynamicNumber` / `DynamicBoolean` types, as
+upstream does (the basic catalog ships without schemas, and its components
+normalize their own inputs). `action`, `@checks` and `@metadata` stay as sent.
 
-### How reactivity is bridged (and one caveat)
+`ctx.checks()` is the outcome of the component's `@checks`: `{ ok, failures,
+firstFailureMessage }`. A rule passes when its condition is `true` or a
+ValidationResult with `valid: true`. `ctx.setValue('value', v)` writes back
+through a prop's `@path` (how TextField/CheckBox/Slider persist input).
+`ctx.sendAction(a)` is upstream's `useAction`: an `event` is sent as a v1.0
+`action` once its `context` and `userMessage` resolve (nested `@call`s are
+awaited); a `functionCall` runs as a user-activated call. It never rejects:
+failures are reported to the agent and logged.
 
-The store's data model is `@preact/signals`-backed. Importing
-`@preact/signals` from ng-lynx would risk a second signals runtime next
-to the store's own (effects in one copy never see writes through the other),
-so the port avoids it entirely: prop resolution **collects the binding paths
-it touches** and subscribes to exactly those signals via the store's own
-`Signal.prototype.subscribe`. Zoneless Angular signals take it from there.
+### How reactivity is bridged
 
-Caveat: paths read *inside* registered catalog-function implementations
-(via `context.resolveSignal`) are invisible to the collector — plain
-bindings and function-call *arguments* re-resolve automatically, but a
-function reading extra signals internally refreshes on the next structural
-update instead. Upstream's effect-based tracking covers that case; this is
-the one behavioral difference.
+The store keeps its data model, and the results of asynchronous function
+calls, in `@preact/signals`. Upstream re-resolves a component's props inside
+an `effect()`, so any signal read along the way re-renders it: a binding, a
+value a function implementation reads, an agent function's answer arriving.
+
+ng-lynx can't import `effect` itself (`@lynx-js/react-signals` isn't its
+dependency, and a second signals runtime would never see the store's writes),
+but every signal carries its runtime: preact's `Signal.prototype.subscribe(fn)`
+is an `effect` that reads `this.value`. `trackA2uiSignals` (reactivity.ts)
+calls it with a `this` whose `value` getter runs the resolution, which makes
+the resolution the body of a real effect on the store's own runtime. Props and
+`@checks` re-resolve exactly when upstream's would; the effect writes Angular
+signals, and zoneless change detection takes it from there.
+
+Until ng-lynx 1.1 the port collected the binding paths it read instead, so a
+value read inside a function implementation only refreshed on the next
+structural update. That gap is gone.
 
 ### What's ported vs not (a2ui)
 
-Ported and harness-verified: surface lifecycle (`beginRendering` /
-`surfaceUpdate` / `deleteSurface`), data binding + write-back, templated
-children (`{ path, componentId }` expansion with scoped relative bindings),
-action dispatch with context resolution, `checks` evaluation
-(conditions arrive pre-resolved through the props pipeline), fail-soft
-unknown components with the once-per-tag warning, `basicFunctions` reuse,
-and — as of the full-catalog pass — all 20 built-in components, including
-the `LineChart`/`PieChart` SVG builders (ported near-verbatim as pure
-functions, rendered via Lynx's native `<svg>` element's `content` attribute)
-and `DateTimeInput`'s full calendar-grid + time-stepper dialog (same pure
-date/time helpers upstream uses, in `datetime-utils.ts`).
+Ported and harness-verified: surface lifecycle (inline `createSurface`,
+`updateComponents`, `updateDataModel` with deletes, `deleteSurface`), `@path`
+binding and write-back, templated children (`{ path, componentId }` expansion
+with scoped relative bindings), `@call` props and action contexts, agent-routed
+functions (`callAgentFunction` → `agentFunctionResponse`), `@checks` with
+ValidationResult messages, `@accessibility`, the `@@` escape, version
+rejection, catalog lookup by id, store swapping, fail-soft unknown components
+with the once-per-tag warning, `basicFunctions` reuse, and all 20 built-in
+components, including the `LineChart`/`PieChart` SVG builders (ported
+near-verbatim as pure functions, rendered via Lynx's native `<svg>` element's
+`content` attribute) and `DateTimeInput`'s full calendar-grid + time-stepper
+dialog (same pure date/time helpers upstream uses, in `datetime-utils.ts`).
 
 Two deliberate simplifications versus upstream's ReactLynx versions of these
 components (documented at each class in `basic-catalog.ts`): `Modal`'s
@@ -123,11 +203,12 @@ itself carries an action fires it in addition to opening the modal), and
 checkbox-vs-chips chrome (the interaction — filter, single/multi select,
 checks — is complete either way).
 
-Also not ported: the `FormContext` cross-input registry, upstream's CSS
-theme tokens (style the upstream-compatible class names from your app CSS —
-see `examples/genui/src/app.css`), and `compactA2UIMessagesToSnapshot`
-(importable from `@lynx-js/genui/a2ui/snapshot` directly if needed —
-it's framework-agnostic).
+Also not ported: the `FormContext` cross-input registry (a Button checks its
+own `@checks`, not every input in its form), upstream's CSS theme tokens
+(style the upstream-compatible class names from your app CSS — see
+`examples/genui/src/app.css`), and `compactA2UIMessagesToSnapshot`
+(importable from `@lynx-js/genui/a2ui/snapshot` directly if needed — it's
+framework-agnostic).
 
 **Bug found and fixed along the way:** `A2uiNode` has no `ngOnChanges` — it
 only re-renders in place via a component's per-id `Resource` subscription,
@@ -137,6 +218,34 @@ fresh `A2uiNode` instance per id (mirrors upstream's own `key={childId}` on
 `NodeRenderer` for the same reason). `A2uiTabs` uses this; `A2uiModal` and
 `A2uiCard`/`A2uiButton`'s single fixed child don't need it, since their
 target id never changes while mounted.
+
+### Migrating from A2UI v0.9
+
+ng-lynx 1.1 requires `@lynx-js/genui` 0.8.1 or later (below 0.9), which only
+accepts A2UI v1.0. Agents that emit v0.9 must be regenerated: rebuild their
+prompts with `@lynx-js/genui/a2ui-prompt` 0.8 (it states the v1.0 format), or
+change hand-written streams:
+
+| v0.9 | v1.0 |
+| --- | --- |
+| no `version` | `version: '1.0'` on every message |
+| `createSurface: { surfaceId }` | `createSurface: { surfaceId, catalogId }` (and optionally `components`, `dataModel` inline) |
+| `{ path: '/a' }` | `{ '@path': '/a' }` |
+| `{ call: 'fn', args }` | `{ '@call': 'fn', args }` |
+| `checks`, `catalogId`, `metadata`, `accessibility` on a component | `@checks`, `@catalogId`, `@metadata`, `@accessibility` |
+| `{ userAction: { … } }` from the renderer | `{ version: '1.0', action: { … } }` |
+
+On the Angular side:
+
+- `(action)` still emits the same `UserActionPayload`. Add `[messageHandler]`
+  to receive errors and agent function calls too.
+- Pass `[catalogId]` if your agent names a catalog other than
+  `A2UI_DEFAULT_CATALOG_ID`.
+- Custom components: read `ctx.checks()` instead of resolving `checks`
+  conditions from `ctx.props()`, add `a2uiA11y` to their root, and expect
+  `ctx.sendAction()` to return a promise.
+- `ResolvedProps.touchedPaths` is gone: wrap `resolveComponentProps` in
+  `trackA2uiSignals` for reactivity.
 
 ## OpenUI — streamed UI language → Angular components
 

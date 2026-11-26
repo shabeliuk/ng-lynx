@@ -24,17 +24,14 @@ updates:
       # Major versions are a deliberate change: the supported Angular range, TypeScript, rspeedy.
       - dependency-name: '*'
         update-types: ['version-update:semver-major']
-      # No fix we can reach. zod 3.x is pinned inside @lynx-js/genui's @a2ui/web_core, and
-      # its fix is only in 4.x; minimatch comes from typedoc, also through @lynx-js/genui;
-      # deepmerge, from @rsbuild/plugin-sass, has no fixed release. Drop these once upstream moves.
-      - dependency-name: zod
-      - dependency-name: minimatch
+      # No fix we can reach: deepmerge, from @rsbuild/plugin-sass, has no fixed release.
+      # Drop this once upstream moves. (minimatch is pinned to 11 by an override in
+      # pnpm-workspace.yaml, until typedoc moves off 10.)
       - dependency-name: deepmerge
-      # genui 0.8 moves a2ui to protocol v1.0 (`version: '1.0'`, `@path`/`@call`, `action`),
-      # which ng-lynx/genui doesn't speak yet. 0.7 patches still come through. Drop this
-      # with the v1.0 migration (to-do list, Phase 3, Later).
+      # genui minors are breaking (0.x), and ng-lynx's peer range stops below 0.9: move to a new
+      # minor by hand, re-running the genui harnesses. 0.8 patches still come through.
       - dependency-name: '@lynx-js/genui'
-        versions: ['>=0.8.0']
+        versions: ['>=0.9.0']
 
   # CocoaPods tooling for the genui example's native iOS app.
   - package-ecosystem: bundler

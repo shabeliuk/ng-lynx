@@ -1,8 +1,9 @@
 # create-ng-lynx
 
-Scaffold an [ng-lynx](https://github.com/shabeliuk/ng-lynx) app —
-standalone, zoneless Angular rendered as native UI on the
-[Lynx](https://lynxjs.org/) engine.
+Create a native iOS and Android app with Angular. Scaffolds an
+[ng-lynx](https://github.com/shabeliuk/ng-lynx) app — standalone, zoneless Angular
+rendered as native UI (no WebView) on the [Lynx](https://lynxjs.org/) cross-platform
+engine. The same app runs on the web.
 
 ```bash
 npm create ng-lynx@latest my-app

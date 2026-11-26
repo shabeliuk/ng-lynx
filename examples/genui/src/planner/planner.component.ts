@@ -19,13 +19,14 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  inject,
   NO_ERRORS_SCHEMA,
   type OnDestroy,
   type OnInit,
   signal,
 } from '@angular/core';
 
-import { LynxModel } from 'ng-lynx';
+import { LynxGlobalEvents, LynxModel } from 'ng-lynx';
 import { type ActionEvent, createOpenUiLibrary, createParser, OpenuiRenderer } from 'ng-lynx/genui';
 
 import { type Agent, AgentError, type AgentInfo, connectAgent, ScriptedAgent } from './agent.js';
@@ -84,7 +85,7 @@ function stateFromProfile(profile: PlannerProfile): Record<string, unknown> {
   // to fill and the composer floats mid-screen instead of pinning to the bottom.
   host: { class: 'planner-host' },
   template: `
-    <view class="planner">
+    <view class="planner" [style.padding-bottom]="keyboardInset()">
       <view class="planner-bar">
         <text [class]="'agent-badge agent-' + agentInfo().kind">{{ agentInfo().label }}</text>
         @if (transcript().length > 0) {
@@ -206,6 +207,22 @@ export class PlannerComponent implements OnInit, OnDestroy {
   /** Set when a screen still has problems after its one correction round. */
   readonly renderWarning = signal<string | undefined>(undefined);
   readonly draft = signal('');
+
+  /**
+   * Lynx's `<input>` doesn't move out of the keyboard's way, and the composer sits
+   * at the bottom of the screen, under it. While the keyboard is open, pad the
+   * planner by its height (`keyboardstatuschanged`, sent by the engine): the
+   * conversation shrinks and the composer sits just above the keyboard. The
+   * composer's own 28px bottom padding is for the home indicator, which the
+   * keyboard covers, so most of it comes off.
+   */
+  private readonly keyboard = inject(LynxGlobalEvents).latest<[status: string, height: number, compatHeight: number]>(
+    'keyboardstatuschanged',
+  );
+  readonly keyboardInset = computed(() => {
+    const keyboard = this.keyboard();
+    return keyboard?.[0] === 'on' ? `${Math.max(0, keyboard[1] - 20)}px` : '0px';
+  });
 
   readonly thinking = computed(() => this.waiting() && !this.response());
   readonly canSend = computed(() => !this.waiting() && this.draft().trim().length > 0);

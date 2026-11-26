@@ -1,8 +1,34 @@
 # ng-lynx
 
-An Angular custom renderer for building [Lynx](https://lynxjs.org) apps — run a
-real, zoneless, signals-based Angular application on Lynx's dual-thread native
+**Build native iOS and Android apps with Angular.** ng-lynx is an Angular renderer for
+[Lynx](https://lynxjs.org), the cross-platform engine from ByteDance: your components,
+signals, router and forms render as real native views, not inside a WebView. The same
+app also runs on the web.
+
+It runs a real, zoneless, signals-based Angular application on Lynx's dual-thread
 engine, with no DOM and no Zone.js.
+
+```bash
+npm create ng-lynx@latest my-app
+cd my-app && npm install && npm run dev   # scan the QR code with Lynx Explorer
+```
+
+## Who it's for
+
+- **Angular teams going mobile.** Keep Angular, TypeScript, DI, signals,
+  `@angular/router` and `@angular/forms`, and ship an iOS and Android app instead of
+  rewriting it in another framework.
+- **Web-to-mobile projects that want native UI.** Hybrid apps (a web app in a
+  WebView) are quick to start but feel like a web page. On Lynx, every `<view>`,
+  `<text>` and `<list>` is a native view, and UI work runs on its own thread, so
+  scrolling and gestures don't wait for your app code.
+- **Apps with AI inside.** Let an LLM or agent build parts of your screens at run
+  time, from components you trust (see [below](#ai-inside-your-app-generative-ui)).
+- **One codebase, several targets.** iOS, Android and the web from the same build.
+  (Lynx also targets HarmonyOS; ng-lynx's support there is experimental and not yet
+  run.)
+
+## How it looks
 
 ```ts
 import { bootstrapLynxApplication } from 'ng-lynx';
@@ -40,13 +66,38 @@ export default defineConfig({
   `@defer (on viewport)`, performance timing, native modules, worklet-driven
   animations, accessibility attributes, i18n via `$localize`, and gestures
   (experimental).
-- **GenUI** (`ng-lynx/genui`) — Angular renderers for the a2ui and openui
-  catalogs.
+- **GenUI** (`ng-lynx/genui`) — AI-generated UI: Angular renderers for A2UI
+  (protocol v1.0) and OpenUI, with the full A2UI basic catalog.
 - **Testing** (`ng-lynx/testing`) — a headless mock-PAPI environment with a
   `renderLynxComponent()` fixture.
 - **AOT by default** via `@ngtools/webpack`; the package itself ships
   partial-Ivy declarations linked against your app's Angular version, so it
   works across its peer range (Angular 21 and 22).
+
+## AI inside your app: generative UI
+
+`ng-lynx/genui` lets an AI agent describe UI, and your app render it as native
+screens from a catalog of Angular components you control. The agent never sends code,
+only a description of which components to show, with what data.
+
+- **A2UI v1.0**, the agent-to-UI protocol: the agent streams JSON messages;
+  `<a2ui-surface>` renders them with the 20 basic-catalog components (text, buttons,
+  forms, lists, tabs, date pickers, charts) or your own. Taps and form input go back
+  to the agent as actions.
+- **OpenUI**: the model writes a compact UI language that renders as it streams in,
+  so a screen builds up while the answer is still arriving.
+- Both come with prompt builders, so the model knows your catalog, and both run on
+  [`@lynx-js/genui`](https://lynxjs.org/next/api/genui/index.html).
+
+```html
+<a2ui-surface [messageStore]="store" [catalog]="catalog" (action)="sendToAgent($event)" />
+```
+
+The repository's
+[`examples/genui`](https://github.com/shabeliuk/ng-lynx/tree/main/examples/genui) is a
+retirement planner where a real LLM (Gemini, or any OpenAI-compatible model) holds the
+conversation and generates the forms and charts on the phone. GenUI is experimental.
+Guide: [docs/28](https://github.com/shabeliuk/ng-lynx/blob/main/docs/28-genui.md).
 
 ## Entry points
 

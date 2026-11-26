@@ -10,6 +10,15 @@ which parts are experimental and may change in a minor release, is in
 
 ### Added
 
+- **A2UI v1.0 in `ng-lynx/genui` (experimental).** `[messageHandler]` on `<a2ui-surface>` is the
+  transport for everything the renderer sends the agent (upstream's `onMessage`): actions, protocol
+  errors, `callAgentFunction` for functions a catalog declares without an implementation, and
+  `rendererFunctionResponse`, with the data model of `sendDataModel` surfaces. `@checks` with
+  ValidationResult messages (`ctx.checks()`, and TextField shows the first failure);
+  `@accessibility` as Lynx accessibility attributes through the `a2uiA11y` directive;
+  catalog-schema coercion of resolved props; `serializeA2uiCatalog` for the agent handshake;
+  `[messageStore]="null"`, and swapping stores for a fresh session. Checked on Lynx Explorer 4.2
+  on the iOS simulator (the `genui` example's A2UI tab). docs/28, harness `verify:genui-a2ui`.
 - **`lynxEnter` / `lynxLeave` (experimental).** Enter and leave animations from CSS classes, what
   Angular's `animate.enter` / `animate.leave` do on the web (they compile, but do nothing on Lynx:
   Angular turns them on only with a DOM). `lynxEnter` puts classes on a new element and takes them
@@ -67,6 +76,20 @@ which parts are experimental and may change in a minor release, is in
 
 ### Changed
 
+- **GenUI speaks A2UI v1.0 (breaking for A2UI streams; GenUI is experimental).** `ng-lynx/genui`
+  needs `@lynx-js/genui` 0.8.1 or later, below 0.9 (was 0.7), whose store accepts only A2UI v1.0,
+  the version the spec marks current. Agents must send `version: '1.0'` on every message,
+  `{ '@path' }` bindings, `{ '@call' }` function calls, `@checks` / `@catalogId` / `@metadata` /
+  `@accessibility`, and a `catalogId` in `createSurface`; older messages are rejected with
+  `UNSUPPORTED_VERSION`. The renderer sends `{ version: '1.0', action }` instead of `userAction`;
+  `(action)` emits the same `UserActionPayload` as before. `<a2ui-surface>` registers its catalog
+  under `[catalogId]` (default `A2UI_DEFAULT_CATALOG_ID`), and a surface renders only from the
+  catalog it names. Custom components read `ctx.checks()` for `@checks`, and `ctx.sendAction()`
+  returns a promise. `ResolvedProps.touchedPaths` is gone. Migration table in docs/28.
+- **GenUI props re-resolve on every signal they read.** Props and `@checks` resolve inside a
+  signals effect on the store's own runtime (`trackA2uiSignals`), as upstream's `effect()` does, so
+  a value read inside a function implementation, or an agent function's answer, re-renders the
+  component. Before, only the bindings the props named directly did.
 - `mainThreadRef()` returns a `MainThreadRef<T>`, so `current` is typed inside a
   `'main thread'` function. Reading it on the Background Thread throws, rather than
   being `undefined`. It's still a `MainThreadRefHandle<T>`, so existing code compiles.
@@ -75,6 +98,10 @@ which parts are experimental and may change in a minor release, is in
 
 ### Fixed
 
+- **`examples/genui`: the keyboard covered the planner's message box** on a phone. The planner pads
+  its bottom by the height `keyboardstatuschanged` reports, so the box sits above the keyboard.
+- **`examples/genui`'s iOS app didn't build with Xcode 27**, which supports iOS 15.0 and up: the
+  pods declared iOS 8 to 12. The Podfile targets 15.0 and raises every pod below it.
 - **Animation and transition listeners leaked.** Angular never unlistens a template's
   `(animationend)`, `(transitionend)` or other `animation*` / `transition*` listener when it destroys
   the view: on the web the browser drops it with the element. On Lynx each stayed in the event registry
@@ -90,6 +117,19 @@ which parts are experimental and may change in a minor release, is in
   list registries for the rest of the session, and every later batch walked every list ever
   created. Each visit to a list screen added to it. They're freed with the list now, and
   `verify:lazy-list` checks the registries are empty afterwards.
+
+### Security
+
+- **zod 4 in the workspace** (GHSA-mrhx-c7xc-m3w5, high, zod < 4.6.6). ng-lynx's dev dependency and
+  `examples/genui` move from zod 3.25 to 4.6.7. The peer range (`>=3.25.0`) is unchanged, and the
+  code already imported `zod/v4`.
+- **minimatch 11 through an override** (GHSA-g3hv-75wg-m249, moderate). typedoc, which
+  `@lynx-js/genui`'s catalog extractor uses, asks for minimatch ^10 with no fixed 10.x;
+  `pnpm-workspace.yaml` overrides it to 11. `verify:genui-tools` runs the extractor on it.
+- **`examples/genui`'s iOS tooling:** activesupport 7.2.4 (GHSA-2j26-frm8-cmj9, GHSA-89vf-4333-qx8v,
+  GHSA-cg4j-q9v8-6v38). GHSA-8474-xrp6-wh69 has no 7.2 fix, and CocoaPods needs activesupport < 8,
+  so it stays until CocoaPods moves; it needs untrusted input to `safe_constantize`, which
+  CocoaPods doesn't take.
 
 ### Tests
 

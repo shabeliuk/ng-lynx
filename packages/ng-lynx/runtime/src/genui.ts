@@ -1,5 +1,5 @@
 /**
- * `ng-lynx/genui` — Angular renderer for Lynx GenUI's A2UI protocol.
+ * `ng-lynx/genui` — Angular renderer for Lynx GenUI's A2UI protocol (v1.0).
  *
  * The framework-agnostic layers of `@lynx-js/genui` are consumed directly
  * (and re-exported here for convenience): the protocol store
@@ -20,13 +20,24 @@
  * which upstream pieces are ported, reused, or intentionally out of scope.
  */
 export {
+  A2UI_DEFAULT_CATALOG_ID,
   defineA2uiCatalog,
   resolveA2uiCatalog,
+  serializeA2uiCatalog,
   type A2uiCatalog,
   type A2uiCatalogInput,
   type A2uiComponentEntry,
   type A2uiFunctionEntry,
+  type A2uiSerializedCatalog,
 } from './genui/catalog.js';
+export { A2uiAccessibility, a2uiAccessibilityAttributes } from './genui/accessibility.js';
+export {
+  A2UI_CHECKS_OK,
+  evaluateA2uiChecks,
+  type A2uiCheckFailure,
+  type A2uiChecksOutcome,
+} from './genui/checks.js';
+export { trackA2uiSignals } from './genui/reactivity.js';
 export {
   A2UI_NODE_CONTEXT,
   A2UI_SURFACE_CONTEXT,
@@ -51,12 +62,14 @@ export {
   A2uiTextField,
 } from './genui/basic-catalog.js';
 export {
+  coerceA2uiBoolean,
+  componentCatalog,
   resolveBindingPath,
   resolveComponentProps,
   UNSUPPORTED_PROP,
   type ResolvedProps,
 } from './genui/resolve-props.js';
-export { A2uiSession } from './genui/session.js';
+export { A2uiSession, type A2uiOutgoingMessage } from './genui/session.js';
 
 // Convenience re-exports of the reused framework-agnostic upstream layers,
 // so apps can import everything genui-related from one place.
@@ -66,9 +79,11 @@ export {
   normalizePayloadToMessages,
   type ComponentInstance,
   type MessageStore,
+  type RendererToAgentMessage,
   type ServerToClientMessage,
   type Surface,
   type UserActionPayload,
+  type V1Message,
 } from '@lynx-js/genui/a2ui/store';
 
 // ── OpenUI (Angular renderer over @openuidev/lang-core) ──
