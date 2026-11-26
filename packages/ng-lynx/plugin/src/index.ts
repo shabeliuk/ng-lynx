@@ -310,6 +310,26 @@ export interface PluginAngularLynxOptions {
    */
   dynamicComponentHost?: boolean;
   /**
+   * How a {@link PluginAngularLynxOptions.dynamicComponent} bundle is packaged,
+   * which decides how the host loads it:
+   *
+   * - `'query-component'` (default): one lazy bundle the engine's
+   *   `lynx.QueryComponent` loads, which `loadDynamicComponent(source)` uses;
+   * - `'fetch-bundle'`: a bundle of named sections (`background`, `main-thread`,
+   *   `CSS`) that `lynx.fetchBundle` downloads and `lynx.loadScript` reads, which
+   *   `loadDynamicComponent(source, { fetcher: 'fetch-bundle' })` uses. It's what
+   *   ReactLynx's own lazy bundles use from engine 3.9, so the host's
+   *   `engineVersion` has to be `'3.9'` or higher.
+   *
+   * The host must load it the way it was built: one format doesn't load as the
+   * other.
+   *
+   * @defaultValue 'query-component'
+   *
+   * @experimental
+   */
+  dynamicComponentFetcher?: 'query-component' | 'fetch-bundle';
+  /**
    * The module ids shared between a dynamic-component host and its dynamic
    * components. **Both sides must agree** — a host publishes exactly this
    * list, and a dynamic bundle externalizes exactly this list.
@@ -529,6 +549,7 @@ export function pluginAngularLynx(
     asyncChunks = false,
     dynamicComponent = false,
     dynamicComponentHost = false,
+    dynamicComponentFetcher = 'query-component',
     sharedModules = [...DEFAULT_SHARED_MODULES],
     i18n,
   } = options;
@@ -863,6 +884,7 @@ export function pluginAngularLynx(
         aot,
         asyncChunks,
         dynamicComponent,
+        dynamicComponentFetcher,
         // The host's publishing module rides in as one more prepended
         // Background import (same shape as the dev-reload client). Never
         // added to a dynamic-component build: that side *consumes* the
@@ -1478,6 +1500,7 @@ function applyEntry(
     asyncChunks: boolean;
     firstScreenModule?: string;
     dynamicComponent: boolean;
+    dynamicComponentFetcher: 'query-component' | 'fetch-bundle';
     sharedRuntimeHostModule?: string;
   },
 ): void {
@@ -1702,9 +1725,21 @@ function applyEntry(
             // it's the same switch ReactLynx's own
             // `experimental_isLazyBundle` sets.
             ...(opts.dynamicComponent ? { experimental_isLazyBundle: true } : {}),
+            // With `fetch-bundle` the lazy bundle is encoded as named sections
+            // (`background`, `main-thread`, `CSS`) read with `lynx.loadScript`,
+            // not as one bundle `QueryComponent` evaluates.
+            ...(opts.dynamicComponent && opts.dynamicComponentFetcher === 'fetch-bundle'
+              ? { lazyBundleFetcher: 'FetchBundle' as const }
+              : {}),
           },
         ]).end();
       }
+    }
+
+    // A `query-component` dynamic bundle gets its CSS as a `CSS` section too, so the host
+    // can adopt it (see AngularLynxDynamicCssPlugin).
+    if (isLynx && opts.dynamicComponent && opts.dynamicComponentFetcher === 'query-component') {
+      c.plugin('lynx:angular-dynamic-css').use(AngularLynxDynamicCssPlugin, []).end();
     }
 
     // Keep `asyncChunks: true` on the plain async-chunk path (see
@@ -1799,6 +1834,60 @@ function applyEntry(
 // ---------------------------------------------------------------------------
 
 const PLUGIN_ASYNC_CHUNKS = 'lynx:angular-async-chunks';
+const PLUGIN_DYNAMIC_CSS = 'lynx:angular-dynamic-css';
+
+// ---------------------------------------------------------------------------
+// AngularLynxDynamicCssPlugin
+//
+// A dynamic-component bundle's own CSS (`import './card.css'`) is packed into the template's
+// style info, which the engine applies to components it renders itself. ng-lynx's elements
+// are created by the host's Main-Thread executor, so on Explorer 4.2 neither engine applies it
+// (the `bundle-query` device flow). The `fetch-bundle` packaging carries the same rules as a
+// `CSS` custom section, which the host adopts with `__LoadStyleSheet`/`__AdoptStyleSheet`
+// (docs/38). This adds that section to the `query-component` packaging as well, next to
+// the style info, which stays as it was: the bundle loads exactly as before.
+// ---------------------------------------------------------------------------
+
+interface DynamicCssEncodeData {
+  encodeData: {
+    css: { chunks?: { source: { source(): string | Buffer } }[] };
+    compilerOptions: Record<string, string | boolean>;
+    customSections: Record<string, { encoding?: 'CSS'; content: Record<string, unknown> }>;
+  };
+}
+
+class AngularLynxDynamicCssPlugin {
+  apply(compiler: { hooks: { thisCompilation: { tap(name: string, cb: (c: unknown) => void): void } } }): void {
+    compiler.hooks.thisCompilation.tap(PLUGIN_DYNAMIC_CSS, (compilation) => {
+      const hooks = (
+        LynxTemplatePlugin as unknown as {
+          getLynxTemplatePluginHooks(c: unknown): {
+            beforeEncode: { tapPromise(name: string, cb: (args: DynamicCssEncodeData) => Promise<DynamicCssEncodeData>): void };
+          };
+        }
+      ).getLynxTemplatePluginHooks(compilation);
+      hooks.beforeEncode.tapPromise(PLUGIN_DYNAMIC_CSS, async (args) => {
+        const chunks = args.encodeData.css.chunks ?? [];
+        if (chunks.length === 0) return args;
+        const { cssMap } = (
+          LynxTemplatePlugin as unknown as {
+            convertCSSChunksToMap(
+              chunks: string[],
+              plugins: unknown[],
+              enableCSSSelector: boolean,
+            ): { cssMap: Record<number, unknown[]> };
+          }
+        ).convertCSSChunksToMap(
+          chunks.map((chunk) => chunk.source.source().toString()),
+          [],
+          args.encodeData.compilerOptions['enableCSSSelector'] !== false,
+        );
+        args.encodeData.customSections['CSS'] = { encoding: 'CSS', content: { ruleList: cssMap[0] ?? [] } };
+        return args;
+      });
+    });
+  }
+}
 
 /** The failure branch of the runtime's `lynx.requireModuleAsync` callback. */
 const CHUNK_LOAD_FAILURE = /if \(err\) \{(\s*)reject\(err\);/;

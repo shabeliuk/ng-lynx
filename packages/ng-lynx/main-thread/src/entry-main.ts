@@ -6,6 +6,7 @@
  * the patch method that the Background Thread calls to ship render ops.
  */
 import {
+  ADOPT_STYLE_SHEET_METHOD,
   PAGE_ROOT_ID,
   PATCH_METHOD,
   RELEASE_MAIN_THREAD_REF_METHOD,
@@ -21,6 +22,7 @@ import {
   setFirstScreenOps,
 } from './first-screen.js';
 import { applyOps, clearPageForReload, resetMainThreadState } from './ops-apply.js';
+import { applyAdoptStyleSheet } from './style-sheet.js';
 import { applyReleaseMainThreadRef, applyRunOnMainThread } from './worklet-apply.js';
 
 // Public API of the Main-Thread entry: install a build-time first-screen
@@ -88,3 +90,5 @@ g[PATCH_METHOD] = function ({ data, epoch }: { data: string; epoch?: string }): 
 // `runOnMainThread` and `mainThreadRef()`'s cleanup, from the Background Thread.
 g[RUN_ON_MAIN_THREAD_METHOD] = applyRunOnMainThread;
 g[RELEASE_MAIN_THREAD_REF_METHOD] = applyReleaseMainThreadRef;
+// `fetchBundle`'s stylesheet, adopted once a bundle's component is about to mount.
+g[ADOPT_STYLE_SHEET_METHOD] = applyAdoptStyleSheet;

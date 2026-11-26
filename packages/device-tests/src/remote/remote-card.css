@@ -1,0 +1,9 @@
+/* The remote card's own styles: they travel in the bundle, not in the host's CSS. */
+.remote-unstyled {
+  display: none;
+}
+
+.remote-styled {
+  font-size: 16px;
+  color: #7ee787;
+}

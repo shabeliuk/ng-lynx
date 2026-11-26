@@ -13,5 +13,7 @@
   "angularCompilerOptions": {
     "strictTemplates": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  // Built by lynx.config.producer.ts, and loaded at run time: the app never imports it.
+  "exclude": ["src/remote"]
 }

@@ -28,9 +28,13 @@ import './app.css';
  * only the web packaging, and rejects `remote.lynx.bundle` with "Invalid
  * Magic Header".
  */
-function remoteSource(platform: string | undefined): string {
-  return lynxAssetUrl(platform === 'web' ? 'remote.web.bundle' : 'remote.lynx.bundle');
+function remoteSource(platform: string | undefined, fetcher: Fetcher): string {
+  const name = fetcher === 'fetch-bundle' ? 'remote-fetch' : 'remote';
+  return lynxAssetUrl(`${name}.${platform === 'web' ? 'web' : 'lynx'}.bundle`);
 }
+
+/** The two packagings of the same card: see the two `lynx.config.producer*.ts`. */
+type Fetcher = 'query-component' | 'fetch-bundle';
 
 @Component({
   selector: 'app-root',
@@ -42,8 +46,11 @@ function remoteSource(platform: string | undefined): string {
       <text class="title">Dynamic component host</text>
       <text class="subtitle">{{ status() }}</text>
 
-      <view class="load-button" (tap)="load()">
+      <view class="load-button" (tap)="load('query-component')">
         <text class="load-label">Load the remote card</text>
+      </view>
+      <view class="load-button" (tap)="load('fetch-bundle')">
+        <text class="load-label">Load it with fetchBundle</text>
       </view>
 
       <!-- The loaded component is mounted here. -->
@@ -56,16 +63,16 @@ export class AppComponent {
 
   readonly status = signal('Not loaded yet — tap the button.');
 
-  private readonly source = remoteSource(injectSystemInfo().platform);
+  private readonly platform = injectSystemInfo().platform;
 
-  async load(): Promise<void> {
+  async load(fetcher: Fetcher): Promise<void> {
     if (this.slot.length > 0) {
       this.status.set('Already loaded.');
       return;
     }
     this.status.set('Loading…');
     try {
-      const mod = await loadDynamicComponent<Type<unknown>>(this.source);
+      const mod = await loadDynamicComponent<Type<unknown>>(remoteSource(this.platform, fetcher), { fetcher });
       this.slot.createComponent(mod.default);
       this.status.set('Loaded — the card below came from another bundle.');
     } catch (err) {

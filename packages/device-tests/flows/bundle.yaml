@@ -1,0 +1,38 @@
+# lynx.fetchBundle on a real engine: a component loaded from a bundle of its own
+# (loadDynamicComponent with fetcher 'fetch-bundle') that stays live, a synchronous
+# fetch whose background section is read with lynx.loadScript, and a bundle that
+# isn't there, which fails with the engine's code.
+appId: ${APP_ID}
+---
+- runFlow:
+    file: shared/open.yaml
+    env:
+      BUNDLE: main
+      READY: 'Count: 0'
+- scrollUntilVisible:
+    element: Open bundle
+    direction: DOWN
+    timeout: 10000
+- tapOn: Open bundle
+- extendedWaitUntil:
+    visible: 'Card: not loaded'
+    timeout: 5000
+- tapOn: Fetch card
+- extendedWaitUntil:
+    visible: 'Card: loaded'
+    timeout: 15000
+# The card's own stylesheet travels in the bundle's CSS section and hides the first text.
+- assertVisible: 'Card CSS applied'
+- assertNotVisible: 'Card CSS not applied'
+- tapOn: 'Card taps: 0'
+- extendedWaitUntil:
+    visible: 'Card taps: 1'
+    timeout: 5000
+- tapOn: Fetch sync
+- extendedWaitUntil:
+    visible: 'Sync: ok RemoteCardComponent,default'
+    timeout: 15000
+- tapOn: Fetch missing
+- extendedWaitUntil:
+    visible: 'Missing: failed, code .*'
+    timeout: 20000

@@ -1,0 +1,28 @@
+# The default packaging of a dynamic component, through lynx.QueryComponent, with the same
+# card as the bundle flow: its own stylesheet hides one text. Its own flow, on a fresh
+# process: a stylesheet adopted for the fetchBundle card would style this one too.
+appId: ${APP_ID}
+---
+- runFlow:
+    file: shared/open.yaml
+    env:
+      BUNDLE: main
+      READY: 'Count: 0'
+- scrollUntilVisible:
+    element: Open bundle
+    direction: DOWN
+    timeout: 10000
+- tapOn: Open bundle
+- extendedWaitUntil:
+    visible: 'Query: not loaded'
+    timeout: 5000
+- tapOn: Query card
+- extendedWaitUntil:
+    visible: 'Query: loaded'
+    timeout: 15000
+- assertVisible: 'Card CSS applied'
+- assertNotVisible: 'Card CSS not applied'
+- tapOn: 'Card taps: 0'
+- extendedWaitUntil:
+    visible: 'Card taps: 1'
+    timeout: 5000

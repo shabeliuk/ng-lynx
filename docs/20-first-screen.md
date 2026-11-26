@@ -80,6 +80,11 @@ expecting/teardown bookkeeping is page-lifetime (reset by `renderPage`).
 
 ## Constraints & notes
 
+- **No `firstScreenSyncTiming`.** ReactLynx's option of that name (`'immediately'`, `'jsReady'` or
+  `'manual'`) decides when its Main-Thread runtime hands control to the Background Thread, because
+  that runtime renders and keeps updating the first screen itself. Here the Main Thread never runs
+  component code: it replays the snapshot's ops, and the Background Thread's first batch hydrates it,
+  so there is no hand-over to time and no equivalent option.
 - **The snapshot renders with default data** — empty `initData`, no
   `globalProps` (ReactLynx IFR has the same constraint). If your first screen
   *displays* host data, the snapshot shows the defaults until hydration — or

@@ -16,8 +16,9 @@ page, .page {
 .load-label { color: #ffffff; font-size: 15px; font-weight: bold; }
 .slot { display: flex; flex-direction: column; }
 
-/* Styles for the loaded component live in the HOST's CSS: Lynx CSS is packaged
-   per template, and the host owns the page's style sheet. See docs/38. */
+/* The loaded component's base styles live in the HOST's CSS, which every way of loading
+   it applies, in the web preview too. What the card adds is in its own remote-card.css,
+   which travels in its bundle: see that file and docs/38. */
 .remote-card {
   background-color: #1b2233;
   border-radius: 12px;

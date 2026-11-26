@@ -91,6 +91,8 @@
  * a real `ViewContainerRef.createComponent()` call — not mocked.
  */
 
+import { fetchBundle, ɵadoptBundleStyleSheet } from './fetch-bundle.js';
+
 /** The callback result shape `lynx.QueryComponent` / `getNativeLynx().QueryComponent` deliver. */
 interface DynamicComponentQueryResult {
   code: number;
@@ -120,6 +122,24 @@ declare var lynxCoreInject:
   | null
   | undefined;
 
+/** How `loadDynamicComponent` gets the bundle. */
+export interface LoadDynamicComponentOptions {
+  /**
+   * `'query-component'` (default) loads a bundle built with the plugin's
+   * default `dynamicComponentFetcher`, through `lynx.QueryComponent`.
+   * `'fetch-bundle'` loads one built with `dynamicComponentFetcher:
+   * 'fetch-bundle'`, through `lynx.fetchBundle` and `lynx.loadScript`: engine
+   * 3.9 and higher, and the one ReactLynx's own lazy bundles use. The format
+   * has to match how the bundle was built.
+   */
+  fetcher?: 'query-component' | 'fetch-bundle';
+}
+
+/** The section of a `fetch-bundle` bundle that holds the Background code. */
+const BACKGROUND_SECTION = 'background';
+
+const fetchBundleExports = new Map<string, unknown>();
+
 /**
  * Load a dynamic-component bundle by `source` (a URL or bundle id — resolved
  * by the native host, not this package) and resolve its module exports.
@@ -131,7 +151,11 @@ declare var lynxCoreInject:
  *
  * @experimental
  */
-export function loadDynamicComponent<T = unknown>(source: string): Promise<{ default: T }> {
+export function loadDynamicComponent<T = unknown>(
+  source: string,
+  options: LoadDynamicComponentOptions = {},
+): Promise<{ default: T }> {
+  if (options.fetcher === 'fetch-bundle') return loadWithFetchBundle<T>(source);
   return new Promise((resolve, reject) => {
     const query = lynx?.QueryComponent ?? lynx?.getNativeLynx?.()?.QueryComponent;
     if (!query) {
@@ -161,9 +185,47 @@ export function loadDynamicComponent<T = unknown>(source: string): Promise<{ def
         );
         return;
       }
+      // The bundle's own CSS rides in its `CSS` section, which the engine leaves unapplied:
+      // do it before the component is created. Nothing happens for a bundle with no CSS.
+      ɵadoptBundleStyleSheet(schema);
       resolve(exports as { default: T });
     });
   });
+}
+
+/**
+ * The `fetch-bundle` path: download the bundle, then evaluate its `background`
+ * section, which is the same module the QueryComponent path evaluates as
+ * `app-service.js`. ReactLynx's loader also sets `globDynamicComponentEntry`
+ * to the bundle's source while it evaluates, because the bundle's wrapper reads
+ * it once; so does this one.
+ */
+async function loadWithFetchBundle<T>(source: string): Promise<{ default: T }> {
+  const cached = fetchBundleExports.get(source);
+  if (cached) return cached as { default: T };
+  const bundle = await fetchBundle(source);
+  const g = globalThis as { globDynamicComponentEntry?: string | undefined };
+  const previous = g.globDynamicComponentEntry;
+  g.globDynamicComponentEntry = source;
+  let exports: unknown;
+  try {
+    exports = bundle.loadScript(BACKGROUND_SECTION);
+  } catch (error) {
+    throw new Error(
+      `[ng-lynx] loadDynamicComponent(${source}) fetched the bundle but could not read its "${BACKGROUND_SECTION}" section: ` +
+        `${error instanceof Error ? error.message : String(error)}. Was it built with dynamicComponentFetcher: 'fetch-bundle'?`,
+    );
+  } finally {
+    g.globDynamicComponentEntry = previous;
+  }
+  if (!exports) {
+    throw new Error(`[ng-lynx] loadDynamicComponent(${source}): the bundle's "${BACKGROUND_SECTION}" section exported nothing.`);
+  }
+  // The component's own CSS rides in the bundle's `CSS` section, which the engine leaves
+  // unapplied: do it before the component is created.
+  bundle.adoptStyleSheet();
+  fetchBundleExports.set(source, exports);
+  return exports as { default: T };
 }
 
 /**

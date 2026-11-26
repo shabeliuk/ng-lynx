@@ -416,6 +416,13 @@ export const RUN_ON_MAIN_THREAD_METHOD = 'ngRunOnMainThread';
 /** Lepus method the Background Thread calls when a `mainThreadRef()` is disposed. */
 export const RELEASE_MAIN_THREAD_REF_METHOD = 'ngReleaseMainThreadRef';
 
+/**
+ * Lepus method the Background Thread calls after `fetchBundle` to apply a bundle's own
+ * stylesheet (its `CSS` section) to the page. Same channel as the render ops, so the
+ * elements created after it are styled by it.
+ */
+export const ADOPT_STYLE_SHEET_METHOD = 'ngAdoptStyleSheet';
+
 /** Main Thread → Background: the outcome of a `runOnMainThread` call. */
 export const MAIN_THREAD_RESULT_EVENT = '__ngMainThreadResult';
 

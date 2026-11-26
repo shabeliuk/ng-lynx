@@ -183,6 +183,7 @@
     "verify:ifr": "node verify/build.mjs harness-ifr.ts",
     "verify:lazy-chunks": "node verify/lazy-chunks.mjs",
     "verify:lazy-list": "node verify/build.mjs harness-lazy-list.ts",
+    "verify:fetch-bundle": "node verify/build.mjs harness-fetch-bundle.ts",
     "verify:list": "node verify/build.mjs harness-list.ts",
     "verify:list-scroll": "ENABLE_SELECTOR_QUERIES=true node verify/build.mjs harness-list-scroll.ts",
     "verify:memory": "node verify/build.mjs harness-memory.ts",

@@ -17,6 +17,8 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 
 import { LYNX_ELEMENTS } from 'ng-lynx/elements';
 
+import './remote-card.css';
+
 @Component({
   selector: 'remote-card',
   standalone: true,
@@ -28,6 +30,7 @@ import { LYNX_ELEMENTS } from 'ng-lynx/elements';
       <text class="remote-body">
         This component was fetched at runtime, not compiled into the host.
       </text>
+      <text class="remote-note">Styled by remote-card.css, which travels in this bundle.</text>
       <view class="remote-button" (tap)="bump()">
         <text class="remote-button-label">Tapped {{ taps() }}×</text>
       </view>

@@ -48,7 +48,7 @@ declarations carry `@experimental` in the types, so editors show it when you hov
 | Part | Where | Why |
 | --- | --- | --- |
 | Native gestures | `LynxGesture`, `GESTURE_TYPE`, the gesture event types, `enableNewGesture` | pinch and rotation never fire on either engine; no web support ([32](32-gestures.md)) |
-| Dynamic components | `loadDynamicComponent`, the shared-runtime exports, `dynamicComponent`, `dynamicComponentHost`, `sharedModules` | Lynx's own mechanism is young ([38](38-dynamic-component.md)) |
+| Dynamic components | `loadDynamicComponent`, `fetchBundle`, `loadBundleScript`, the shared-runtime exports, `dynamicComponent`, `dynamicComponentFetcher`, `dynamicComponentHost`, `sharedModules` | Lynx's own mechanism is young ([38](38-dynamic-component.md)) |
 | GenUI | all of `ng-lynx/genui` | follows `@lynx-js/genui`, which is `0.x` and moves to a2ui protocol v1.0 in 0.8 ([28](28-genui.md)) |
 | Inline `'main thread'` functions | the transform in `pluginAngularLynx` (`inlineMainThread`), `MainThreadInlineFunction` | new; run on the iOS simulator and the Android emulator, not yet on a phone ([11](11-worklets.md#inline-main-thread-functions)) |
 | Lazy lists | `LynxLazyFor`, `LynxLazyForContext` | new; run on the iOS simulator and the Android emulator, not yet on a phone ([30](30-virtual-list.md)) |

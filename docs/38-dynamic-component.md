@@ -180,6 +180,119 @@ Android: "unexpected end of stream"), and `loadDynamicComponent`'s error starts 
 failure isn't cached: calling it again fetches the bundle again, so a retry button is enough
 (iOS simulator and Android emulator, Explorer 4.2, 2026-11-19).
 
+## Loading with `lynx.fetchBundle`
+
+`loadDynamicComponent` goes through `lynx.QueryComponent` by default. From engine 3.9 there is a
+second mechanism, and it is the one ReactLynx's own lazy bundles use (`@lynx-js/react`'s
+`core/lynx/lazy-bundle.ts`): `lynx.fetchBundle` downloads a bundle into the engine's cache, and
+`lynx.loadScript(section, { bundleName })` evaluates one **named section** of it. The bundle is
+packaged differently, so the two sides have to agree:
+
+```ts
+// lynx.config.producer.ts: the bundle is a set of sections
+pluginAngularLynx({ dynamicComponent: true, dynamicComponentFetcher: 'fetch-bundle', engineVersion: '3.9' });
+```
+
+```ts
+// the host
+const mod = await loadDynamicComponent<Type<unknown>>(source, { fetcher: 'fetch-bundle' });
+this.slot.createComponent(mod.default);
+```
+
+A bundle built one way doesn't load the other way. With `'fetch-bundle'` the template plugin
+encodes the bundle's `background` and `main-thread` chunks (and the CSS, when there is any) as
+custom sections, and `loadDynamicComponent` reads `background`, which is the module
+`QueryComponent` reads as `app-service.js`. The Main-Thread section is the same inert stub as
+before, so nothing is re-registered on the host's executor.
+
+### The Promise API underneath
+
+`fetchBundle(url, options)` is the Promise form of `lynx.fetchBundle`, for when what you want is
+a bundle's other sections, such as a shared library:
+
+```ts
+import { fetchBundle, LynxBundleError } from 'ng-lynx';
+
+try {
+  const bundle = await fetchBundle(url); // fetched once; a second call is free
+  const exports = bundle.loadScript<{ default: unknown }>('background');
+} catch (error) {
+  if (error instanceof LynxBundleError) console.warn(error.code, error.message);
+}
+```
+
+- **What the engines return.** On a device, `lynx.fetchBundle` returns a handler, not a Promise:
+  `then(callback)` takes one callback and returns nothing, and `wait(seconds)` blocks. The result is
+  `{ url, code, error_msg }`, and `code` is `0` on success. The web preview returns a real Promise of
+  `{ url, code, errorMsg }`, with `-1` for a failure and no `wait`. Neither rejects. `fetchBundle`
+  turns a failure into a `LynxBundleError` with the `code`, the `bundleUrl` and the engine's words.
+- **`{ sync: true }`** blocks the thread until the bundle is there (`timeout` seconds, 5 by
+  default), through `wait`. Only on a device: the web preview rejects, saying so.
+- **`timeout` also limits the asynchronous form (30 seconds by default, `0` for no limit).** The
+  Android engine (Explorer 4.2) never calls back for a bundle the server answers with a 404: the
+  request is made, and nothing else ever happens, not even after a minute. iOS answers at once with
+  an error (`template binary is empty`, code `-1`). Without a limit the Promise would never settle, so
+  the limit is what reports it, with code `-1`.
+- **Success is remembered, failure isn't.** A URL is fetched once, and two calls at the same time
+  share one request. A failed fetch is forgotten, so calling again retries.
+- `bundle.adoptStyleSheet()` applies the bundle's own CSS to the page ([below](#the-bundles-own-css)).
+- `hasFetchBundle()` says whether the engine has `lynx.fetchBundle`. `loadBundleScript(section,
+  bundleName)` is `lynx.loadScript` with a clear error when the engine doesn't have it (3.7).
+  Both `fetchBundle` and `loadBundleScript` are `@experimental`.
+
+### What was checked
+
+Engine 4.2 on the iOS simulator and the Android emulator, the `bundle` device flow: the card loads
+and its own `(tap)` and signal stay live, a synchronous fetch reads the `background` section's
+exports with `lynx.loadScript`, and a fetch of a bundle that isn't there fails with the engine's
+message (iOS) or by the limit (Android). The web preview loads and runs the same card
+(`examples/dynamic-component`, "Load it with fetchBundle"). Headless, `verify:fetch-bundle` covers
+both engine shapes, the caching, the limits and `loadDynamicComponent`'s error messages, and
+`verify:dynamic-component-build` checks the two packagings, so the sections and the old
+`app-service.js` path can't be mixed up.
+
+Not covered: `lynx.fetchBundle`'s `options` (the types declare `{}`, and ReactLynx's loader passes
+`{}`, so `fetchBundle` does too), and a real phone.
+
+### The bundle's own CSS
+
+A component that imports CSS (`import './card.css'`) puts its rules in the bundle, not in the
+`background` code. **Neither engine applies them to the host's page when it loads the bundle**, in
+either packaging. Measured on Explorer 4.2: a card whose stylesheet hides one of its texts showed that
+text, loaded through `fetchBundle` (iOS simulator) and through `QueryComponent` (iOS simulator and
+Android emulator). The engine applies a bundle's styles to components it renders itself; here the
+host's Main-Thread executor creates the elements.
+
+ReactLynx's loader applies the rules from the Main Thread, with `__LoadStyleSheet('CSS', bundleName)`
+and `__AdoptStyleSheet(sheet)`, which read a custom section named `CSS`. ng-lynx does the same, for
+both packagings:
+
+- **`fetch-bundle`** already carries the rules as a `CSS` section.
+- **`query-component`** carries them in the template's style info, as it always did, and now also as
+  a `CSS` section next to it (a small plugin tap on the template plugin's `beforeEncode` hook, only
+  for a `dynamicComponent` build, and only when there is CSS). The bundle loads as before.
+- `loadDynamicComponent` calls the adopt step before it resolves, so the component is created
+  styled: `bundle.adoptStyleSheet()` for the first, and the same call under the bundle's schema for
+  the second. Call `bundle.adoptStyleSheet()` yourself when you read other sections with
+  `fetchBundle`. It's one `ngAdoptStyleSheet` call to the Main Thread on the same channel as the render
+  ops, once per bundle.
+- A bundle with no CSS has no section, which `__LoadStyleSheet` answers with `null`: nothing is adopted.
+- The rules are adopted **for the page**, not scoped to the component: use class names that can't
+  collide with the host's, as with any global CSS here (`enableCSSSelector`).
+
+**The web preview differs, and only for `query-component`.** There an engine without the two calls
+leaves the adopt step alone, and web-core applies a `fetchBundle` bundle's styles by itself (a
+temporary rule on the example card turned its title magenta over the host's colour). It scopes a
+`QueryComponent` bundle's styles to the bundle, which ng-lynx's elements are not part of, so they don't
+apply: that card keeps the host's styles. That's why `examples/dynamic-component` keeps the card's base
+styles in the host's CSS and adds the green edge and note in `remote-card.css`: on a device both
+buttons show them, and in the web preview only "Load it with fetchBundle" does.
+
+The device flows `bundle` and `bundle-query` each load a card with its own stylesheet that hides a
+text and colours another. Each failed before the Main-Thread call (`bundle` on iOS only; `bundle-query`
+on both) and passes after it, on iOS and Android. They are separate flows, on separate launches,
+because an adopted stylesheet is global and would style the other card too.
+
 ## Producing a loadable bundle
 
 The consuming half above needs something to load. `pluginAngularLynx` builds
@@ -239,6 +352,8 @@ host fetches it by name through `loadDynamicComponent`.
 - **Skips the Background bootstrap** for the same reason —
   `entry-background.ts` installs the event pipeline, host-data channels and
   polyfills that the host already owns.
+- **Adds a `CSS` section** with the component's own stylesheet, when it has one, for the host to
+  adopt (see [The bundle's own CSS](#the-bundles-own-css)).
 - **Exposes the entry's exports** as the bundle's module exports (a
   `commonjs` library), which is what `getDynamicComponentExports` hands back.
 

@@ -165,6 +165,8 @@ const SERVED = [
   { flow: 'lazy-route', label: 'the lazy route chunk', test: /^\/static\/js\/async\/lazy-route\.[^/]+\.js$/ },
   { flow: 'assets', label: 'the image from lynxAssetUrl()', test: /^\/square\.png$/ },
   { flow: 'assets', label: 'the image imported as a module', test: /^\/static\/image\/imported-photo\.[0-9a-f]+\.png$/ },
+  { flow: 'bundle', label: 'the fetchBundle card bundle', test: /^\/remote\/remote-fetch\.lynx\.bundle$/ },
+  { flow: 'bundle-query', label: 'the QueryComponent card bundle', test: /^\/remote\/remote-query\.lynx\.bundle$/ },
   { flow: 'platform', label: 'the server-sent events stream', test: /^\/sse$/ },
   { flow: 'network', label: 'the lazy chunk on a slow network', test: /^\/static\/js\/async\/lazy-route\.[^/]+\.js$/ },
   { flow: 'network', label: "HttpClient's GET to the headers echo", test: /^\/__headers\/get$/ },
@@ -185,7 +187,8 @@ function checkRequests(requests) {
     }
   }
   for (const { pathname, status } of requests) {
-    // The network flow cuts the lazy chunk's connection on purpose.
+    // The network flow cuts the lazy chunk's connection on purpose, and the bundle flow asks for a bundle that isn't there.
+    if (/^\/remote\/nothing-here\./.test(pathname)) continue;
     if (status !== 200 && status !== 'dropped') failures.push(`The device got ${status} for ${pathname}.`);
   }
   return failures;
@@ -199,8 +202,9 @@ const ENGINE_ERRORS = [
   /LynxError.*\b\d{4,}\b/,
   /FiberElement re-insert node/,
 ];
-// The last one is the network flow cutting the lazy chunk's connection on purpose.
-const NOISE = /Duplicated Behavior|timing_map|lynx_plugin: load original|load external js script failed! url: http:\/\/127\.0\.0\.1:8791\/static\/js\/async\/lazy-route\./;
+// The last two are the network flow cutting the lazy chunk's connection on purpose, and the bundle
+// flow asking for a bundle that isn't there (the server's empty 404 reads as an empty template).
+const NOISE = /Duplicated Behavior|timing_map|lynx_plugin: load original|load external js script failed! url: http:\/\/127\.0\.0\.1:8791\/static\/js\/async\/lazy-route\.|Load lazy bundle failed, the error message is: template binary is empty/;
 
 function checkLog(file) {
   const lines = readFileSync(file, 'utf8').split('\n');
@@ -228,7 +232,15 @@ mkdirSync(artifacts, { recursive: true });
 // leaves alone the dist/ that `npm run dev` may be writing to.
 const dist = process.env.DEVICE_TESTS_DIST ? path.resolve(process.env.DEVICE_TESTS_DIST) : path.join(here, 'dist');
 console.log('Building the test app');
-run('pnpm', ['exec', 'rspeedy', 'build'], { cwd: here, env: { ...process.env, NODE_ENV: 'production', DO_NOT_TRACK: '1' } });
+const buildEnv = { ...process.env, NODE_ENV: 'production', DO_NOT_TRACK: '1' };
+run('pnpm', ['exec', 'rspeedy', 'build'], { cwd: here, env: buildEnv });
+// The bundles the `bundle` screen loads, built after the app: the app's build empties dist/.
+for (const fetcher of ['fetch-bundle', 'query-component']) {
+  run('pnpm', ['exec', 'rspeedy', 'build', '--config', 'lynx.config.producer.ts'], {
+    cwd: here,
+    env: { ...buildEnv, DEVICE_TESTS_FETCHER: fetcher },
+  });
+}
 console.log('Preparing the tools and the device');
 const maestro = await ensureMaestro();
 const device = await prepareDevice();
