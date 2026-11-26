@@ -52,6 +52,7 @@ declarations carry `@experimental` in the types, so editors show it when you hov
 | GenUI | all of `ng-lynx/genui` | follows `@lynx-js/genui`, which is `0.x` and moves to a2ui protocol v1.0 in 0.8 ([28](28-genui.md)) |
 | Inline `'main thread'` functions | the transform in `pluginAngularLynx` (`inlineMainThread`), `MainThreadInlineFunction` | new; run on the iOS simulator and the Android emulator, not yet on a phone ([11](11-worklets.md#inline-main-thread-functions)) |
 | Lazy lists | `LynxLazyFor`, `LynxLazyForContext` | new; run on the iOS simulator and the Android emulator, not yet on a phone ([30](30-virtual-list.md)) |
+| Enter and leave animations | `LynxEnter`, `LynxLeave`, `DEFAULT_TRANSITION_TIMEOUT` | new; run on the iOS simulator, the Android emulator and the web preview, not yet on a phone ([33](33-animations.md#enter-and-leave-lynxenter--lynxleave)) |
 | Desktop-only elements | `LynxTitleBarView` (`<title-bar-view>`) | never run: Clay desktop only |
 | HarmonyOS | — | never run anywhere |
 

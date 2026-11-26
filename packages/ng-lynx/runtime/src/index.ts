@@ -289,6 +289,17 @@ export { LynxVirtualFor, LynxVirtualForContext } from './virtual-for.js';
 export { LynxLazyFor, LynxLazyForContext } from './lazy-for.js';
 
 /**
+ * `lynxEnter` / `lynxLeave` — enter and leave animations for elements Angular
+ * adds and removes, from CSS classes: what Angular's `animate.enter` /
+ * `animate.leave` do on the web, which can't run on Lynx. A leaving element
+ * stays on screen until its `animationend` or `transitionend`. See
+ * docs/33-animations.md.
+ *
+ * @experimental
+ */
+export { DEFAULT_TRANSITION_TIMEOUT, LynxEnter, LynxLeave } from './transition.js';
+
+/**
  * `hotSwapComponent(type, next)` — state-preserving component hot-swap:
  * rebuild every live view of `type` with `next`'s template **in place**,
  * keeping component instances (signals, fields, injected services). The

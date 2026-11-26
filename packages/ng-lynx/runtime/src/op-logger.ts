@@ -57,6 +57,8 @@ function formatOp(code: number, args: unknown[]): string {
   switch (code) {
     case OP.CREATE:
       return `${name} #${args[0]} ${args[1]}`;
+    case OP.CREATE_MAPPED:
+      return `${name} #${args[0]} ${args[1]}${args[2] ? ` (nodeIndex ${args[2]})` : ''}`;
     case OP.CREATE_TEXT:
       return `${name} #${args[0]}`;
     case OP.INSERT: {

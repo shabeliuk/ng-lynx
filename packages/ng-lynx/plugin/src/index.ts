@@ -330,6 +330,26 @@ export interface PluginAngularLynxOptions {
    */
   dynamicComponentFetcher?: 'query-component' | 'fetch-bundle';
   /**
+   * Map each element back to the template line that created it, for Lynx
+   * DevTool. Angular's compiler records every element's place in its template,
+   * as for the Angular CLI's dev server; ng-lynx then:
+   *
+   * - sets it on the element as `data-ng-source-location`
+   *   (`src/app/app.component.html@o:120,l:4,c:2`, with a 0-based line and
+   *   column), which DevTool's Elements panel shows, and the web preview's
+   *   browser DevTools too;
+   * - creates the element with a `nodeIndex`, which the engine keeps for DevTool
+   *   (`DOM.getOriginalNodeSourceInfo`);
+   * - writes each index's file, line and column to the `uiSourceMap` of
+   *   `debug-metadata.json`, which is how DevTool resolves a ReactLynx element.
+   *
+   * AOT only: `aot: false` compiles templates on the device, without locations.
+   * It costs an attribute per element, so it's off in a production build.
+   *
+   * @defaultValue `true` in a development build, `false` in a production one
+   */
+  templateSourceMap?: boolean;
+  /**
    * The module ids shared between a dynamic-component host and its dynamic
    * components. **Both sides must agree** — a host publishes exactly this
    * list, and a dynamic bundle externalizes exactly this list.
@@ -550,6 +570,7 @@ export function pluginAngularLynx(
     dynamicComponent = false,
     dynamicComponentHost = false,
     dynamicComponentFetcher = 'query-component',
+    templateSourceMap: templateSourceMapOption,
     sharedModules = [...DEFAULT_SHARED_MODULES],
     i18n,
   } = options;
@@ -577,10 +598,19 @@ export function pluginAngularLynx(
         : undefined;
       // The worklet runtime goes in for worklet modules or inline functions.
       const hasWorklets = mainThreadModules.length > 0 || Boolean(inline?.files.length);
+      // Decided from the build's mode when the config is built, below, and read
+      // by the compiler setup after it. `rspeedy build` sets NODE_ENV to
+      // production even with `--mode development`, so the mode is what counts.
+      // Templates only have locations under AOT.
+      let templateSourceMapOn = false;
+      const templateSourceMap = (): boolean => templateSourceMapOn;
 
       // ① Global defines + engine target.
-      api.modifyRsbuildConfig((config, { mergeRsbuildConfig }) =>
-        mergeRsbuildConfig(config, {
+      api.modifyRsbuildConfig((config, { mergeRsbuildConfig }) => {
+        const mode = (config as { mode?: string }).mode
+          ?? (process.env.NODE_ENV === 'production' ? 'production' : 'development');
+        templateSourceMapOn = aot && (templateSourceMapOption ?? mode !== 'production');
+        return mergeRsbuildConfig(config, {
           source: {
             // Compile node_modules JS too: many packages ship ES2021+ syntax
             // the Lynx engine can't parse.
@@ -619,6 +649,9 @@ export function pluginAngularLynx(
               // functions), so `<lynx-slider>` can drag
               // there. A dynamic component's Main-Thread part is a stub.
               __WORKLET_RUNTIME__: String(hasWorklets && !dynamicComponent),
+              // Read by renderer.ts (Background Thread): create elements with the
+              // nodeIndex of their template location. See `templateSourceMap`.
+              __NG_LYNX_TEMPLATE_SOURCE_MAP__: String(templateSourceMap()),
             },
           },
           tools: {
@@ -792,8 +825,8 @@ export function pluginAngularLynx(
               },
             },
           }),
-        }),
-      );
+        });
+      });
 
       // ①.5 Hot-update EMISSION for `web` dev builds (rspack's own
       // HotModuleReplacementPlugin) — deliberately decoupled from `dev.hmr`,
@@ -839,7 +872,7 @@ export function pluginAngularLynx(
       });
 
       // ② Angular compilation (AOT/ngtsc by default, JIT with `aot: false`).
-      applyAngularCompiler(api, { aot, tsconfig, inline });
+      applyAngularCompiler(api, { aot, tsconfig, inline, templateSourceMap });
 
       // ②.5 Link the package's partial-Ivy declarations to full Ivy against the
       // app's Angular version (version-independent package output).
@@ -1382,9 +1415,33 @@ function loadNgtools(): {
   }
 }
 
+const TEMPLATE_SOURCE_MAP_LOADER = path.join(_dirname, 'template-source-map-loader.cjs');
+
+/**
+ * Switch on the template source locations of the Angular compiler that ngtsc
+ * runs in this process: the flag the Angular CLI's dev server sets, which makes
+ * each compiled template call `ɵɵattachSourceLocations`. It's a module-level
+ * flag, so it is set on the instance `@angular/compiler-cli` itself imports,
+ * found from `@ngtools/webpack`. `require` loads that ES module into the same
+ * instance `import` does.
+ */
+function enableTemplateSourceLocations(): void {
+  const fromNgtools = createRequire(require.resolve('@ngtools/webpack'));
+  const fromCompilerCli = createRequire(fromNgtools.resolve('@angular/compiler-cli/package.json'));
+  const compiler = fromCompilerCli('@angular/compiler') as { setEnableTemplateSourceLocations?: (on: boolean) => void };
+  if (typeof compiler.setEnableTemplateSourceLocations !== 'function') {
+    console.warn(
+      '[ng-lynx] templateSourceMap: this @angular/compiler has no template source locations '
+        + '(it needs Angular 20 or later), so elements are not mapped to their templates.',
+    );
+    return;
+  }
+  compiler.setEnableTemplateSourceLocations(true);
+}
+
 function applyAngularCompiler(
   api: RsbuildApiLike,
-  opts: { aot: boolean; tsconfig: string; inline?: InlineMainThread },
+  opts: { aot: boolean; tsconfig: string; inline?: InlineMainThread; templateSourceMap: () => boolean },
 ): void {
   if (!opts.aot && opts.inline) {
     // JIT: SWC compiles each file through the loaders, so a loader can rewrite it.
@@ -1436,6 +1493,20 @@ function applyAngularCompiler(
   api.modifyBundlerChain((chain) => {
     // biome-ignore lint/suspicious/noExplicitAny: rspack-chain isn't typed here
     const c = chain as any;
+    if (opts.templateSourceMap()) {
+      enableTemplateSourceLocations();
+      // Declared before the ngtools rule: loaders of the same `enforce` run last
+      // rule first, so this one reads what ngtsc emitted.
+      c.module
+        .rule('ng-lynx-template-source-map')
+        .test(/\.[cm]?ts$/)
+        .resourceQuery({ not: [new RegExp(MAIN_THREAD_QUERY)] })
+        .exclude.add(/node_modules/).end()
+        .enforce('pre')
+        .use('template-source-map')
+        .loader(TEMPLATE_SOURCE_MAP_LOADER)
+        .end();
+    }
     c.module
       .rule('angular-aot-ts')
       .test(/\.[cm]?ts$/)

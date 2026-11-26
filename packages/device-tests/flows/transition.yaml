@@ -1,0 +1,35 @@
+# lynxEnter / lynxLeave on a real engine. The panel's leave timeout is 20 s and its leave
+# animation 3 s, still for its first 2.4: there right after the tap, gone well before the
+# timeout, so the engine's animationend removed it. The box checks a CSS transition and its transitionend.
+appId: ${APP_ID}
+---
+- runFlow:
+    file: shared/open.yaml
+    env:
+      BUNDLE: main
+      READY: 'Count: 0'
+- scrollUntilVisible:
+    element: Open transition
+    direction: DOWN
+    timeout: 10000
+- tapOn: Open transition
+- extendedWaitUntil:
+    visible: 'Enter ended: 0'
+    timeout: 5000
+- assertNotVisible: Animated panel
+- tapOn: Toggle panel
+- extendedWaitUntil:
+    visible: Animated panel
+    timeout: 3000
+- extendedWaitUntil:
+    visible: 'Enter ended: 1'
+    timeout: 3000
+- tapOn: Toggle panel
+- assertVisible: Animated panel
+- extendedWaitUntil:
+    notVisible: Animated panel
+    timeout: 10000
+- tapOn: Fade box
+- extendedWaitUntil:
+    visible: 'Transition ended: 1'
+    timeout: 3000

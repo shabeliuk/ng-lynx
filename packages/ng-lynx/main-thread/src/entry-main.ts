@@ -78,12 +78,20 @@ g['updateGlobalProps'] = function (_data: unknown): void {};
 
 // Called by the Background Thread via
 // callLepusMethod(PATCH_METHOD, { data, epoch }).
-g[PATCH_METHOD] = function ({ data, epoch }: { data: string; epoch?: string }): void {
+g[PATCH_METHOD] = function (
+  { data, epoch, plain, locations }: { data: string; epoch?: string; plain?: string; locations?: string },
+): void {
   // With a first-screen snapshot painted, the Background Thread's first batch
   // is compared byte-for-byte: identical → already on screen, drop it
   // (element ids and event signs line up by determinism); different → the
-  // snapshot was torn down and this batch applies onto a clean page.
-  if (consumeFirstScreenBatch(data)) return;
+  // snapshot was torn down and this batch applies onto a clean page. A
+  // development build's first batch carries a `plain` form without template
+  // source mapping, which is what the snapshot was captured as; on a match the
+  // snapshot's elements still get their source locations.
+  if (consumeFirstScreenBatch(plain ?? data)) {
+    if (locations) applyOps(JSON.parse(locations) as unknown[], epoch);
+    return;
+  }
   applyOps(JSON.parse(data) as unknown[], epoch);
 };
 

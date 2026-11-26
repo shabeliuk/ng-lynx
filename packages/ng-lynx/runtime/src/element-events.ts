@@ -30,6 +30,8 @@ interface ListenerEntry {
 }
 
 const listeners = new Map<string, ListenerEntry>();
+/** The keys of `listeners` per element id, so a destroyed element's can be dropped. */
+const keysByElement = new Map<number, Set<string>>();
 
 /** How many element listeners are registered. For leak checks (verify:memory). */
 export function elementListenerCount(): number {
@@ -104,6 +106,9 @@ export function addElementListener(
     });
     entry = { sign, type, name, targetId: el.id, callbacks };
     listeners.set(key, entry);
+    let keys = keysByElement.get(el.id);
+    if (!keys) keysByElement.set(el.id, (keys = new Set()));
+    keys.add(key);
     pushOp(OP.SET_EVENT, el.id, type, name, sign);
     scheduleFlush();
   }
@@ -115,15 +120,37 @@ export function addElementListener(
     if (e.callbacks.size === 0) {
       unregister(e.sign);
       listeners.delete(key);
+      keysByElement.get(e.targetId)?.delete(key);
       pushOp(OP.REMOVE_EVENT, e.targetId, e.type, e.name);
       scheduleFlush();
     }
   };
 }
 
+/**
+ * Forget every listener of an element being destroyed. Angular unlistens what it
+ * registered when it destroys a view, except `animation*` and `transition*`
+ * listeners: it leaves those to the browser, which drops them with the element
+ * (`isAnimationEventType` in `@angular/core`), so they can still fire while an
+ * element leaves. Here they'd stay in the event registry for good. The element
+ * is going, so no REMOVE_EVENT is sent: its DESTROY frees it on the Main Thread.
+ */
+export function dropElementListeners(id: number): void {
+  const keys = keysByElement.get(id);
+  if (!keys) return;
+  keysByElement.delete(id);
+  for (const key of keys) {
+    const entry = listeners.get(key);
+    if (!entry) continue;
+    unregister(entry.sign);
+    listeners.delete(key);
+  }
+}
+
 /** Reset all state — for testing only. */
 export function resetElementListeners(): void {
   listeners.clear();
+  keysByElement.clear();
 }
 
 /** Replaced at build time by the bundler `define`. */

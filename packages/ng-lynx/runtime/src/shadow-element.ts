@@ -19,7 +19,7 @@
  * Thread). Regular elements start from id=2.
  */
 import type { ScrollToPositionParams, UIMethods } from '@lynx-js/types/element';
-import { OP, PAGE_ROOT_ID } from 'ng-lynx/internal/ops';
+import { OP, PAGE_ROOT_ID, SOURCE_LOCATION_ATTR } from 'ng-lynx/internal/ops';
 
 import { addElementListener } from './element-events.js';
 import { scheduleFlush, whenFlushed } from './flush.js';
@@ -36,6 +36,13 @@ import { pushOp } from './ops.js';
 declare const __ENABLE_SELECTOR_QUERIES__: boolean | 'lazy';
 
 export type LynxNodeType = 'element' | 'text' | 'comment';
+
+/**
+ * Elements that have their template source location (`data-ng-source-location`),
+ * kept aside rather than as a field so an element pays nothing for it in a
+ * build without `templateSourceMap`. See `ShadowElement.hasAttribute`.
+ */
+export const sourceLocated = new WeakSet<ShadowElement>();
 
 /**
  * DOM event name → Lynx event name, for {@link ShadowElement.addEventListener}.
@@ -221,6 +228,15 @@ export class ShadowElement {
     this.id = forceId ?? ShadowElement.nextId++;
     this.type = type;
     this.kind = kind;
+  }
+
+  /**
+   * Angular's `ɵɵattachSourceLocations` asks this before it sets an element's
+   * source location, and that is the only attribute it asks about. The
+   * renderer keeps no other attributes on the Background Thread.
+   */
+  hasAttribute(name: string): boolean {
+    return name === SOURCE_LOCATION_ATTR && sourceLocated.has(this);
   }
 
   /**

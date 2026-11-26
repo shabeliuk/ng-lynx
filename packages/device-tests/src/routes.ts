@@ -13,6 +13,7 @@ import { MemoryComponent } from './memory.component.js';
 import { NetworkComponent } from './network.component.js';
 import { PlatformComponent } from './platform.component.js';
 import { TimingComponent } from './timing.component.js';
+import { TransitionComponent } from './transition.component.js';
 import { UserComponent } from './user.component.js';
 
 export const routes: Routes = [
@@ -30,6 +31,7 @@ export const routes: Routes = [
   { path: 'network', component: NetworkComponent },
   { path: 'memory', component: MemoryComponent },
   { path: 'bundle', component: BundleComponent },
+  { path: 'transition', component: TransitionComponent },
   {
     // The chunk name keeps this on the path `lynx.requireModuleAsync` loads from.
     // See docs/15-routing.md.

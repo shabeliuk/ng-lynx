@@ -18,11 +18,23 @@
  * `queuePostFlushCb`. We use a microtask instead so the runtime stays decoupled
  * from Angular's scheduler internals.
  */
-import { encodeBatch, PATCH_METHOD } from 'ng-lynx/internal/ops';
+import { encodeBatch, PATCH_METHOD, splitSourceMap } from 'ng-lynx/internal/ops';
 
 import { logFlush } from './op-logger.js';
 import { takeOps } from './ops.js';
 import { materializePendingStyleClass } from './pending-style.js';
+
+declare const __HAS_FIRST_SCREEN__: boolean;
+declare const __NG_LYNX_TEMPLATE_SOURCE_MAP__: boolean;
+/**
+ * A development build (`templateSourceMap`) of an app with a first-screen
+ * snapshot: the snapshot is captured without template source mapping, so the
+ * first batch also goes without it, for the Main Thread to compare. See
+ * `splitSourceMap`.
+ */
+const SPLIT_FIRST_BATCH = typeof __HAS_FIRST_SCREEN__ !== 'undefined' && __HAS_FIRST_SCREEN__
+  && typeof __NG_LYNX_TEMPLATE_SOURCE_MAP__ !== 'undefined' && __NG_LYNX_TEMPLATE_SOURCE_MAP__;
+let firstBatchSent = false;
 
 // `lynx` is injected by the Lynx runtime wrapper as a parameter to the bundle's
 // AMD-style callback — it is NOT on globalThis. Declared module-scoped (not a
@@ -158,9 +170,19 @@ export function flushOps(): void {
   // types, class lists, attr keys, …) into a shared table, in one walk over
   // the batch. Unchanged when there's neither. See internal/src/ops.ts.
   const wireOps = encodeBatch(raw);
+  const params: { data: string; epoch: string; plain?: string; locations?: string } = {
+    data: JSON.stringify(wireOps),
+    epoch: SESSION_EPOCH,
+  };
+  if (SPLIT_FIRST_BATCH && !firstBatchSent) {
+    const { plain, locations } = splitSourceMap(raw);
+    params.plain = JSON.stringify(encodeBatch(plain));
+    params.locations = JSON.stringify(locations);
+  }
+  firstBatchSent = true;
 
   const app = lynx?.getNativeApp?.();
-  app?.callLepusMethod?.(PATCH_METHOD, { data: JSON.stringify(wireOps), epoch: SESSION_EPOCH }, () => {
+  app?.callLepusMethod?.(PATCH_METHOD, params, () => {
     inFlightCount--;
     if (inFlightCount === 0) {
       const toResolve = waiters;
@@ -173,6 +195,7 @@ export function flushOps(): void {
 /** Reset module state — for testing only. */
 export function resetFlushState(): void {
   scheduled = false;
+  firstBatchSent = false;
   stopped = false;
   inFlightCount = 0;
   waiters = [];

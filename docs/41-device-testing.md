@@ -310,6 +310,12 @@ Each one was driven, not just opened. What each row left out:
   `timeout` turns into an error ([38](38-dynamic-component.md#loading-with-lynxfetchbundle)). Without
   the Main-Thread adopt step the stylesheet wasn't applied by either engine
   ([38](38-dynamic-component.md#the-bundles-own-css)).
+- `transition` (2026-11-26, Explorer 4.2): on the iOS simulator and the Android emulator, `lynxEnter`'s
+  keyframe animation ran and the engine sent the element its `animationend`, which took the classes off.
+  A panel removed with `lynxLeave` stayed on screen through its 3 s leave animation and was gone about 3 s
+  later, against a 20 s timeout, so its `animationend` removed it. A class change with a CSS `transition`
+  sent `transitionend`. The web preview sends both events too
+  ([33](33-animations.md#enter-and-leave-lynxenter--lynxleave)).
 - `threejs-*` ran, but only a phone's frame rate means anything.
 
 ### Before 1.0.0

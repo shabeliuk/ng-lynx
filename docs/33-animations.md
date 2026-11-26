@@ -3,8 +3,10 @@
 `@angular/animations` is DOM/WAAPI-bound (`AnimationBuilder`, `animate()`
 metadata, the whole trigger system compile down to `Element.animate()` /
 `Web Animations API` calls) — none of that exists on Lynx's element PAPI, so
-the package doesn't apply here at all; don't add it as a dependency. This page
-covers what genuinely does work instead.
+the package doesn't apply here at all; don't add it as a dependency. Nor do
+Angular's newer `animate.enter` / `animate.leave`: use
+[`lynxEnter` / `lynxLeave`](#enter-and-leave-lynxenter--lynxleave) instead. This
+page covers what genuinely does work.
 
 ## What already works
 
@@ -51,6 +53,76 @@ A [worklet](11-worklets.md) mutating `ctx.setStyle(...)` synchronously, at
 gesture rate, with zero Background-Thread round-trip, is the right tool for
 motion that must track a finger in real time (drag, pinch-follow) — nothing
 new needed; that's the worklet model's whole reason to exist.
+
+## Enter and leave: `lynxEnter` / `lynxLeave`
+
+Angular's own enter and leave animations, `animate.enter` and `animate.leave`,
+compile but do nothing on Lynx. `@angular/core` turns them on only where
+`document.documentElement.getAnimations` exists, and times them with
+`getComputedStyle` and `getAnimations()`. Angular runs on the Background Thread,
+which has none of those. ng-lynx has the same pair as two directives, with CSS
+classes, like vue-lynx's `<Transition>`:
+
+```ts
+import { LynxEnter, LynxLeave } from 'ng-lynx';
+
+@Component({
+  imports: [LYNX_ELEMENTS, LynxEnter, LynxLeave],
+  template: `
+    @for (item of items(); track item) {
+      <text class="item" lynxEnter="item-in" lynxLeave="item-out" (tap)="remove(item)">{{ item }}</text>
+    }
+  `,
+})
+```
+
+```css
+.item-in { animation: item-in 300ms ease-out; }
+.item-out { animation: item-out 250ms ease-in forwards; }
+@keyframes item-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes item-out { from { opacity: 1; } to { opacity: 0; } }
+```
+
+- **`lynxEnter="classes"`** puts the classes on when Angular creates the element,
+  on the first render too, and takes them off at the element's own
+  `animationend` or `transitionend`.
+- **`lynxLeave="classes"`** puts the classes on when Angular removes the
+  element, and keeps it on screen until its own `animationend` or
+  `transitionend`. Then it's removed, with everything in it. End the animation
+  where the element should disappear (`forwards`), or the last frame snaps back
+  before it goes.
+- Each waits 2 seconds at most for that event: `lynxEnterTimeout` and
+  `lynxLeaveTimeout`, in milliseconds. They're for classes with no animation in
+  them. With an animation, the event ends it.
+- An end event bubbled up from a child's animation doesn't count.
+
+Where a leave applies: on an element Angular removes itself, one directly inside
+an `@if`, `@for` or `@switch` block, as Vue's `<Transition>` wants a single child.
+An element inside one of those goes with its parent, at once. Items of a `<list>`
+aren't animated: the list removes its own.
+
+While an element leaves, Angular has already let it go: a new one can come in
+beside it (toggle an `@if` twice quickly), and its own listeners are gone, so
+a tap on it does nothing.
+
+`examples/hello-world`'s list uses them: "Add item" slides one in, and tapping
+an item slides it out.
+
+What was checked: on Explorer 4.2 on the iOS simulator and the Android emulator,
+the engine runs the keyframe animations and sends `animationend` and
+`transitionend` to the element, and a leaving panel was removed by its
+`animationend`, long before its timeout (the `transition` flow, docs/41). In the
+web preview an item's enter classes came off and a removed item went 317 ms and
+270 ms after they began, the length of their animations. `npm run
+verify:transition` covers the rest headlessly.
+
+### `(animationend)` and `(transitionend)` listeners
+
+Angular keeps a template's `animation*` and `transition*` listeners when it
+destroys the view, so they still fire while an element leaves: a
+`(animationend)` on a `lynxLeave` element sees the leave's end too. On the web
+the browser drops them with the element. ng-lynx drops an element's listeners
+when it destroys the element (earlier versions kept them registered for good).
 
 ## New: `lynxAnimate` — a tiny declarative tween
 
