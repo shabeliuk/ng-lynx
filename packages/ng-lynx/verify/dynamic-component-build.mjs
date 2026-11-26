@@ -87,11 +87,15 @@ console.log('\n=== Building the standalone dynamic-component bundle ===');
 // `--mode development` so the un-packaged intermediates survive on disk (a
 // production build cleans them); the mode doesn't change externals, the
 // runtime wrapper, or the packaging under test here.
-execFileSync(
+// NG_LYNX_DEBUG_DYNAMIC_CSS: the plugin says what its CSS-section tap saw. Kept, and repeated
+// next to the CSS checks below, since a CI log shows only a harness's last lines.
+const producerLog = execFileSync(
   'npx',
   ['rspeedy', 'build', '--config', wrapConfig('producer.config.ts', 'lynx.config.producer.ts', remoteDir), '--mode', 'development'],
-  { cwd: exampleDir, stdio: 'inherit' },
-);
+  { cwd: exampleDir, stdio: ['inherit', 'pipe', 'inherit'], env: { ...process.env, NG_LYNX_DEBUG_DYNAMIC_CSS: '1' } },
+).toString();
+process.stdout.write(producerLog);
+const dynamicCssLog = producerLog.split('\n').filter((line) => line.includes('[ng-lynx] dynamic-css:'));
 
 const bgChunk = path.join(remoteDir, '.rspeedy/remote/background.js');
 const mtChunk = path.join(remoteDir, '.rspeedy/remote/main-thread.js');
@@ -164,6 +168,9 @@ assert(
   'it shares Angular with the host here too, rather than bundling it',
 );
 const queryTasm = JSON.parse(readFileSync(path.join(remoteDir, '.rspeedy/remote/tasm.json'), 'utf8'));
+console.log(`  (the CSS-section tap: ${dynamicCssLog.length ? dynamicCssLog.join(' | ') : 'never ran'}; default packaging's sections: ${
+  Object.keys(queryTasm.customSections ?? {}).join(', ') || 'none'
+}; its style info: ${Object.keys(queryTasm.css?.cssMap ?? {}).length} css id(s))`);
 // The card imports its own stylesheet (remote-card.css). Both packagings carry it as a CSS section
 // the host adopts, and nothing else is a section in the default one.
 assert(sections.includes('CSS'), "the fetch-bundle packaging carries the card's own CSS as a CSS section");
