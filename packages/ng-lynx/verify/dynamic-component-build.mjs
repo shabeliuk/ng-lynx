@@ -40,12 +40,17 @@ const exampleDir = path.join(repoRoot, 'examples/dynamic-component');
 const outRoot = mkdtempSync(path.join(tmpdir(), 'ng-lynx-dynamic-component-'));
 const remoteDir = path.join(outRoot, 'remote');
 const hostDir = path.join(outRoot, 'host');
-function wrapConfig(name, config, distRoot) {
+// `lynxOnly` builds just the `lynx` environment. A producer build's `lynx` and `web` environments
+// both write their intermediate `.rspeedy/<entry>/tasm.json` to the same path, so with both, which
+// one this check reads (or a mix of the two) depends on which finished last: on CI it was the web
+// one, which has no CSS section. Everything checked here is the `lynx` output.
+function wrapConfig(name, config, distRoot, { lynxOnly = false } = {}) {
   const file = path.join(outRoot, name);
   writeFileSync(
     file,
     `import base from ${JSON.stringify(path.join(exampleDir, config))};\n` +
-      `export default { ...base, output: { ...base.output, distPath: { root: ${JSON.stringify(distRoot)} } } };\n`,
+      `export default { ...base, ${lynxOnly ? 'environments: { lynx: base.environments?.lynx ?? {} }, ' : ''}` +
+      `output: { ...base.output, distPath: { root: ${JSON.stringify(distRoot)} } } };\n`,
   );
   return file;
 }
@@ -87,15 +92,11 @@ console.log('\n=== Building the standalone dynamic-component bundle ===');
 // `--mode development` so the un-packaged intermediates survive on disk (a
 // production build cleans them); the mode doesn't change externals, the
 // runtime wrapper, or the packaging under test here.
-// NG_LYNX_DEBUG_DYNAMIC_CSS: the plugin says what its CSS-section tap saw. Kept, and repeated
-// next to the CSS checks below, since a CI log shows only a harness's last lines.
-const producerLog = execFileSync(
+execFileSync(
   'npx',
-  ['rspeedy', 'build', '--config', wrapConfig('producer.config.ts', 'lynx.config.producer.ts', remoteDir), '--mode', 'development'],
-  { cwd: exampleDir, stdio: ['inherit', 'pipe', 'inherit'], env: { ...process.env, NG_LYNX_DEBUG_DYNAMIC_CSS: '1' } },
-).toString();
-process.stdout.write(producerLog);
-const dynamicCssLog = producerLog.split('\n').filter((line) => line.includes('[ng-lynx] dynamic-css:'));
+  ['rspeedy', 'build', '--config', wrapConfig('producer.config.ts', 'lynx.config.producer.ts', remoteDir, { lynxOnly: true }), '--mode', 'development'],
+  { cwd: exampleDir, stdio: 'inherit' },
+);
 
 const bgChunk = path.join(remoteDir, '.rspeedy/remote/background.js');
 const mtChunk = path.join(remoteDir, '.rspeedy/remote/main-thread.js');
@@ -149,7 +150,7 @@ console.log('\n=== The same component, packaged for lynx.fetchBundle ===');
 const fetchDir = path.join(outRoot, 'remote-fetch');
 execFileSync(
   'npx',
-  ['rspeedy', 'build', '--config', wrapConfig('producer-fetch.config.ts', 'lynx.config.producer-fetch.ts', fetchDir), '--mode', 'development'],
+  ['rspeedy', 'build', '--config', wrapConfig('producer-fetch.config.ts', 'lynx.config.producer-fetch.ts', fetchDir, { lynxOnly: true }), '--mode', 'development'],
   { cwd: exampleDir, stdio: 'inherit' },
 );
 const fetchPackaged = path.join(fetchDir, 'remote-fetch.lynx.bundle');
@@ -168,9 +169,6 @@ assert(
   'it shares Angular with the host here too, rather than bundling it',
 );
 const queryTasm = JSON.parse(readFileSync(path.join(remoteDir, '.rspeedy/remote/tasm.json'), 'utf8'));
-console.log(`  (the CSS-section tap: ${dynamicCssLog.length ? dynamicCssLog.join(' | ') : 'never ran'}; default packaging's sections: ${
-  Object.keys(queryTasm.customSections ?? {}).join(', ') || 'none'
-}; its style info: ${Object.keys(queryTasm.css?.cssMap ?? {}).length} css id(s))`);
 // The card imports its own stylesheet (remote-card.css). Both packagings carry it as a CSS section
 // the host adopts, and nothing else is a section in the default one.
 assert(sections.includes('CSS'), "the fetch-bundle packaging carries the card's own CSS as a CSS section");

@@ -1739,12 +1739,7 @@ function applyEntry(
     // A `query-component` dynamic bundle gets its CSS as a `CSS` section too, so the host
     // can adopt it (see AngularLynxDynamicCssPlugin).
     if (isLynx && opts.dynamicComponent && opts.dynamicComponentFetcher === 'query-component') {
-      // Hooks are per class: tap ours and the one rspeedy's build engine exposes, in case they
-      // aren't the same module (they are with one installed copy).
-      const exposed = api.useExposed?.<{ LynxTemplatePlugin?: unknown }>(Symbol.for('LynxTemplatePlugin'))
-        ?.LynxTemplatePlugin;
-      const classes = [...new Set([LynxTemplatePlugin, exposed].filter(Boolean))];
-      c.plugin('lynx:angular-dynamic-css').use(AngularLynxDynamicCssPlugin, [classes]).end();
+      c.plugin('lynx:angular-dynamic-css').use(AngularLynxDynamicCssPlugin, []).end();
     }
 
     // Keep `asyncChunks: true` on the plain async-chunk path (see
@@ -1855,55 +1850,41 @@ const PLUGIN_DYNAMIC_CSS = 'lynx:angular-dynamic-css';
 
 interface DynamicCssEncodeData {
   encodeData: {
-    css: { chunks?: { source: { source(): string | Buffer } }[]; cssMap?: Record<string, unknown[]> };
+    css: { chunks?: { source: { source(): string | Buffer } }[] };
     compilerOptions: Record<string, string | boolean>;
     customSections: Record<string, { encoding?: 'CSS'; content: Record<string, unknown> }>;
   };
 }
 
-interface TemplatePluginClass {
-  getLynxTemplatePluginHooks(c: unknown): {
-    beforeEncode: { tapPromise(name: string, cb: (args: DynamicCssEncodeData) => Promise<DynamicCssEncodeData>): void };
-  };
-  convertCSSChunksToMap?(chunks: string[], plugins: unknown[], enableCSSSelector: boolean): {
-    cssMap: Record<string, unknown[]>;
-  };
-}
-
-/** `NG_LYNX_DEBUG_DYNAMIC_CSS=1` logs what the tap saw. For CI, where the build's internals can't be inspected. */
-const debugDynamicCss = (message: string): void => {
-  if (process.env['NG_LYNX_DEBUG_DYNAMIC_CSS']) console.log(`[ng-lynx] dynamic-css: ${message}`);
-};
-
 class AngularLynxDynamicCssPlugin {
-  constructor(private readonly classes: unknown[] = [LynxTemplatePlugin]) {}
-
   apply(compiler: { hooks: { thisCompilation: { tap(name: string, cb: (c: unknown) => void): void } } }): void {
-    const classes = this.classes as TemplatePluginClass[];
-    debugDynamicCss(`tapping ${classes.length} template plugin class(es)`);
     compiler.hooks.thisCompilation.tap(PLUGIN_DYNAMIC_CSS, (compilation) => {
-      for (const TemplatePlugin of classes) {
-        TemplatePlugin.getLynxTemplatePluginHooks(compilation).beforeEncode.tapPromise(PLUGIN_DYNAMIC_CSS, async (args) => {
-          const { css, customSections, compilerOptions } = args.encodeData;
-          if (customSections['CSS']) return args;
-          const chunks = css.chunks ?? [];
-          // The chunks, parsed the way the fetch-bundle packaging parses them; failing that, the
-          // rules the template plugin already parsed into its style info.
-          let ruleList: unknown[] = [];
-          const convert = TemplatePlugin.convertCSSChunksToMap ?? (LynxTemplatePlugin as unknown as TemplatePluginClass).convertCSSChunksToMap;
-          if (chunks.length > 0 && convert) {
-            ruleList = convert(
-              chunks.map((chunk) => chunk.source.source().toString()),
-              [],
-              compilerOptions['enableCSSSelector'] !== false,
-            ).cssMap[0] ?? [];
+      const hooks = (
+        LynxTemplatePlugin as unknown as {
+          getLynxTemplatePluginHooks(c: unknown): {
+            beforeEncode: { tapPromise(name: string, cb: (args: DynamicCssEncodeData) => Promise<DynamicCssEncodeData>): void };
+          };
+        }
+      ).getLynxTemplatePluginHooks(compilation);
+      hooks.beforeEncode.tapPromise(PLUGIN_DYNAMIC_CSS, async (args) => {
+        const chunks = args.encodeData.css.chunks ?? [];
+        if (chunks.length === 0) return args;
+        const { cssMap } = (
+          LynxTemplatePlugin as unknown as {
+            convertCSSChunksToMap(
+              chunks: string[],
+              plugins: unknown[],
+              enableCSSSelector: boolean,
+            ): { cssMap: Record<number, unknown[]> };
           }
-          if (ruleList.length === 0) ruleList = Object.values(css.cssMap ?? {}).flat();
-          debugDynamicCss(`${chunks.length} CSS chunk(s), ${ruleList.length} rule(s)`);
-          if (ruleList.length > 0) customSections['CSS'] = { encoding: 'CSS', content: { ruleList } };
-          return args;
-        });
-      }
+        ).convertCSSChunksToMap(
+          chunks.map((chunk) => chunk.source.source().toString()),
+          [],
+          args.encodeData.compilerOptions['enableCSSSelector'] !== false,
+        );
+        args.encodeData.customSections['CSS'] = { encoding: 'CSS', content: { ruleList: cssMap[0] ?? [] } };
+        return args;
+      });
     });
   }
 }
