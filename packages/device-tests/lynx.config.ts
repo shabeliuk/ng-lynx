@@ -58,6 +58,8 @@ export default defineConfig({
       enableNewGesture: true,
       asyncChunks: true,
       mainThreadModules: ['./src/worklets.ts'],
+      // The `bundle` screen loads a component from a bundle built on its own.
+      dynamicComponentHost: true,
     }),
     // lynxEventSource reads its stream through fetch's standard streaming.
     pluginLynxConfig({ enableFetchAPIStandardStreaming: true }),

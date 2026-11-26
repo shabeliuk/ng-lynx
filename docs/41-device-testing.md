@@ -303,6 +303,13 @@ Each one was driven, not just opened. What each row left out:
   connection was lost", Android "unexpected end of stream"). Retried on a slow network (4 s), it loads
   and the card works. The engine doesn't keep the failure, unlike the lazy-chunk runtime's (see
   `network` above). iOS tried the cut request three times before failing; Android once.
+- `bundle` and `bundle-query` (2026-11-25, Explorer 4.2): the iOS simulator and the Android emulator loaded a
+  card through `fetchBundle` and through `QueryComponent` (`bundle-query`), kept it live, and applied the
+  stylesheet inside its bundle. `bundle` also read a section synchronously and failed a missing bundle:
+  iOS reports it at once, with the engine's message; Android never calls back, which `fetchBundle`'s
+  `timeout` turns into an error ([38](38-dynamic-component.md#loading-with-lynxfetchbundle)). Without
+  the Main-Thread adopt step the stylesheet wasn't applied by either engine
+  ([38](38-dynamic-component.md#the-bundles-own-css)).
 - `threejs-*` ran, but only a phone's frame rate means anything.
 
 ### Before 1.0.0

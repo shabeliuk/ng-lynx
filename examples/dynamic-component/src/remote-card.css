@@ -1,0 +1,12 @@
+/* The loaded component's own stylesheet. It is packed into its bundle, not the host's
+   app.css, and loadDynamicComponent applies it from the bundle's CSS section before it
+   creates the component, whichever way the bundle was packaged.
+
+   On a device that's both buttons: the card gets a green edge and a green note. In the web
+   preview only "Load it with fetchBundle" applies it: web-core scopes the styles of a
+   QueryComponent bundle to the bundle, which ng-lynx's elements aren't part of, so that card
+   keeps the host's styles and shows the note unstyled. See docs/38. */
+.remote-card {
+  border-left: 4px solid #7ee787;
+}
+.remote-note { color: #7ee787; font-size: 12px; margin-bottom: 14px; }

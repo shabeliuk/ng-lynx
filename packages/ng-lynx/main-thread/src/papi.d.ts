@@ -53,6 +53,9 @@ declare function __SetInlineStyles(el: LynxElement, styles: string | object): vo
 declare function __SetClasses(el: LynxElement, classes: string): void;
 declare function __SetID(el: LynxElement, id: string | undefined): void;
 declare function __SetCSSId(els: LynxElement[], cssId: number): void;
+/** The stylesheet in a fetched bundle's custom section, or `null` when it has none. Engine 3.9. */
+declare function __LoadStyleSheet(section: string, bundleName: string): unknown;
+declare function __AdoptStyleSheet(sheet: unknown): void;
 /**
  * `handler` is `string` for a cross-thread sign (routed to `publishEvent`),
  * `undefined` to remove the listener, or `{ type: 'worklet', value }` to

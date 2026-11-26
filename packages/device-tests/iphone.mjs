@@ -184,17 +184,22 @@ console.log(`iPhone ${udid}, server http://${host}:${PORT}/, ${flows.length} flo
 
 console.log('Building the test app');
 const dist = path.join(here, 'dist-iphone');
-execFileSync('pnpm', ['exec', 'rspeedy', 'build'], {
-  cwd: here,
-  stdio: 'pipe',
-  env: {
-    ...process.env,
-    NODE_ENV: 'production',
-    DO_NOT_TRACK: '1',
-    DEVICE_TESTS_ORIGIN: `http://${host}:${PORT}/`,
-    DEVICE_TESTS_DIST: dist,
-  },
-});
+const buildEnv = {
+  ...process.env,
+  NODE_ENV: 'production',
+  DO_NOT_TRACK: '1',
+  DEVICE_TESTS_ORIGIN: `http://${host}:${PORT}/`,
+  DEVICE_TESTS_DIST: dist,
+};
+execFileSync('pnpm', ['exec', 'rspeedy', 'build'], { cwd: here, stdio: 'pipe', env: buildEnv });
+// The bundles the `bundle` screen loads, built after the app: the app's build empties dist/.
+for (const fetcher of ['fetch-bundle', 'query-component']) {
+  execFileSync('pnpm', ['exec', 'rspeedy', 'build', '--config', 'lynx.config.producer.ts'], {
+    cwd: here,
+    stdio: 'pipe',
+    env: { ...buildEnv, DEVICE_TESTS_FETCHER: fetcher },
+  });
+}
 
 const main = await serve(dist, PORT, { host: '0.0.0.0' });
 const assets = await serve(dist, ASSETS_PORT, { host: '0.0.0.0', main: 'assets' });

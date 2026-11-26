@@ -14,7 +14,7 @@ import { pluginAngularLynx } from 'ng-lynx/plugin';
 /**
  * Serves the dynamic bundle from the host's own origin. `npm run dev` and
  * `npm run build` run the producer first (`lynx.config.producer.ts`), which
- * writes `remote.*.bundle` into `dist-remote/`. This adds that folder to
+ * writes `remote.*.bundle` into `dist-remote/` and `remote-fetch.*.bundle` into `dist-remote-fetch/`. This adds that folder to
  * rsbuild's static files: the dev server serves it as is, and a build copies
  * it into `dist/`. rspeedy's config has no `server.publicDir`, hence a plugin.
  */
@@ -22,7 +22,7 @@ const pluginServeRemoteBundle: RsbuildPlugin = {
   name: 'serve-remote-bundle',
   setup(api) {
     api.modifyRsbuildConfig((config) => {
-      config.server = { ...config.server, publicDir: [{ name: 'public' }, { name: 'dist-remote' }] };
+      config.server = { ...config.server, publicDir: [{ name: 'public' }, { name: 'dist-remote' }, { name: 'dist-remote-fetch' }] };
     });
   },
 };

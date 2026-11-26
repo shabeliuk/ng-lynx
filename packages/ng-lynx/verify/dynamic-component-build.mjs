@@ -140,6 +140,48 @@ assert(
   `the packaged bundle is small (${(packagedSize / 1024).toFixed(0)} kB — an app bundle carrying its own Angular is several hundred kB)`,
 );
 
+// --- 5b. the fetch-bundle packaging ---------------------------------------
+console.log('\n=== The same component, packaged for lynx.fetchBundle ===');
+const fetchDir = path.join(outRoot, 'remote-fetch');
+execFileSync(
+  'npx',
+  ['rspeedy', 'build', '--config', wrapConfig('producer-fetch.config.ts', 'lynx.config.producer-fetch.ts', fetchDir), '--mode', 'development'],
+  { cwd: exampleDir, stdio: 'inherit' },
+);
+const fetchPackaged = path.join(fetchDir, 'remote-fetch.lynx.bundle');
+assert(existsSync(fetchPackaged), 'dynamicComponentFetcher: "fetch-bundle" emitted remote-fetch.lynx.bundle');
+const fetchTasm = path.join(fetchDir, '.rspeedy/remote-fetch/tasm.json');
+assert(existsSync(fetchTasm), 'and its tasm.json, to read the sections from');
+const sections = Object.keys(JSON.parse(readFileSync(fetchTasm, 'utf8')).customSections ?? {});
+// The names lynx.loadScript is asked for: loadDynamicComponent reads 'background', ReactLynx's loader
+// reads all three.
+assert(sections.includes('background'), `the bundle has a "background" section (${sections.join(', ')})`);
+assert(sections.includes('main-thread'), 'and a "main-thread" section');
+const fetchBg = readFileSync(path.join(fetchDir, '.rspeedy/remote-fetch/background.js'), 'utf8');
+assert(fetchBg.includes('Loaded from a separate bundle'), "the component's own template is in it");
+assert(
+  fetchBg.includes('__ANGULAR_LYNX_EXPORTS__(@angular/core)') && !fetchBg.includes('R3Injector'),
+  'it shares Angular with the host here too, rather than bundling it',
+);
+const queryTasm = JSON.parse(readFileSync(path.join(remoteDir, '.rspeedy/remote/tasm.json'), 'utf8'));
+// The card imports its own stylesheet (remote-card.css). Both packagings carry it as a CSS section
+// the host adopts, and nothing else is a section in the default one.
+assert(sections.includes('CSS'), "the fetch-bundle packaging carries the card's own CSS as a CSS section");
+assert(
+  Object.keys(queryTasm.customSections ?? {}).join() === 'CSS',
+  'the default packaging has only that CSS section, and no background or main-thread one: the formats are not mixed up',
+);
+const ruleSelectors = (tasm) =>
+  (tasm.customSections?.CSS?.content?.ruleList ?? []).map((rule) => rule.selectorText?.value).filter(Boolean);
+assert(
+  ruleSelectors(queryTasm).includes('.remote-note') && ruleSelectors(queryTasm).join() === ruleSelectors(JSON.parse(readFileSync(fetchTasm, 'utf8'))).join(),
+  'the same rules in both (.remote-note from remote-card.css)',
+);
+assert(
+  Object.keys(queryTasm.css?.cssMap ?? {}).length > 0,
+  "and the default packaging still has the template's own style info, as before",
+);
+
 // --- 6. the HOST side publishes what the producer externalizes -------------
 console.log('\n=== Building the host (dynamicComponentHost: true) ===');
 execFileSync('npx', ['rspeedy', 'build', '--config', wrapConfig('host.config.ts', 'lynx.config.ts', hostDir), '--mode', 'development'], {

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "npm run build:producer && rspeedy dev",
     "build": "npm run build:producer && rspeedy build",
-    "build:producer": "rspeedy build --config lynx.config.producer.ts"
+    "build:producer": "rspeedy build --config lynx.config.producer.ts && rspeedy build --config lynx.config.producer-fetch.ts"
   },
   "dependencies": {
     "@angular/compiler": ">=21.2.26",

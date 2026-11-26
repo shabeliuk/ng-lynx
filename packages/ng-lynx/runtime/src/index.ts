@@ -373,6 +373,16 @@ export function asLynxElement(nativeElement: unknown): unknown {
  * @experimental
  */
 export { loadDynamicComponent } from './dynamic-component.js';
+export type { LoadDynamicComponentOptions } from './dynamic-component.js';
+export {
+  fetchBundle,
+  type FetchBundleOptions,
+  type FetchedBundle,
+  hasFetchBundle,
+  loadBundleScript,
+  LynxBundleError,
+  ɵresetFetchedBundles,
+} from './fetch-bundle.js';
 
 /**
  * Shared-runtime registry for dynamic components — the mechanism that lets a

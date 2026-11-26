@@ -58,5 +58,6 @@ export class HomeComponent {
     { label: 'Open timing', path: '/timing' },
     { label: 'Open network', path: '/network' },
     { label: 'Open memory', path: '/memory' },
+    { label: 'Open bundle', path: '/bundle' },
   ];
 }

@@ -10,6 +10,21 @@ which parts are experimental and may change in a minor release, is in
 
 ### Added
 
+- **`lynx.fetchBundle` (experimental).** `fetchBundle(url, { sync?, timeout? })` is the Promise
+  form of the engine's loader (engine 3.9, the one ReactLynx's own lazy bundles use): it resolves
+  once the bundle is in the engine's cache, caches a success and not a failure, and rejects with a
+  `LynxBundleError` carrying the engine's `code` and message. `loadBundleScript` and
+  `hasFetchBundle` go with it. `loadDynamicComponent(source, { fetcher: 'fetch-bundle' })` loads a
+  component packaged with the new plugin option `dynamicComponentFetcher: 'fetch-bundle'`, which
+  encodes the bundle as named sections. The default, `'query-component'`, is unchanged. Neither engine applies a
+  dynamic bundle's own CSS to the host's page (measured on Explorer 4.2, both packagings), so
+  `loadDynamicComponent` adopts the bundle's `CSS` section from the Main Thread before the component is
+  created, as ReactLynx's loader does (`bundle.adoptStyleSheet()`); the `query-component` packaging now carries
+  that section too, next to its style info. The async
+  form has a `timeout` (30 s by default): Explorer 4.2 on Android never calls back for a 404.
+  docs/38, a "Load it with fetchBundle" button in `examples/dynamic-component`, harness
+  `verify:fetch-bundle`, the packaging checks in `verify:dynamic-component-build`, and the `bundle` and
+  `bundle-query` device flows on the iOS simulator and the Android emulator.
 - **Inline `'main thread'` functions (experimental).** Write a worklet or a main-thread
   function in the component, with `'main thread'` as the first statement of its body,
   and `pluginAngularLynx` moves the body to the Main-Thread bundle: no Main-Thread

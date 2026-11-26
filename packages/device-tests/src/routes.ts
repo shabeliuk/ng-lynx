@@ -1,6 +1,7 @@
 import type { Routes } from '@angular/router';
 
 import { AttributesComponent } from './attributes.component.js';
+import { BundleComponent } from './bundle.component.js';
 import { GestureComponent } from './gesture.component.js';
 import { GestureLabComponent } from './gesture-lab.component.js';
 import { HomeComponent } from './home.component.js';
@@ -28,6 +29,7 @@ export const routes: Routes = [
   { path: 'timing', component: TimingComponent },
   { path: 'network', component: NetworkComponent },
   { path: 'memory', component: MemoryComponent },
+  { path: 'bundle', component: BundleComponent },
   {
     // The chunk name keeps this on the path `lynx.requireModuleAsync` loads from.
     // See docs/15-routing.md.
