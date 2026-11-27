@@ -8,6 +8,34 @@ which parts are experimental and may change in a minor release, is in
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-27
+
+Two fixes to `LynxLazyFor` (experimental), found by MyAssets, a real app built from the
+published packages, the first time it put a 721-row list on the directive.
+
+### Fixed
+
+- **`LynxLazyFor` could crash the app** (Lynx Explorer 4.2, iOS simulator) when rows the
+  native list still held a cell for left the list: a sort followed by a fling, or a filter
+  that removed the rows on screen. The Main Thread took a dropped row's element off the
+  `<list>` in the same batch, which freed it, while the engine's C++ list container still
+  had an item holder pointing at it. When the list recycled that holder it read the freed
+  element (`ListItemMediator::HasBoundEvent`, from `ListEventManager::SendExposureEvent`
+  in `DefaultListAdapter::OnEnqueueElement`): EXC_BAD_ACCESS. A dropped row the list
+  still holds now stays on the list until the list lets go of its cell
+  (`enqueueComponent`), and leaves it a turn later, since the engine reads the element
+  again after that callback returns. Found by MyAssets, a real app built from the
+  published packages, on its 721-row markets list and coin search. `verify:lazy-list`'s
+  native list now reads a cell's element as it lets go, as the engine does, with a sort
+  and a search on screen; the `lazy-list` device flow sorts, flings and filters.
+- **A sort could make `LynxLazyFor` build thousands of rows.** After a change that moved
+  every row, the C++ list container asked for every cell from the top down to its old
+  scroll position in one layout pass, then kept a screen of them; on the iOS simulator
+  the window grew to 4,956 of 10,000 rows, and stayed that big. A range report now spans
+  at most 200 rows, from the first cell the list asked for; a window far bigger than the
+  rows the list holds shrinks at the next report; and a held row the change moved is no
+  longer wanted back where it went, which pulled the window away from the screen.
+
 ## [1.1.0] - 2026-11-27
 
 Everything since 1.0.1, including the HttpClient fix prepared as 1.0.2, which was never
@@ -364,7 +392,8 @@ Gestures: pan, tap, long press and fling run on iOS and Android. Lynx's engines 
 recognizer for `pinch` or `rotation`, so those never fire, and a dev build warns when you
 bind one. A fling's event is typed as `MainThreadFlingGestureEvent`.
 
-[Unreleased]: https://github.com/shabeliuk/ng-lynx/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/shabeliuk/ng-lynx/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/shabeliuk/ng-lynx/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/shabeliuk/ng-lynx/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/shabeliuk/ng-lynx/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/shabeliuk/ng-lynx/compare/v0.1.0-rc.0...v1.0.0

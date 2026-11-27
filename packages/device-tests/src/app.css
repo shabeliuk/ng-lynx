@@ -252,3 +252,14 @@
 .transition-box.faded {
   opacity: 0.3;
 }
+
+/* Two buttons side by side (the lazy list's sort and filter). */
+.button-row {
+  display: flex;
+  flex-direction: row;
+}
+
+.button-half {
+  flex: 1;
+  margin-right: 8px;
+}

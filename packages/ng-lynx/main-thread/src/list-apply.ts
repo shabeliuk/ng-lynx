@@ -113,6 +113,28 @@ const lazySigns = new Map<number, { list: number; key: string }>();
  * put it back (a move).
  */
 const lazyDetach = new Map<number, { list: number; el: LynxElement }>();
+/**
+ * Rows dropped from a lazy list while the native list still held a cell for them,
+ * by element sign. Each stays on the list until the list lets go of its cell, and
+ * a turn after that: the C++ list container's item holder keeps a raw pointer to
+ * the element, and after `enqueueComponent` returns it still sends the element's
+ * exposure event and detaches it (`ListAdapter::EnqueueElement`,
+ * `DefaultListAdapter::OnEnqueueElement`). Taking the element off the list any
+ * sooner frees it under the holder, and the app crashes when the list recycles the
+ * holder (a fling, or a filter that removes rows on screen).
+ */
+const retiring = new Map<number, { list: number; listEl: LynxElement; el: LynxElement; childId: number }>();
+/** Retired elements whose cell the list let go of: taken off their list on the next turn. */
+const retired: { list: number; listEl: LynxElement; el: LynxElement; childId: number }[] = [];
+let retireTimerSet = false;
+/**
+ * The most rows one range report spans. The list holds about a screen of cells, and
+ * a screen is far fewer rows than this. But the C++ list container can ask for
+ * thousands of cells in one layout pass and keep only a screen of them: after a sort
+ * moved every row, it asked for every cell from the top down to the old scroll
+ * position. Reported as one range, that built thousands of rows.
+ */
+const MAX_REPORT_ROWS = 200;
 /** Lazy lists with a range report waiting for the timer. */
 const pendingReports = new Set<number>();
 let reportTimerSet = false;
@@ -212,6 +234,13 @@ function createListCallbacks(listBgId: number): {
   // Angular owns the elements, so there's nothing to recycle: a lazy list only
   // stops counting the cell as held.
   const enqueueComponent = (_list: LynxElement, _listID: number, sign: number): void => {
+    const leaving = retiring.get(sign);
+    if (leaving) {
+      // A row already dropped: its key may be bound to a new element by now.
+      retiring.delete(sign);
+      retireLater(leaving);
+      return;
+    }
     const cell = lazySigns.get(sign);
     if (!cell) return;
     lazySigns.delete(sign);
@@ -220,6 +249,29 @@ function createListCallbacks(listBgId: number): {
   };
 
   return { componentAtIndex, enqueueComponent, componentAtIndexes };
+}
+
+/**
+ * Take a dropped row's element off its list once the engine is done with it: not
+ * inside `enqueueComponent`, which the engine follows by reading the element.
+ */
+function retireLater(entry: { list: number; listEl: LynxElement; el: LynxElement; childId: number }): void {
+  retired.push(entry);
+  if (retireTimerSet) return;
+  retireTimerSet = true;
+  setTimeout(removeRetired, 0);
+}
+
+function removeRetired(): void {
+  retireTimerSet = false;
+  const entries = retired.splice(0);
+  for (const { list, listEl, el, childId } of entries) {
+    // A list destroyed meanwhile took its children with it. A retired element was
+    // handed to the list, so it's on it: `appendedItems` has forgotten it already.
+    if (!listElementIds.has(list)) continue;
+    appendedItems.delete(childId);
+    __RemoveElement(listEl, el);
+  }
 }
 
 /** Is this BG parent id a `<list>`? */
@@ -264,6 +316,7 @@ export function insertListItem(
   // Re-inserting an id means this was a move, not a removal — keep its metadata.
   pendingItemCleanup.delete(childId);
   lazyDetach.delete(childId);
+  for (const [sign, entry] of retiring) if (entry.childId === childId) retiring.delete(sign);
   const order = listOrder.get(listBgId);
   if (!order) return;
 
@@ -363,6 +416,23 @@ function sendRangeReports(): void {
     };
     lazy.bound.forEach(widen);
     lazy.freshMisses.forEach(widen);
+    if (end - start + 1 > MAX_REPORT_ROWS) {
+      // More than any screen: report from the first cell the list asked for, or
+      // held, that many rows. The next report, once the list has settled, says the rest.
+      const firstOf = (keys: Set<string>): number => {
+        let first = Number.POSITIVE_INFINITY;
+        keys.forEach((key) => {
+          const row = lazy.rowOf.get(key);
+          if (row !== undefined && row < first) first = row;
+        });
+        return first;
+      };
+      const from = lazy.freshMisses.size > 0 ? firstOf(lazy.freshMisses) : firstOf(lazy.bound);
+      if (Number.isFinite(from)) {
+        start = from;
+        end = Math.min(end, from + MAX_REPORT_ROWS - 1);
+      }
+    }
     const hadMisses = lazy.freshMisses.size > 0;
     lazy.freshMisses.clear();
     if (end < 0) continue;
@@ -441,6 +511,24 @@ function lisIndices(seq: number[]): Set<number> {
 }
 
 /**
+ * The keys of `prevKeys` still in `currentKeys` whose relative order is already
+ * right (the longest increasing subsequence of the survivors by their new index):
+ * these stay where they are, and the rest are removed and inserted again.
+ */
+function keptInPlace(prevKeys: string[], currentKeys: string[]): Set<string> {
+  const curPos = new Map<string, number>();
+  currentKeys.forEach((k, i) => curPos.set(k, i));
+  const survivors: { curIdx: number; key: string }[] = [];
+  for (const k of prevKeys) {
+    const ci = curPos.get(k);
+    if (ci !== undefined) survivors.push({ curIdx: ci, key: k });
+  }
+  const keep = new Set<string>();
+  lisIndices(survivors.map((s) => s.curIdx)).forEach((idx) => keep.add(survivors[idx]!.key));
+  return keep;
+}
+
+/**
  * The minimal keyed diff from `prevKeys` to `currentKeys`: `removeAction` as
  * ascending old positions, and the positions in `currentKeys` to insert. Keys in
  * `reinsert` are removed and inserted again even if they kept their place.
@@ -459,16 +547,7 @@ function diffKeys(
   // gaps / a lone item) even though web-core tolerates it.
   const curPos = new Map<string, number>();
   currentKeys.forEach((k, i) => curPos.set(k, i));
-
-  // Survivors = prev keys still present, in prev order, tagged with new index.
-  const survivors: { curIdx: number; key: string }[] = [];
-  for (const k of prevKeys) {
-    const ci = curPos.get(k);
-    if (ci !== undefined) survivors.push({ curIdx: ci, key: k });
-  }
-  const lis = lisIndices(survivors.map((s) => s.curIdx));
-  const keep = new Set<string>();
-  lis.forEach((idx) => keep.add(survivors[idx]!.key));
+  const keep = keptInPlace(prevKeys, currentKeys);
   reinsert?.forEach((k) => keep.delete(k));
 
   // removeAction: **ascending** prev positions of keys that vanished or must
@@ -492,15 +571,36 @@ function diffKeys(
 /** Post-ops for a list a `LynxLazyFor` drives. See the module doc. */
 function flushLazyList(listBgId: number, listEl: LynxElement, order: number[], lazy: LazyList): void {
   // Rows the Background Thread dropped: their slot stays, so take the element off
-  // the list here. One the list still showed is wanted back.
+  // the list here. One the list still showed may be wanted back (below).
+  const heldDropped: string[] = [];
   for (const [childId, detach] of lazyDetach) {
     if (detach.list !== listBgId) continue;
     lazyDetach.delete(childId);
-    if (appendedItems.delete(childId)) __RemoveElement(listEl, detach.el);
-    lazySigns.delete(__GetElementUniqueID(detach.el));
+    const sign = __GetElementUniqueID(detach.el);
+    if (lazySigns.has(sign)) {
+      // The list still holds a cell for it: it stays on the list until the list
+      // lets go (see `retiring`).
+      retiring.set(sign, { list: listBgId, listEl, el: detach.el, childId });
+    } else if (appendedItems.delete(childId)) {
+      __RemoveElement(listEl, detach.el);
+    }
+    lazySigns.delete(sign);
     const key = itemKeyOf(childId);
-    // A row that left the data, rather than the window, isn't wanted back.
-    if (lazy.bound.delete(key) && lazy.rowOf.has(key)) {
+    if (lazy.bound.delete(key)) heldDropped.push(key);
+  }
+
+  const currentKeys = lazy.keys;
+  const prevKeys = listPrevKeys.get(listBgId) ?? [];
+  const unchanged = arraysEqual(currentKeys, prevKeys);
+  // A dropped row the list still showed is wanted back only where the list keeps
+  // its cell: the window moved under a list that stood still. A row that left the
+  // data isn't, and nor is one the rows' change moves (a sort): the list removes
+  // that cell and recycles it, and wanting the row back where it went would pull
+  // the window away from the screen.
+  if (heldDropped.length > 0) {
+    const stays = unchanged ? undefined : keptInPlace(prevKeys, currentKeys);
+    for (const key of heldDropped) {
+      if (!lazy.rowOf.has(key) || (stays && !stays.has(key))) continue;
       lazy.missed.add(key);
       lazy.freshMisses.add(key);
       scheduleRangeReport(listBgId);
@@ -528,9 +628,7 @@ function flushLazyList(listBgId: number, listEl: LynxElement, order: number[], l
   });
   refresh.forEach((key) => lazy.missed.delete(key));
 
-  const currentKeys = lazy.keys;
-  const prevKeys = listPrevKeys.get(listBgId) ?? [];
-  if (arraysEqual(currentKeys, prevKeys)) {
+  if (unchanged) {
     if (refresh.size === 0) return;
     const updateAction: Record<string, unknown>[] = [];
     refresh.forEach((key) => {
@@ -572,6 +670,7 @@ function dropList(listBgId: number, order: number[]): void {
   pendingReports.delete(listBgId);
   for (const [sign, cell] of lazySigns) if (cell.list === listBgId) lazySigns.delete(sign);
   for (const [childId, detach] of lazyDetach) if (detach.list === listBgId) lazyDetach.delete(childId);
+  for (const [sign, entry] of retiring) if (entry.list === listBgId) retiring.delete(sign);
 }
 
 /**
@@ -630,6 +729,7 @@ export function listStateSizes(): Record<string, number> {
     lazyLists: lazyLists.size,
     lazySigns: lazySigns.size,
     lazyDetach: lazyDetach.size,
+    retiring: retiring.size + retired.length,
     pendingReports: pendingReports.size,
     childEls: listChildEls.size,
     itemKeys: itemKeyMap.size,
@@ -650,5 +750,7 @@ export function resetListState(): void {
   lazyLists.clear();
   lazySigns.clear();
   lazyDetach.clear();
+  retiring.clear();
+  retired.length = 0;
   pendingReports.clear();
 }

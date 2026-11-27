@@ -1006,15 +1006,44 @@ export function virtualizingList(listEl: MockEl): VirtualizingList {
   let operationId = 1;
   const listId = listEl.listId ?? 0;
 
+  /**
+   * Let go of a cell, as `ListAdapter::EnqueueElement` does: it calls
+   * `enqueueComponent`, and then, still holding a raw pointer to the cell's
+   * element, sends its exposure event and detaches it (`OnEnqueueElement`). An
+   * element already taken off the list, before or during the callback, has been
+   * freed by then: on a device that's a use-after-free, and the app crashes.
+   */
+  const enqueue = (sign: number): void => {
+    const el = sign > 0 ? elementsByUid.get(sign) : undefined;
+    const wasAttached = !!el && listEl.children.includes(el);
+    listEl.listCbs?.enqueueComponent?.(listEl, listId, sign);
+    if (wasAttached && !listEl.children.includes(el!)) {
+      errors.push(`the cell with sign ${sign} was taken off the list before the list let go of it (a device crashes reading it)`);
+    }
+  };
+
   const release = (key: string): void => {
     const sign = held.get(key);
     if (sign === undefined) return;
     held.delete(key);
     // iOS recycles a cell's UI even when it has none, as sign 0.
-    listEl.listCbs?.enqueueComponent?.(listEl, listId, sign > 0 ? sign : 0);
+    enqueue(sign > 0 ? sign : 0);
+  };
+
+  /** A cell held for `key` whose element is no longer on the list: what crashes when it's recycled. */
+  const checkHeld = (): void => {
+    for (const [key, sign] of held) {
+      if (sign <= 0) continue;
+      const el = elementsByUid.get(sign);
+      if (!el || !listEl.children.includes(el)) {
+        errors.push(`the list still holds a cell for "${key}" whose element was taken off the list (a device crashes recycling it)`);
+        held.set(key, -1);
+      }
+    }
   };
 
   const applyUpdates = (): void => {
+    checkHeld();
     const updates = listEl.listUpdates ?? [];
     listEl.listUpdates = [];
     delete listEl.attrs['update-list-info'];
@@ -1087,7 +1116,7 @@ export function virtualizingList(listEl: MockEl): VirtualizingList {
         dirty.delete(key);
         // The C++ list container lets go of a cell before binding it again.
         const previous = held.get(key);
-        if (previous !== undefined && previous > 0) listEl.listCbs?.enqueueComponent?.(listEl, listId, previous);
+        if (previous !== undefined && previous > 0) enqueue(previous);
         requests.push(index);
         const answer = listEl.listCbs?.componentAtIndex(listEl, listId, index, operationId++);
         const sign = typeof answer === 'number' ? answer : -1;
