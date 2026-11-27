@@ -1,13 +1,24 @@
 {
   "name": "create-ng-lynx",
   "version": "1.0.2",
-  "description": "Scaffold an Angular-on-Lynx app (Angular custom renderer for the Lynx cross-platform engine)",
+  "description": "Create a native iOS and Android app with Angular: scaffolds an ng-lynx project (Angular on the Lynx cross-platform engine, native UI, no WebView).",
   "keywords": [
     "angular",
     "lynx",
+    "lynxjs",
     "ng-lynx",
     "create",
-    "scaffold"
+    "scaffold",
+    "starter",
+    "template",
+    "mobile",
+    "mobile-app",
+    "ios",
+    "android",
+    "cross-platform",
+    "native",
+    "angular-mobile",
+    "web-to-mobile"
   ],
   "license": "Apache-2.0",
   "type": "module",

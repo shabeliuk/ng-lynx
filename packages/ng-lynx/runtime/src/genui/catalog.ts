@@ -12,11 +12,14 @@
  * Angular component classes as the implementations, so:
  *
  *  - function entries use the identical shape as upstream
- *    (`{ kind: 'function', name, impl, definition? }`), which means
+ *    (`{ kind: 'function', name, impl?, definition? }`), which means
  *    `basicFunctions` from `@lynx-js/genui/a2ui/functions` — a React-free
  *    entry — can be spread straight into an Angular catalog;
- *  - `resolveDynamicValue` / `executeFunctionCall` from
- *    `@lynx-js/genui/a2ui/store` accept the function entries unchanged.
+ *  - a resolved catalog has upstream's `Catalog` shape (`components` with
+ *    `name` and `schema`, plus `functions`), so `A2uiSurface` registers it on
+ *    the `MessageProcessor` with `registerCatalog(catalogId, catalog)`. In
+ *    A2UI v1.0 that registration, not the global `functionRegistry`, is how
+ *    `@call` finds a function: by the surface's (or component's) catalog id.
  */
 import type { Type } from '@angular/core';
 
@@ -33,9 +36,23 @@ type FunctionDefinition = NonNullable<FunctionEntry['definition']>;
 export interface A2uiFunctionEntry {
   kind: 'function';
   name: string;
-  impl: FunctionEntry['impl'];
+  /**
+   * Local implementation. Without one, a call is routed to the agent
+   * (`callAgentFunction`), so the definition alone declares an agent function.
+   */
+  impl?: FunctionEntry['impl'];
   definition?: FunctionDefinition;
 }
+
+/**
+ * The catalog id `<a2ui-surface>` registers its catalog under when none is
+ * given: the same default as upstream `<A2UI>`, the published Lynx catalog.
+ * A surface renders only when its `createSurface.catalogId` names a
+ * registered catalog.
+ *
+ * @experimental
+ */
+export const A2UI_DEFAULT_CATALOG_ID = 'https://unpkg.com/@lynx-js/genui/a2ui/dist/catalog.json';
 
 /**
  * A named Angular component registered as an A2UI catalog component.
@@ -79,8 +96,9 @@ function isFunctionEntry(input: A2uiCatalogInput): input is A2uiFunctionEntry {
 /**
  * Build an Angular A2UI catalog from component entries, `[component,
  * manifest]` pairs, and function entries. Duplicate names within the same
- * kind are rejected, and function impls are registered into the shared
- * `functionRegistry` immediately — both mirroring upstream `defineCatalog`.
+ * kind are rejected, as is the reserved name `Surface`, and function impls
+ * are also registered into the shared `functionRegistry` — all mirroring
+ * upstream `defineCatalog`.
  *
  * @experimental
  */
@@ -96,11 +114,13 @@ export function defineA2uiCatalog(inputs: readonly A2uiCatalogInput[]): A2uiCata
       }
       seenFunctions.add(input.name);
       functions.push(input);
-      functionRegistry.register({
-        name: input.name,
-        impl: input.impl,
-        ...(input.definition ? { definition: input.definition } : {}),
-      });
+      if (input.impl) {
+        functionRegistry.register({
+          name: input.name,
+          impl: input.impl,
+          ...(input.definition ? { definition: input.definition } : {}),
+        });
+      }
       continue;
     }
     let entry: A2uiComponentEntry;
@@ -120,6 +140,9 @@ export function defineA2uiCatalog(inputs: readonly A2uiCatalogInput[]): A2uiCata
     } else {
       entry = input as A2uiComponentEntry;
     }
+    if (entry.name === 'Surface') {
+      throw new Error('[a2ui] Surface is a reserved A2UI component name.');
+    }
     if (seenComponents.has(entry.name)) {
       throw new Error(`[a2ui] Duplicate component name in catalog: "${entry.name}".`);
     }
@@ -138,4 +161,79 @@ export function resolveA2uiCatalog(catalog: A2uiCatalog): Map<string, Type<unkno
   const map = new Map<string, Type<unknown>>();
   for (const entry of catalog.components) map.set(entry.name, entry.component);
   return map;
+}
+
+/**
+ * The catalog an agent is told about during the handshake: port of upstream
+ * `serializeCatalog`. Every component entry needs a `schema` (from the
+ * catalog extractor, or written by hand); the basic catalog's components
+ * have none, so serialize your own catalogs, or announce the published Lynx
+ * catalog by its id ({@link A2UI_DEFAULT_CATALOG_ID}).
+ *
+ * @experimental
+ */
+export function serializeA2uiCatalog(
+  catalog: A2uiCatalog,
+  catalogId: string = A2UI_DEFAULT_CATALOG_ID,
+): A2uiSerializedCatalog {
+  const components = Object.fromEntries(catalog.components.map((entry) => {
+    if (!entry.schema) {
+      throw new Error(`[a2ui] Cannot serialize component "${entry.name}" without a schema.`);
+    }
+    const properties = entry.schema['properties'] as Record<string, unknown> | undefined;
+    const required = entry.schema['required'] as string[] | undefined;
+    return [entry.name, {
+      ...entry.schema,
+      type: 'object',
+      properties: { ...properties, component: { const: entry.name } },
+      required: [...new Set(['component', ...(required ?? [])])],
+    }];
+  }));
+  const functions = Object.fromEntries(catalog.functions.filter((fn) => fn.definition).map((fn) => {
+    const { description, parameters, returnType, allowedCallers, requiresUserActivation } = fn.definition!;
+    const args: Record<string, unknown> = { ...parameters };
+    delete args['$schema'];
+    return [fn.name, {
+      type: 'object',
+      ...(description ? { description } : {}),
+      returnType,
+      ...(allowedCallers || requiresUserActivation ? { allowedCallers: allowedCallers ?? 'rendererOnly' } : {}),
+      ...(requiresUserActivation === undefined ? {} : { requiresUserActivation }),
+      properties: { '@call': { const: fn.name }, args },
+      required: ['@call', 'args'],
+    }];
+  }));
+  const references = (section: string, schemas: Record<string, unknown>): Record<string, unknown> =>
+    Object.keys(schemas).length > 0
+      ? {
+        oneOf: Object.keys(schemas).map((name) => ({
+          $ref: `#/${section}/${name.replace(/~/g, '~0').replace(/\//g, '~1')}`,
+        })),
+      }
+      : { not: {} };
+  return {
+    $id: catalogId,
+    catalogId,
+    $defs: {
+      anyComponent: references('components', components),
+      anyFunction: references('functions', functions),
+    },
+    protocolVersion: '1.0',
+    components,
+    ...(Object.keys(functions).length > 0 ? { functions } : {}),
+  };
+}
+
+/**
+ * What {@link serializeA2uiCatalog} returns: upstream's `SerializedCatalog`.
+ *
+ * @experimental
+ */
+export interface A2uiSerializedCatalog {
+  $id: string;
+  catalogId: string;
+  $defs: Record<string, Record<string, unknown>>;
+  protocolVersion: '1.0';
+  components: Record<string, Record<string, unknown>>;
+  functions?: Record<string, Record<string, unknown>>;
 }

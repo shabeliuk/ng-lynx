@@ -1,7 +1,7 @@
 // Derived from `@lynx-js/genui` (https://github.com/lynx-family/lynx-stack),
 // Copyright The Lynx Authors, Apache-2.0. Changed: ported from ReactLynx to Angular.
 /**
- * Angular ports of the A2UI v0.9 basic-catalog components.
+ * Angular ports of the A2UI v1.0 basic-catalog components.
  *
  * Each mirrors the behavior contract of its ReactLynx counterpart in
  * `@lynx-js/genui/a2ui/catalog` — same protocol prop names, same
@@ -15,11 +15,11 @@
  * List, Loading, TextField, CheckBox, Slider, Icon, RadioGroup, ChoicePicker,
  * Modal, Tabs, DateTimeInput, LineChart, PieChart.
  *
- * `checks` arrive with their conditions already resolved (the node renderer
- * resolves function calls / bindings inside props reactively — the same
- * pipeline upstream uses), so components only need `Boolean(condition)`
- * over the array. The upstream `FormContext` cross-input registry is not
- * ported.
+ * `@checks` are evaluated by the node renderer (checks.ts, reactively) and
+ * arrive as `ctx.checks()`; inputs show the first failure's message, and a
+ * Button with failing checks is disabled. `@accessibility` is applied by the
+ * `a2uiA11y` directive on each component's root. The upstream `FormContext`
+ * cross-input registry is not ported.
  *
  * A few components simplify upstream's ReactLynx behavior deliberately (each
  * one documented at its class below): `Modal` skips upstream's
@@ -73,6 +73,7 @@ import {
   startOfMonth,
   withDate,
 } from './datetime-utils.js';
+import { A2uiAccessibility } from './accessibility.js';
 import { A2UI_NODE_CONTEXT } from './node-context.js';
 import { A2uiNode } from './node.directive.js';
 import { resolveBindingPath } from './resolve-props.js';
@@ -82,19 +83,6 @@ import { resolveBindingPath } from './resolve-props.js';
 interface ChildItem {
   key: string;
   component: ComponentInstance;
-}
-
-/** Outcome of an input's (pre-resolved) `checks` array. */
-function checksOutcome(props: Record<string, unknown>): { ok: boolean; message: string | undefined } {
-  const checks = props['checks'];
-  if (!Array.isArray(checks) || checks.length === 0) return { ok: true, message: undefined };
-  for (const rule of checks as Array<{ condition?: unknown; message?: string }>) {
-    const condition = rule?.condition;
-    // Unknown shapes pass rather than block the user, like upstream.
-    const ok = typeof condition === 'boolean' ? condition : Boolean(condition ?? true);
-    if (!ok) return { ok: false, message: rule?.message };
-  }
-  return { ok: true, message: undefined };
 }
 
 /**
@@ -110,6 +98,11 @@ abstract class A2uiCatalogBase {
   protected readonly ctx = inject(A2UI_NODE_CONTEXT);
   protected readonly destroyRef = inject(DestroyRef);
   protected readonly props = this.ctx.props;
+  /** The node's `@checks` outcome: `ok`, and the first failure's message. */
+  protected readonly checksState = computed(() => {
+    const checks = this.ctx.checks();
+    return { ok: checks.ok, message: checks.firstFailureMessage };
+  });
 
   /** Bridge a data-model path into an Angular signal (cleaned up on destroy). */
   protected bindPath(path: string): Signal<unknown> {
@@ -176,7 +169,8 @@ abstract class A2uiCatalogBase {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [NO_ERRORS_SCHEMA],
-  template: `<text [class]="className()">{{ text() }}</text>`,
+  imports: [A2uiAccessibility],
+  template: `<text a2uiA11y [class]="className()">{{ text() }}</text>`,
 })
 export class A2uiText extends A2uiCatalogBase {
   protected readonly text = computed(() => {
@@ -200,9 +194,9 @@ export class A2uiText extends A2uiCatalogBase {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [NO_ERRORS_SCHEMA],
-  imports: [A2uiNode],
+  imports: [A2uiNode, A2uiAccessibility],
   template: `
-    <view [class]="className()" style="padding:10px 16px;border-radius:8px;align-items:center" (tap)="onTap()">
+    <view a2uiA11y [class]="className()" style="padding:10px 16px;border-radius:8px;align-items:center" (tap)="onTap()">
       @if (childComponent(); as child) {
         <ng-container [a2uiNode]="child" [a2uiNodeSurface]="ctx.surface" />
       } @else {
@@ -215,7 +209,7 @@ export class A2uiText extends A2uiCatalogBase {
   `,
 })
 export class A2uiButton extends A2uiCatalogBase {
-  protected readonly checks = computed(() => checksOutcome(this.props()));
+  protected readonly checks = computed(() => this.checksState());
   protected readonly enabled = computed(
     () => (this.props()['isValid'] as boolean | undefined ?? true) && this.checks().ok,
   );
@@ -253,9 +247,9 @@ export class A2uiButton extends A2uiCatalogBase {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [NO_ERRORS_SCHEMA],
-  imports: [A2uiNode],
+  imports: [A2uiNode, A2uiAccessibility],
   template: `
-    <view [class]="className()" style="display:flex;flex-direction:row">
+    <view a2uiA11y [class]="className()" style="display:flex;flex-direction:row">
       @for (item of childItems(); track item.key) {
         @if (weightOf(item.component); as weight) {
           <view [style]="'flex:' + weight + ' ' + weight + ' 0'">
@@ -286,9 +280,9 @@ export class A2uiRow extends A2uiCatalogBase {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [NO_ERRORS_SCHEMA],
-  imports: [A2uiNode],
+  imports: [A2uiNode, A2uiAccessibility],
   template: `
-    <view [class]="className()" style="display:flex;flex-direction:column">
+    <view a2uiA11y [class]="className()" style="display:flex;flex-direction:column">
       @for (item of childItems(); track item.key) {
         @if (weightOf(item.component); as weight) {
           <view [style]="'flex:' + weight + ' ' + weight + ' 0'">
@@ -319,9 +313,9 @@ export class A2uiColumn extends A2uiCatalogBase {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [NO_ERRORS_SCHEMA],
-  imports: [A2uiNode],
+  imports: [A2uiNode, A2uiAccessibility],
   template: `
-    <view class="card" style="border-radius:12px;border:1px solid #e2e2e2;padding:12px">
+    <view a2uiA11y class="card" style="border-radius:12px;border:1px solid #e2e2e2;padding:12px">
       @if (childComponent(); as child) {
         <ng-container [a2uiNode]="child" [a2uiNodeSurface]="ctx.surface" />
       }
@@ -348,7 +342,8 @@ export class A2uiCard extends A2uiCatalogBase {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [NO_ERRORS_SCHEMA],
-  template: `<view [class]="'divider divider-' + axis()" [style]="style()"></view>`,
+  imports: [A2uiAccessibility],
+  template: `<view a2uiA11y [class]="'divider divider-' + axis()" [style]="style()"></view>`,
 })
 export class A2uiDivider extends A2uiCatalogBase {
   protected readonly axis = computed(() => (this.props()['axis'] as string | undefined) ?? 'horizontal');
@@ -369,10 +364,14 @@ export class A2uiDivider extends A2uiCatalogBase {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [NO_ERRORS_SCHEMA],
-  template: `<image class="image" [src]="url()" [mode]="mode()" style="width:100%;min-height:100px"></image>`,
+  imports: [A2uiAccessibility],
+  template: `<image a2uiA11y class="image" [src]="url()" [mode]="mode()" style="width:100%;min-height:100px"></image>`,
 })
 export class A2uiImage extends A2uiCatalogBase {
-  protected readonly url = computed(() => String(this.props()['url'] ?? ''));
+  protected readonly url = computed(() => {
+    const url = this.props()['url'];
+    return typeof url === 'string' ? url : '';
+  });
   protected readonly mode = computed(() => {
     // A2UI `fit` → Lynx image mode.
     const fit = (this.props()['fit'] as string | undefined) ?? 'fit';
@@ -390,9 +389,9 @@ export class A2uiImage extends A2uiCatalogBase {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [NO_ERRORS_SCHEMA],
-  imports: [A2uiNode],
+  imports: [A2uiNode, A2uiAccessibility],
   template: `
-    <scroll-view
+    <scroll-view a2uiA11y
       [class]="'list list-' + direction()"
       [scroll-orientation]="direction()"
       style="flex:1"
@@ -419,8 +418,9 @@ export class A2uiList extends A2uiCatalogBase {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [NO_ERRORS_SCHEMA],
+  imports: [A2uiAccessibility],
   template: `
-    <view class="loading" style="padding:12px;align-items:center">
+    <view a2uiA11y class="loading" style="padding:12px;align-items:center">
       <text class="loading-label">Loading…</text>
     </view>
   `,
@@ -437,8 +437,9 @@ export class A2uiLoading extends A2uiCatalogBase {}
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [NO_ERRORS_SCHEMA],
+  imports: [A2uiAccessibility],
   template: `
-    <view class="textfield" style="display:flex;flex-direction:column">
+    <view a2uiA11y class="textfield" style="display:flex;flex-direction:column">
       @if (label(); as labelText) {
         <text class="textfield-label">{{ labelText }}</text>
       }
@@ -472,9 +473,13 @@ export class A2uiTextField extends A2uiCatalogBase {
     () => (this.props()['variant'] as string | undefined) === 'longText',
   );
   protected readonly invalidMessage = computed(() => {
+    // Like upstream: shown once the user has typed, when `@checks` fail or the
+    // value doesn't match `validationRegexp`.
     if (!this.touched()) return undefined;
-    const pattern = this.props()['validationRegexp'] as string | undefined;
-    if (!pattern) return undefined;
+    const checks = this.checksState();
+    if (!checks.ok) return checks.message ?? 'Invalid value';
+    const pattern = this.props()['validationRegexp'];
+    if (typeof pattern !== 'string' || !pattern) return undefined;
     try {
       return new RegExp(pattern).test(this.value()) ? undefined : 'Invalid value';
     } catch {
@@ -501,8 +506,9 @@ export class A2uiTextField extends A2uiCatalogBase {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [NO_ERRORS_SCHEMA],
+  imports: [A2uiAccessibility],
   template: `
-    <view class="checkbox" style="display:flex;flex-direction:row;align-items:center" (tap)="toggle()">
+    <view a2uiA11y class="checkbox" style="display:flex;flex-direction:row;align-items:center" (tap)="toggle()">
       <view
         class="checkbox-box"
         style="width:18px;height:18px;border:1px solid #999;border-radius:4px;margin-right:8px;align-items:center;justify-content:center"
@@ -521,7 +527,7 @@ export class A2uiTextField extends A2uiCatalogBase {
 export class A2uiCheckBox extends A2uiCatalogBase {
   protected readonly checked = computed(() => Boolean(this.props()['value']));
   protected readonly label = computed(() => String(this.props()['label'] ?? 'CheckBox'));
-  protected readonly failureMessage = computed(() => checksOutcome(this.props()).message);
+  protected readonly failureMessage = computed(() => this.checksState().message);
 
   protected toggle(): void {
     this.ctx.setValue('value', !this.checked());
@@ -538,8 +544,9 @@ export class A2uiCheckBox extends A2uiCatalogBase {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [NO_ERRORS_SCHEMA],
+  imports: [A2uiAccessibility],
   template: `
-    <view class="slider" style="display:flex;flex-direction:row;align-items:center">
+    <view a2uiA11y class="slider" style="display:flex;flex-direction:row;align-items:center">
       @if (label(); as labelText) {
         <text class="slider-label" style="margin-right:8px">{{ labelText }}</text>
       }
@@ -583,7 +590,8 @@ function toMaterialIconName(name: unknown): string {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [NO_ERRORS_SCHEMA],
-  template: `<text [class]="className()">{{ iconName() }}</text>`,
+  imports: [A2uiAccessibility],
+  template: `<text a2uiA11y [class]="className()">{{ iconName() }}</text>`,
 })
 export class A2uiIcon extends A2uiCatalogBase {
   protected readonly iconName = computed(() => toMaterialIconName(this.props()['name']));
@@ -604,8 +612,9 @@ export class A2uiIcon extends A2uiCatalogBase {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [NO_ERRORS_SCHEMA],
+  imports: [A2uiAccessibility],
   template: `
-    <view [class]="className()">
+    <view a2uiA11y [class]="className()">
       @for (item of items(); track item) {
         <view class="radio-option" style="display:flex;flex-direction:row;align-items:center;margin-bottom:6px" (tap)="select(item)">
           <view
@@ -632,7 +641,7 @@ export class A2uiRadioGroup extends A2uiCatalogBase {
   });
   protected readonly value = computed(() => this.props()['value'] as string | undefined);
   protected readonly usageHint = computed(() => (this.props()['usageHint'] as string | undefined) ?? 'default');
-  protected readonly checks = computed(() => checksOutcome(this.props()));
+  protected readonly checks = computed(() => this.checksState());
   protected readonly className = computed(
     () => `radio-group radio-group-${this.usageHint()}${this.checks().ok ? '' : ' radio-group-invalid'}`,
   );
@@ -704,8 +713,9 @@ function filterChoicePickerOptions(options: ChoicePickerOption[], query: string)
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [NO_ERRORS_SCHEMA],
+  imports: [A2uiAccessibility],
   template: `
-    <view [class]="rootClassName()">
+    <view a2uiA11y [class]="rootClassName()">
       @if (labelText(); as text) {
         <text class="choice-picker-label">{{ text }}</text>
       }
@@ -738,7 +748,7 @@ export class A2uiChoicePicker extends A2uiCatalogBase {
   protected readonly visibleOptions = computed(() => filterChoicePickerOptions(this.options(), this.query()));
   protected readonly filterable = computed(() => this.props()['filterable'] === true);
   protected readonly labelText = computed(() => normalizeChoicePickerLabel(this.props()['label']) || undefined);
-  protected readonly checks = computed(() => checksOutcome(this.props()));
+  protected readonly checks = computed(() => this.checksState());
   protected readonly failureMessage = computed(() => (this.checks().ok ? undefined : this.checks().message));
   protected readonly rootClassName = computed(
     () => `choice-picker choice-picker-${this.variant()}${this.checks().ok ? '' : ' choice-picker-invalid'}`,
@@ -781,9 +791,9 @@ export class A2uiChoicePicker extends A2uiCatalogBase {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [NO_ERRORS_SCHEMA],
-  imports: [A2uiNode],
+  imports: [A2uiNode, A2uiAccessibility],
   template: `
-    <view class="modal-trigger" (tap)="open()">
+    <view a2uiA11y class="modal-trigger" (tap)="open()">
       @if (triggerComponent(); as trigger) {
         <ng-container [a2uiNode]="trigger" [a2uiNodeSurface]="ctx.surface" />
       }
@@ -839,9 +849,9 @@ interface A2uiTabItem {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [NO_ERRORS_SCHEMA],
-  imports: [A2uiNode],
+  imports: [A2uiNode, A2uiAccessibility],
   template: `
-    <view class="tabs">
+    <view a2uiA11y class="tabs">
       <view class="tabs-headers" style="display:flex;flex-direction:row">
         @for (tab of tabs(); track $index) {
           <view [class]="'tabs-header' + (isActive($index) ? ' tabs-header-active' : '')" style="padding:8px 12px" (tap)="select($index)">
@@ -907,8 +917,9 @@ const DATETIME_MONTH_LABELS = [
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [NO_ERRORS_SCHEMA],
+  imports: [A2uiAccessibility],
   template: `
-    <view class="datetime-input">
+    <view a2uiA11y class="datetime-input">
       @if (labelText(); as text) {
         <text class="datetime-input-label">{{ text }}</text>
       }
@@ -981,7 +992,7 @@ export class A2uiDateTimeInput extends A2uiCatalogBase {
   protected readonly minParts = computed(() => normalizeDateTimeInputValue(this.props()['min']));
   protected readonly maxParts = computed(() => normalizeDateTimeInputValue(this.props()['max']));
   protected readonly outputFormat = computed(() => this.props()['outputFormat']);
-  protected readonly checks = computed(() => checksOutcome(this.props()));
+  protected readonly checks = computed(() => this.checksState());
 
   protected readonly currentOutOfRange = computed(() => {
     const value = this.valueParts();
@@ -1078,8 +1089,9 @@ export class A2uiDateTimeInput extends A2uiCatalogBase {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [NO_ERRORS_SCHEMA],
+  imports: [A2uiAccessibility],
   template: `
-    <view class="line-chart">
+    <view a2uiA11y class="line-chart">
       <view class="line-chart-header">
         <text class="line-chart-title">{{ yLabel() }}</text>
         <text class="line-chart-caption">{{ caption() }}</text>
@@ -1140,8 +1152,9 @@ export class A2uiLineChart extends A2uiCatalogBase {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [NO_ERRORS_SCHEMA],
+  imports: [A2uiAccessibility],
   template: `
-    <view class="pie-chart">
+    <view a2uiA11y class="pie-chart">
       <view class="pie-chart-header">
         <text class="pie-chart-title">{{ title() }}</text>
         <text class="pie-chart-caption">{{ subtitle() }}</text>

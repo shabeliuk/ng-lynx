@@ -14,7 +14,7 @@
   },
   "packageManager": "pnpm@12.18.0",
   "devDependencies": {
-    "@lynx-js/genui": "0.7.3",
+    "@lynx-js/genui": "0.8.1",
     "@lynx-js/react": "^0.129.3"
   }
 }

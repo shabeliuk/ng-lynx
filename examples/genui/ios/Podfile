@@ -1,4 +1,6 @@
-platform :ios, '12.0'
+# Xcode 27 builds for iOS 15.0 and up only (the app targets themselves are 15.6+).
+platform :ios, '15.0'
+MIN_IOS = '15.0'
 
 source 'https://cdn.cocoapods.org/'
 
@@ -117,6 +119,32 @@ end
 target 'SparklingGoInHouse' do
   sparkling_kit
   sparkling_devtool
+end
+
+# Pods still declaring iOS 8-12 (PrimJS, Lynx, SDWebImage, ...) fail on Xcode 27:
+# "IPHONEOS_DEPLOYMENT_TARGET is set to 9.0, but the range of supported deployment
+# target versions is 15.0 to 27.2.x". Raise them to MIN_IOS, in post_integrate:
+# post_install runs before CocoaPods writes the pod projects, which would undo it.
+# Every pod project is opened from disk: with incremental installation,
+# installer.generated_projects holds only the ones regenerated this time.
+def raise_pod_deployment_targets(sandbox_root)
+  minimum = Gem::Version.new(MIN_IOS)
+  Dir[File.join(sandbox_root, '*.xcodeproj')].each do |path|
+    project = Xcodeproj::Project.open(path)
+    changed = false
+    configs = project.build_configurations + project.targets.flat_map(&:build_configurations)
+    configs.each do |config|
+      current = config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
+      next unless current && Gem::Version.new(current) < minimum
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = MIN_IOS
+      changed = true
+    end
+    project.save if changed
+  end
+end
+
+post_integrate do |installer|
+  raise_pod_deployment_targets(installer.sandbox.root.to_s)
 end
 
 post_install do |installer|

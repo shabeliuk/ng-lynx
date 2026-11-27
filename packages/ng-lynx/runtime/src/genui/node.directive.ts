@@ -17,14 +17,16 @@
  *    `updateComponents` messages re-render it in place;
  *  - preserve an explicitly-passed `dataContextPath` over the stored one
  *    (containers pass per-item contexts for templated children);
- *  - resolve dynamic props (bindings, function calls) and re-resolve when a
- *    touched data-model signal changes — see resolve-props.ts for how the
- *    subscription set replaces upstream's `@preact/signals` `effect()`;
+ *  - look the component up in the catalog its `@catalogId` (or the
+ *    surface's `catalogId`) names, as registered on the processor;
+ *  - resolve dynamic props and evaluate `@checks` inside a signals effect on
+ *    the store's runtime (reactivity.ts), so any signal read along the way
+ *    (a binding, a value a function reads, an agent function's result)
+ *    re-resolves them;
  *  - hand the catalog component its runtime contract through
  *    `A2UI_NODE_CONTEXT` (Angular's substitute for the
- *    `GenericComponentProps` prop spread);
- *  - warn once per unknown tag and fail soft (render nothing), plus a
- *    fallback notice for unsupported dynamic syntax, like upstream.
+ *    `GenericComponentProps` prop spread), including upstream's `useAction`;
+ *  - warn once per unknown tag and fail soft (render a notice), like upstream.
  */
 import {
   ChangeDetectionStrategy,
@@ -43,10 +45,13 @@ import {
 } from '@angular/core';
 
 import type { ComponentInstance, Surface } from '@lynx-js/genui/a2ui/store';
-import { executeFunctionCall, resolveDynamicValue } from '@lynx-js/genui/a2ui/store';
+import { executeFunctionCall, isDataBinding, resolveDynamicValue } from '@lynx-js/genui/a2ui/store';
 
+import type { A2uiCatalog } from './catalog.js';
+import { A2UI_CHECKS_OK, type A2uiChecksOutcome, evaluateA2uiChecks, sameChecksOutcome } from './checks.js';
 import { A2UI_NODE_CONTEXT, A2UI_SURFACE_CONTEXT, A2uiNodeContext } from './node-context.js';
-import { resolveBindingPath, resolveComponentProps } from './resolve-props.js';
+import { trackA2uiSignals } from './reactivity.js';
+import { componentCatalog, resolveBindingPath, resolveComponentProps } from './resolve-props.js';
 
 const warnedTags = new Set<string>();
 
@@ -71,6 +76,31 @@ export class A2uiUnsupportedNotice {
   @Input() nodeId = '';
 }
 
+/** Port of upstream `awaitResolvedValues`: settle nested promises. */
+async function awaitResolvedValues(value: unknown): Promise<unknown> {
+  const settled = await value;
+  if (Array.isArray(settled)) return Promise.all(settled.map((item) => awaitResolvedValues(item)));
+  if (settled !== null && typeof settled === 'object') {
+    const entries = await Promise.all(
+      Object.entries(settled).map(async ([key, item]) => [key, await awaitResolvedValues(item)] as const),
+    );
+    return Object.fromEntries(entries);
+  }
+  return settled;
+}
+
+const componentMaps = new WeakMap<A2uiCatalog, Map<string, Type<unknown>>>();
+
+/** Name → Angular component for a registered catalog. */
+function componentsOf(catalog: A2uiCatalog): Map<string, Type<unknown>> {
+  let map = componentMaps.get(catalog);
+  if (!map) {
+    map = new Map(catalog.components.map((entry) => [entry.name, entry.component]));
+    componentMaps.set(catalog, map);
+  }
+  return map;
+}
+
 /** @experimental */
 @Directive({
   selector: '[a2uiNode]',
@@ -87,13 +117,15 @@ export class A2uiNode implements OnInit, OnDestroy {
 
   private componentRef: ComponentRef<unknown> | undefined;
   private noticeRef: ComponentRef<A2uiUnsupportedNotice> | undefined;
-  private renderedTag: string | undefined;
+  private renderedType: Type<unknown> | undefined;
   private offResource: (() => void) | undefined;
   private latest: ComponentInstance | undefined;
   private readonly propsSignal = signal<Record<string, unknown>>({});
   private readonly unsupportedSignal = signal<string[]>([]);
-  /** path → unsubscribe, for the data-model signals the props touch. */
-  private readonly pathSubs = new Map<string, () => void>();
+  private readonly checksSignal = signal<A2uiChecksOutcome>(A2UI_CHECKS_OK);
+  /** Disposes the signals effect resolving the current component. */
+  private offTracking: (() => void) | undefined;
+  private trackedComponent: ComponentInstance | undefined;
   private destroyed = false;
 
   ngOnInit(): void {
@@ -122,8 +154,7 @@ export class A2uiNode implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroyed = true;
     this.offResource?.();
-    for (const off of this.pathSubs.values()) off();
-    this.pathSubs.clear();
+    this.stopTracking();
     this.componentRef?.destroy();
     this.noticeRef?.destroy();
   }
@@ -146,76 +177,94 @@ export class A2uiNode implements OnInit, OnDestroy {
     const component = this.effectiveComponent();
     const surface = this.a2uiNodeSurface;
     const tag = component.component;
-    const type = this.surfaceCtx.componentsByName.get(tag);
+    const catalog = componentCatalog(
+      component as unknown as Record<string, unknown>,
+      surface,
+      this.surfaceCtx.processor,
+    );
+    const type = catalog ? componentsOf(catalog).get(tag) : undefined;
     if (!type) {
       if (!warnedTags.has(tag)) {
         warnedTags.add(tag);
         console.warn(`[a2ui] Component "${tag}" is not in the active catalog.`);
       }
+      this.stopTracking();
       this.mountNotice('component', component.id ?? '');
       return;
     }
-    this.resolveAndTrack(component, surface);
+    this.track(component, surface);
     if (this.unsupportedSignal().length > 0) {
       this.mountNotice('syntax', component.id ?? '');
       return;
     }
-    this.mount(type, component, surface, tag);
+    this.mount(type, surface);
   }
 
-  private resolveAndTrack(component: ComponentInstance, surface: Surface): void {
-    const { props, unsupportedFields, touchedPaths } = resolveComponentProps(
-      component as unknown as Record<string, unknown>,
-      surface,
-      component.dataContextPath,
-      this.surfaceCtx.processor,
-      this.surfaceCtx.functions,
-    );
-    this.propsSignal.set(props);
-    this.unsupportedSignal.set(unsupportedFields);
-    // Diff path subscriptions: drop stale ones, add new ones.
-    for (const [path, off] of this.pathSubs) {
-      if (!touchedPaths.has(path)) {
-        off();
-        this.pathSubs.delete(path);
+  private stopTracking(): void {
+    this.offTracking?.();
+    this.offTracking = undefined;
+    this.trackedComponent = undefined;
+  }
+
+  /**
+   * Resolve props and evaluate `@checks` in a signals effect; it re-runs
+   * whenever a store signal it read changes, until the component changes.
+   */
+  private track(component: ComponentInstance, surface: Surface): void {
+    if (this.trackedComponent === component && this.offTracking) return;
+    this.offTracking?.();
+    this.trackedComponent = component;
+    const { processor, functions } = this.surfaceCtx;
+    const raw = component as unknown as Record<string, unknown>;
+    let previous: Record<string, unknown> | undefined;
+    // Last values set, kept here so the effect never reads Angular signals.
+    let checks = this.checksSignal();
+    let unsupported = this.unsupportedSignal();
+    this.offTracking = trackA2uiSignals(surface, () => {
+      if (this.destroyed) return;
+      const resolved = resolveComponentProps(
+        raw,
+        surface,
+        component.dataContextPath,
+        processor,
+        functions,
+        previous,
+      );
+      previous = resolved.props;
+      this.propsSignal.set(resolved.props);
+      if (
+        unsupported.length !== resolved.unsupportedFields.length
+        || unsupported.some((field, i) => field !== resolved.unsupportedFields[i])
+      ) {
+        unsupported = resolved.unsupportedFields;
+        this.unsupportedSignal.set(unsupported);
       }
-    }
-    for (const path of touchedPaths) {
-      if (this.pathSubs.has(path)) continue;
-      const sig = surface.store.getSignal(path);
-      let primed = false;
-      const off = sig.subscribe(() => {
-        if (!primed) return; // first call replays the current value
-        if (!this.destroyed) this.resolveAndTrack(this.effectiveComponent(), this.a2uiNodeSurface);
-      });
-      primed = true;
-      this.pathSubs.set(path, off);
-    }
+      const next = evaluateA2uiChecks(processor, raw['@checks'], surface, component.dataContextPath, functions);
+      if (!sameChecksOutcome(next, checks)) {
+        checks = next;
+        this.checksSignal.set(next);
+      }
+    });
   }
 
-  private mount(
-    type: Type<unknown>,
-    component: ComponentInstance,
-    surface: Surface,
-    tag: string,
-  ): void {
-    if (this.renderedTag === tag && this.componentRef) return; // props flow via signals
+  private mount(type: Type<unknown>, surface: Surface): void {
+    if (this.renderedType === type && this.componentRef) return; // props flow via signals
     this.componentRef?.destroy();
     this.noticeRef?.destroy();
     this.noticeRef = undefined;
-    const ctx = this.buildContext(component, surface);
+    const ctx = this.buildContext(surface);
     const injector = Injector.create({
       providers: [{ provide: A2UI_NODE_CONTEXT, useValue: ctx }],
       parent: this.injector,
     });
     this.componentRef = this.vcr.createComponent(type, { injector });
-    this.renderedTag = tag;
+    this.renderedType = type;
   }
 
   private mountNotice(kind: 'component' | 'syntax', nodeId: string): void {
     this.componentRef?.destroy();
     this.componentRef = undefined;
-    this.renderedTag = undefined;
+    this.renderedType = undefined;
     if (!this.noticeRef) {
       this.noticeRef = this.vcr.createComponent(A2uiUnsupportedNotice);
     }
@@ -223,65 +272,91 @@ export class A2uiNode implements OnInit, OnDestroy {
     this.noticeRef.setInput('nodeId', nodeId);
   }
 
-  private buildContext(component: ComponentInstance, surface: Surface): A2uiNodeContext {
-    const { processor, functions } = this.surfaceCtx;
-    const id = component.id ?? '';
-    const dataContextPath = component.dataContextPath;
+  private buildContext(surface: Surface): A2uiNodeContext {
+    const initial = this.effectiveComponent();
     return {
-      id,
+      id: initial.id ?? '',
       surface,
-      dataContextPath,
+      dataContextPath: initial.dataContextPath,
       props: this.propsSignal.asReadonly(),
       unsupportedFields: this.unsupportedSignal.asReadonly(),
+      checks: this.checksSignal.asReadonly(),
       setValue: (key, value) => {
         // Write through the *original* (unresolved) prop's binding.
-        const raw = (this.effectiveComponent() as unknown as Record<string, unknown>)[key];
-        if (raw && typeof raw === 'object' && 'path' in raw && !('componentId' in raw)) {
-          const rawPath = (raw as { path?: unknown })['path'];
-          const path = resolveBindingPath(typeof rawPath === 'string' ? rawPath : '', dataContextPath);
-          surface.store.update(path, value);
+        const component = this.effectiveComponent();
+        const raw = (component as unknown as Record<string, unknown>)[key];
+        if (isDataBinding(raw) && !('componentId' in (raw as object))) {
+          const rawPath = (raw as { '@path': string })['@path'];
+          if (!rawPath) return;
+          surface.store.update(resolveBindingPath(rawPath, component.dataContextPath), value);
         }
       },
-      sendAction: (action) => {
-        // Port of `useAction`: functionCall actions execute locally; event
-        // actions resolve their context then dispatch a UserActionPayload.
-        if ('functionCall' in action && action['functionCall']) {
-          void executeFunctionCall(
-            processor,
-            action['functionCall'] as never,
-            surface.surfaceId,
-            dataContextPath,
-            { functions: functions as never },
-          );
-          return;
-        }
-        let name = 'unknownAction';
-        let context: Record<string, unknown> = {};
-        const event = action['event'] as
-          | { name?: string; context?: Record<string, unknown> }
-          | undefined;
-        if (event) {
-          name = event.name ?? name;
-          if (event.context) {
-            const resolved: Record<string, unknown> = {};
-            for (const [key, value] of Object.entries(event.context)) {
-              resolved[key] = resolveDynamicValue(processor, value, surface.surfaceId, dataContextPath, {
-                functions: functions as never,
-              });
-            }
-            context = resolved;
-          }
-        }
-        void processor.dispatch({
-          userAction: {
-            name,
-            surfaceId: surface.surfaceId,
-            sourceComponentId: id,
-            timestamp: new Date().toISOString(),
-            context,
-          },
-        });
-      },
+      sendAction: (action) =>
+        this.runAction(action, surface).catch((error: unknown) => {
+          console.warn('[a2ui] Action failed:', error);
+          return undefined;
+        }),
     };
+  }
+
+  /** Port of upstream `useAction`'s `sendAction`. */
+  private async runAction(action: Record<string, unknown>, surface: Surface): Promise<unknown> {
+    const { processor, functions } = this.surfaceCtx;
+    const component = this.effectiveComponent();
+    const id = component.id ?? '';
+    const dataContextPath = component.dataContextPath;
+    const surfaceId = surface.surfaceId;
+    try {
+      if (action['functionCall']) {
+        return await executeFunctionCall(processor, action['functionCall'] as never, surfaceId, dataContextPath, {
+          functions: functions as never,
+          awaitResult: true,
+          userActivated: true,
+        });
+      }
+      const options = {
+        functions: functions as never,
+        resolveFunctionCall: executeFunctionCall,
+        awaitResult: true,
+        userActivated: true,
+        throwOnError: true,
+      };
+      const event = action['event'] as
+        | { name?: string; context?: Record<string, unknown>; userMessage?: unknown }
+        | undefined;
+      let name = 'unknownAction';
+      let context: Record<string, unknown> = {};
+      if (event) {
+        name = event.name ?? name;
+        if (event.context) {
+          const resolved: Record<string, unknown> = {};
+          for (const [key, value] of Object.entries(event.context)) {
+            resolved[key] = await awaitResolvedValues(
+              resolveDynamicValue(processor, value, surfaceId, dataContextPath, options),
+            );
+          }
+          context = resolved;
+        }
+      }
+      const userMessage = event?.userMessage === undefined
+        ? undefined
+        : await awaitResolvedValues(
+          resolveDynamicValue(processor, event.userMessage, surfaceId, dataContextPath, options),
+        );
+      return await processor.sendMessage({
+        version: '1.0',
+        action: {
+          name,
+          surfaceId,
+          sourceComponentId: id,
+          timestamp: new Date().toISOString(),
+          context,
+          ...(typeof userMessage === 'string' ? { userMessage } : {}),
+        },
+      } as never);
+    } catch (error) {
+      processor.reportExpressionError(error, surfaceId, 'EXECUTION_ERROR');
+      throw error;
+    }
   }
 }
