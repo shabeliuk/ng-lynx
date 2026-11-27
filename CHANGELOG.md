@@ -8,6 +8,11 @@ which parts are experimental and may change in a minor release, is in
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-27
+
+Two fixes to `LynxLazyFor` (experimental), found by MyAssets, a real app built from the
+published packages, the first time it put a 721-row list on the directive.
+
 ### Fixed
 
 - **`LynxLazyFor` could crash the app** (Lynx Explorer 4.2, iOS simulator) when rows the
@@ -387,7 +392,8 @@ Gestures: pan, tap, long press and fling run on iOS and Android. Lynx's engines 
 recognizer for `pinch` or `rotation`, so those never fire, and a dev build warns when you
 bind one. A fling's event is typed as `MainThreadFlingGestureEvent`.
 
-[Unreleased]: https://github.com/shabeliuk/ng-lynx/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/shabeliuk/ng-lynx/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/shabeliuk/ng-lynx/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/shabeliuk/ng-lynx/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/shabeliuk/ng-lynx/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/shabeliuk/ng-lynx/compare/v0.1.0-rc.0...v1.0.0
