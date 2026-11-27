@@ -1,7 +1,10 @@
 # A LynxLazyFor list of 10,000 rows: the native list knows every row while only a
 # window is built. Flings past where LynxVirtualFor's window used to stop, jumps to
 # row 5000 (empty cells the Background Thread then fills), checks the window stays
-# small, and scrolls back up past the window's edge.
+# small, and scrolls back up past the window's edge. Then what crashed Lynx Explorer
+# 4.2 in a real app before 1.1.1: a sort of every row with a fling after it, and a
+# filter that removes the rows on screen. The engine's list recycled cells whose
+# elements had been taken off it; a crash ends the flow.
 appId: ${APP_ID}
 ---
 - runFlow:
@@ -50,3 +53,38 @@ appId: ${APP_ID}
           end: 50%, 92%
           duration: 600
 - assertVisible: Row 4950
+# Every row moves while the list holds cells; then hard flings recycle them.
+- tapOn: Sort descending
+# Every row moved, so the list starts again at the top, with row 9999.
+- extendedWaitUntil:
+    visible: Row 9999
+    timeout: 5000
+# And only a window is built: before 1.1.1 the rows the list had held were wanted
+# back where they went, about index 5050, and every row up to there was built.
+- extendedWaitUntil:
+    visible: 'Built: [1-9][0-9]? rows'
+    timeout: 5000
+- repeat:
+    times: 8
+    commands:
+      - swipe:
+          start: 50%, 85%
+          end: 50%, 45%
+          duration: 100
+# Still running, with rows on screen, and a small window.
+- extendedWaitUntil:
+    visible: 'Lazy rows: 10000'
+    timeout: 5000
+- assertVisible: 'Row [0-9]+'
+- extendedWaitUntil:
+    visible: 'Built: [1-9][0-9]? rows'
+    timeout: 5000
+# A filter that removes every row on screen.
+- tapOn: Keep 10 rows
+- extendedWaitUntil:
+    visible: 'Lazy rows: 10'
+    timeout: 5000
+- extendedWaitUntil:
+    visible: Row 9007
+    timeout: 5000
+- takeScreenshot: lazy-list-filtered

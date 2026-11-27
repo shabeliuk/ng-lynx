@@ -230,7 +230,8 @@ export class LynxLazyFor<T> implements DoCheck, OnDestroy {
   /**
    * The Main Thread's report of which rows the list holds or asked for. Moves the
    * window once those rows come within half a buffer of its edge, so it moves in
-   * steps rather than a row at a time.
+   * steps rather than a row at a time, and when the window has grown far bigger
+   * than those rows.
    */
   onListRange(range: LazyListRange): void {
     if (range.version !== this.version) return;
@@ -258,7 +259,10 @@ export class LynxLazyFor<T> implements DoCheck, OnDestroy {
     const margin = Math.floor(buffer / 2);
     const lowOk = this.windowStart === 0 ? start >= 0 : start >= this.windowStart + margin;
     const highOk = this.windowEnd === count ? end < count : end < this.windowEnd - margin;
-    if (lowOk && highOk) return;
+    // A window much bigger than the rows the list holds, left from a report that
+    // spanned more (the list asked for many cells, then kept a screen), shrinks.
+    const oversized = this.windowEnd - this.windowStart > end - start + 1 + 3 * buffer;
+    if (lowOk && highOk && !oversized) return;
     this.windowStart = Math.max(0, start - buffer);
     this.windowEnd = Math.min(count, end + 1 + buffer);
     this.lastMove = Date.now();

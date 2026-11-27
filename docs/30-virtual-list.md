@@ -104,6 +104,23 @@ A dropped row's slot stays in the list, so its element is taken off the list on 
 Main Thread instead. If the list was still showing it (a race with the window
 moving), the Main Thread asks for it back and refreshes the cell.
 
+**Not while the list holds its cell.** The engine's C++ list container keeps a raw
+pointer to each cell's element in its item holder, and reads it once more after
+`enqueueComponent` returns (the exposure event, then the detach, in
+`ListAdapter::EnqueueElement`). Taking the element off the list frees it, so a
+dropped row the list still holds stays on the list until the list lets go of its
+cell, and leaves it on the next turn. Before 1.1.1 it left at once, and a sort with a
+fling after it, or a filter that removed the rows on screen, crashed Lynx Explorer
+4.2 when the list recycled those cells.
+
+**The window has a ceiling.** The list can ask for far more cells than it keeps: after
+a sort moved every row, the C++ list container asked for every cell from the top down
+to its old scroll position in one layout pass, then kept a screen. So one range report
+spans at most 200 rows, from the first cell the list asked for, and a window much
+bigger than the rows the list holds (more than three buffers over) shrinks at the next
+report. A held row that a change of rows moved isn't wanted back: the list removes its
+cell, and wanting it where it went would pull the window off the screen.
+
 So the cost is bounded by what's on screen: about the cells the list holds plus two
 buffers, built at a time, wherever you are in the list. What a fling can show is an
 empty cell for a moment, until its row arrives, never a wall.

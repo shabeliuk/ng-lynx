@@ -10,6 +10,11 @@
  *  - a jump far down shows empty cells, moves the window there, and fills them;
  *  - small scrolls inside the window build nothing; the window stays bounded;
  *  - prepending and removing rows keep the list's keys equal to the data's;
+ *  - a sort of every row, and a search that removes the rows on screen, never
+ *    take an element off the list while the list still holds its cell (what
+ *    crashed Lynx Explorer 4.2: the engine reads it as it lets go);
+ *  - the list asking for thousands of cells at once builds a capped window, which
+ *    shrinks back once the list keeps only a screen;
  *  - removing the directive empties the list, and adding it back works;
  *  - the web preview builds every row;
  *  - nothing a device would reject (duplicate keys, malformed actions).
@@ -227,6 +232,67 @@ async function main(): Promise<void> {
   assert(native.emptyCells().length === 0, `and the screen the fling ended on is filled (empty: ${native.emptyCells().join(',')})`);
   assert(native.errors.length === 0, `nothing a device would reject (got: ${native.errors.join('; ')})`);
 
+  // What crashed Lynx Explorer 4.2 in a real app (MyAssets): the engine's list
+  // recycled a cell whose element had been taken off the list, and freed.
+  console.log('\n=== a sort reorders every row while the list holds cells ===');
+  const saved = app.items();
+  native.layout(2990, 2999);
+  await settle();
+  native.layout(2990, 2999);
+  mark = opsLogMark();
+  app.items.update((rows) => [...rows].reverse());
+  await settle();
+  // The rows the list held moved to about index 7000; the list itself is still at
+  // 2990. Wanting them back where they went moved the window there (on a device,
+  // where the list went to the top, it built the 5,000 rows in between).
+  assert(
+    lazy.builtRange.start <= 2990 && lazy.builtRange.end >= 3000,
+    `the window stays on the cells on screen (got [${lazy.builtRange.start}, ${lazy.builtRange.end}))`,
+  );
+  native.layout(2990, 2999);
+  await settle();
+  native.layout(2990, 2999);
+  assert(native.keys.every((key, i) => key === String(app.items()[i]!.id)), "the list's keys follow the new order");
+  assert(native.emptyCells().length === 0, `no empty cells (empty: ${native.emptyCells().join(',')})`);
+  assert(textOf(native.cell(2990)) === `${app.items()[2990]!.name} #2990`, `cell 2990 shows the row now there (got "${textOf(native.cell(2990))}")`);
+  assert(native.errors.length === 0, `no cell recycled after its element left the list (got: ${native.errors.join('; ')})`);
+  const sorted = countCreates(opsSince(mark), 'list-item');
+  assert(sorted <= 30, `the sort built one window of rows, not two (got ${sorted})`);
+
+  console.log('\n=== the list asks for thousands of cells at once, then keeps a screen ===');
+  // What the C++ list container did on a device after a sort moved every row: it
+  // asked for every cell from the top down to its old scroll position.
+  mark = opsLogMark();
+  native.layout(0, 4000);
+  native.layout(0, 9);
+  await settle();
+  native.layout(0, 9);
+  await settle();
+  native.layout(0, 9);
+  const askedMany = countCreates(opsSince(mark), 'list-item');
+  assert(askedMany <= 250, `one report builds at most a capped window, not 4,000 rows (built ${askedMany})`);
+  assert(native.emptyCells().length === 0, `the screen it kept is filled (empty: ${native.emptyCells().join(',')})`);
+  const settled = lazy.builtRange.end - lazy.builtRange.start;
+  assert(settled <= 30, `and the window shrinks back to the screen and a buffer: ${settled} rows built`);
+  assert(native.errors.length === 0, `nothing a device would reject (got: ${native.errors.join('; ')})`);
+
+  console.log('\n=== a search removes most rows, the ones on screen included ===');
+  app.items.update((rows) => rows.filter((row) => row.id % 1000 === 7));
+  await settle();
+  native.layout(0, 9);
+  await settle();
+  native.layout(0, 9);
+  assert(native.keys.length === 10, `ten rows match (got ${native.keys.length})`);
+  assert(native.emptyCells().length === 0, `the matches are shown (empty: ${native.emptyCells().join(',')})`);
+  assert(native.errors.length === 0, `no cell recycled after its element left the list (got: ${native.errors.join('; ')})`);
+  await settle();
+  assert(listStateSizes()['retiring'] === 0, `the rows the list let go of left it (retiring: ${listStateSizes()['retiring']})`);
+  app.items.set(saved);
+  await settle();
+  native.layout(0, 9);
+  await settle();
+  native.layout(0, 9);
+
   console.log('\n=== removing the directive empties the list; adding it back fills it ===');
   app.show.set(false);
   await settle();
@@ -259,9 +325,12 @@ async function main(): Promise<void> {
   app.showWeb.set(false);
   app.show.set(false);
   await settle();
+  // The list lets go of the cells it still held, and the rows retire.
+  native.layout(0, 9);
+  await settle();
   const sizes = listStateSizes();
   assert(sizes['lists'] === 1, `only the lazy <list> element is still tracked (got ${sizes['lists']})`);
-  for (const name of ['lazyLists', 'lazySigns', 'lazyDetach', 'pendingReports', 'childEls', 'itemKeys', 'appended']) {
+  for (const name of ['lazyLists', 'lazySigns', 'lazyDetach', 'retiring', 'pendingReports', 'childEls', 'itemKeys', 'appended']) {
     assert(sizes[name] === 0, `${name} is empty (got ${sizes[name]})`);
   }
 
