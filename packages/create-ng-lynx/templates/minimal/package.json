@@ -11,12 +11,12 @@
   "dependencies": {
     "@angular/core": "^22.2.6",
     "@angular/compiler": "^22.2.6",
-    "ng-lynx": "^1.0.2"
+    "ng-lynx": "^1.1.0"
   },
   "devDependencies": {
     "@angular/compiler-cli": "^22.2.6",
-    "@lynx-js/qrcode-rsbuild-plugin": "^0.7.3",
-    "@lynx-js/rspeedy": "^0.18.4",
+    "@lynx-js/qrcode-rsbuild-plugin": "^0.7.4",
+    "@lynx-js/rspeedy": "^0.19.0",
     "@ngtools/webpack": "^22.2.7",
     "typescript": "~6.0.0"
   },

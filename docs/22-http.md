@@ -63,7 +63,7 @@ no global fetch, a `lynx.fetch` whose `body` getter uses the body up.
 The harnesses before 1.0.1 ran against Node's `fetch` and the web preview, which
 both have a global `fetch` and streaming bodies: that is how this got through.
 
-### On a device: a Content-Type on every request (fixed in 1.0.2)
+### On a device: a Content-Type on every request (fixed in 1.1.0)
 
 Through 1.0.1, every `HttpClient` request on a device reached the server with
 `Content-Type: text/plain;charset=UTF-8`, a GET or a DELETE with no body
@@ -86,7 +86,7 @@ it. iOS sent only one of the two, whichever came last: a raw POST with
 server got `application/json` and `text/plain;charset=UTF-8` together.
 
 `lynx.fetch` builds each request with `new pageGlobal.Request(...)`, looked up
-at call time. So since 1.0.2 the shim, for the length of each engine fetch,
+at call time. So since 1.1.0 the shim, for the length of each engine fetch,
 puts a subclass of that `Request` on `globalThis` that deletes the made-up
 header, then puts the original back. It's left in place where the fetch
 standard sets one too: a string or `URLSearchParams` body with no Content-Type

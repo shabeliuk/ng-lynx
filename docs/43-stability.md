@@ -64,7 +64,7 @@ When a part leaves experimental, its tag goes and the CHANGELOG says so.
 | --- | --- | --- |
 | Angular | 21 and 22 | `@angular/*` peers `>=21 <23`. CI builds and tests both |
 | TypeScript | 5.9 (Angular 21), 6.0 (Angular 22) | |
-| `@lynx-js/rspeedy` | 0.18 | |
+| `@lynx-js/rspeedy` | 0.18 and 0.19 | |
 | Node | 22.12 or later | for the build only |
 | RxJS | 6.5.3+ or 7.4+ | as Angular itself needs |
 | `@lynx-js/genui` | 0.8 (0.8.1 or later) | optional: only for `/genui`. A2UI v1.0 |
