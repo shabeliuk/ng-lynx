@@ -8,6 +8,12 @@ which parts are experimental and may change in a minor release, is in
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-27
+
+Everything since 1.0.1, including the HttpClient fix prepared as 1.0.2, which was never
+published on its own. That fix was found by MyAssets, a real app built from the published
+packages, querying HM Land Registry's SPARQL endpoint from Lynx Explorer 4.2.
+
 ### Added
 
 - **A2UI v1.0 in `ng-lynx/genui` (experimental).** `[messageHandler]` on `<a2ui-surface>` is the
@@ -95,9 +101,22 @@ which parts are experimental and may change in a minor release, is in
   being `undefined`. It's still a `MainThreadRefHandle<T>`, so existing code compiles.
 - `runOnMainThread` and `ToMainThread` accept a `'main thread'` function wherever they
   took a `defineMainThreadFunction` handle.
+- **`@lynx-js/rspeedy` 0.19 is supported.** The peer range is `>=0.18.0 <0.20.0`, so 0.18 keeps
+  working. The workspace builds with 0.19 (Rsbuild 2.3.3), and new apps from `create-ng-lynx` get
+  rspeedy `^0.19.0` with `@lynx-js/qrcode-rsbuild-plugin` `^0.7.4`, the first one that accepts 0.19.
+- Both packages are at 1.1.0, and the templates require `ng-lynx@^1.1.0`.
 
 ### Fixed
 
+- **`HttpClient` sent `Content-Type: text/plain` on every request on a device**, a GET
+  without a body included, and strict servers refuse that (Land Registry answers 415).
+  Lynx's own `Request` adds it whenever the headers lack a `Content-Type` in that exact
+  spelling, and nothing a caller passes avoids it. A `content-type` in another spelling
+  got a second header beside it: iOS could send Lynx's instead, and Android sent both.
+  Seen on Explorer 4.2 on the iOS simulator and the Android emulator. During each engine
+  fetch, `provideLynxHttpClient()` now puts a `Request` on `globalThis` that drops the
+  made-up header. It keeps the header the standard sets for a string or
+  `URLSearchParams` body. `verify:http` fakes the engine's `Request`.
 - **`examples/genui`: the keyboard covered the planner's message box** on a phone. The planner pads
   its bottom by the height `keyboardstatuschanged` reports, so the box sits above the keyboard.
 - **`examples/genui`'s iOS app didn't build with Xcode 27**, which supports iOS 15.0 and up: the
@@ -131,6 +150,11 @@ which parts are experimental and may change in a minor release, is in
   so it stays until CocoaPods moves; it needs untrusted input to `safe_constantize`, which
   CocoaPods doesn't take.
 
+### Documentation
+
+- docs/22: the made-up Content-Type, where it comes from, and the form-POST workaround
+  for 1.0.1.
+
 ### Tests
 
 - The mock PAPI has `virtualizingList()`, a native list that virtualizes the way the iOS
@@ -138,35 +162,6 @@ which parts are experimental and may change in a minor release, is in
   go of the ones that leave with `enqueueComponent`, asks again for a cell an `updateAction`
   refreshes, and records what a device rejects. The mock's `<list>` now keeps
   `enqueueComponent` and every `update-list-info` in order.
-
-## [1.0.2] - Unreleased
-
-Found by MyAssets, a real app built from the published packages, adding a section that
-queries HM Land Registry's SPARQL endpoint from Lynx Explorer 4.2 on the iOS simulator.
-
-### Fixed
-
-- **`HttpClient` sent `Content-Type: text/plain` on every request on a device**, a GET
-  without a body included, and strict servers refuse that (Land Registry answers 415).
-  Lynx's own `Request` adds it whenever the headers lack a `Content-Type` in that exact
-  spelling, and nothing a caller passes avoids it. A `content-type` in another spelling
-  got a second header beside it: iOS could send Lynx's instead, and Android sent both.
-  Seen on Explorer 4.2 on the iOS simulator and the Android emulator. During each engine
-  fetch, `provideLynxHttpClient()` now puts a `Request` on `globalThis` that drops the
-  made-up header. It keeps the header the standard sets for a string or
-  `URLSearchParams` body. `verify:http` fakes the engine's `Request`.
-
-### Documentation
-
-- docs/22: the made-up Content-Type, where it comes from, and the form-POST workaround
-  for 1.0.1.
-
-### Changed
-
-- Both packages are at 1.0.2, and the templates require `ng-lynx@^1.0.2`.
-
-### Tests
-
 - The device `network` flow sends `HttpClient` requests to a server endpoint that
   echoes the Content-Type each one arrived with. The screen shows it, and `run.mjs`
   fails the run when it's wrong. The screen scrolls, since on CI's 320x640 emulator the
@@ -369,7 +364,8 @@ Gestures: pan, tap, long press and fling run on iOS and Android. Lynx's engines 
 recognizer for `pinch` or `rotation`, so those never fire, and a dev build warns when you
 bind one. A fling's event is typed as `MainThreadFlingGestureEvent`.
 
-[1.0.2]: https://github.com/shabeliuk/ng-lynx/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/shabeliuk/ng-lynx/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/shabeliuk/ng-lynx/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/shabeliuk/ng-lynx/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/shabeliuk/ng-lynx/compare/v0.1.0-rc.0...v1.0.0
 [0.1.0-rc.0]: https://github.com/shabeliuk/ng-lynx/releases/tag/v0.1.0-rc.0
