@@ -302,8 +302,8 @@
     }
   },
   "devDependencies": {
-    "@angular-devkit/core": "^21.2.30",
-    "@angular-devkit/schematics": "^21.2.30",
+    "@angular-devkit/core": "^21.2.31",
+    "@angular-devkit/schematics": "^21.2.31",
     "@angular/common": "^21.2.26",
     "@angular/compiler": "^21.2.26",
     "@angular/compiler-cli": "21.2.26",
@@ -313,7 +313,7 @@
     "@angular/router": "^21.2.26",
     "@lynx-js/genui": "^0.8.1",
     "@lynx-js/rspeedy": "^0.18.6",
-    "@ngtools/webpack": "21.2.30",
+    "@ngtools/webpack": "21.2.31",
     "@openuidev/lang-core": "^0.4.1",
     "@types/node": "^20.19.43",
     "acorn": "^8.19.0",

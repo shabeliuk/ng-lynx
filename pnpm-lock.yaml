@@ -873,11 +873,11 @@ importers:
         version: 9.2.1(@babel/core@7.29.13(supports-color@8.1.1))(webpack@5.112.2(cssnano@7.1.9(postcss@8.5.33))(csso@5.0.5)(esbuild@0.28.2)(postcss@8.5.33)(svgo@4.1.0))
     devDependencies:
       '@angular-devkit/core':
-        specifier: ^21.2.30
-        version: 21.2.30(chokidar@5.0.0)
+        specifier: ^21.2.31
+        version: 21.2.31(chokidar@5.0.0)
       '@angular-devkit/schematics':
-        specifier: ^21.2.30
-        version: 21.2.30(chokidar@5.0.0)
+        specifier: ^21.2.31
+        version: 21.2.31(chokidar@5.0.0)
       '@angular/common':
         specifier: 21.2.26
         version: 21.2.26(@angular/core@21.2.26(@angular/compiler@21.2.26)(rxjs@7.8.2))(rxjs@7.8.2)
@@ -906,8 +906,8 @@ importers:
         specifier: ^0.18.6
         version: 0.18.6(@rspack/core@2.2.9(@swc/helpers@0.5.24))(@types/node@20.19.43)(core-js@3.47.0)(csso@5.0.5)(esbuild@0.28.2)(tslib@2.9.1)(typescript@5.9.3)(webpack@5.112.2(cssnano@7.1.9(postcss@8.5.33))(csso@5.0.5)(esbuild@0.28.2)(postcss@8.5.33)(svgo@4.1.0))
       '@ngtools/webpack':
-        specifier: 21.2.30
-        version: 21.2.30(@angular/compiler-cli@21.2.26(@angular/compiler@21.2.26)(supports-color@8.1.1)(typescript@5.9.3))(typescript@5.9.3)(webpack@5.112.2(cssnano@7.1.9(postcss@8.5.33))(csso@5.0.5)(esbuild@0.28.2)(postcss@8.5.33)(svgo@4.1.0))
+        specifier: 21.2.31
+        version: 21.2.31(@angular/compiler-cli@21.2.26(@angular/compiler@21.2.26)(supports-color@8.1.1)(typescript@5.9.3))(typescript@5.9.3)(webpack@5.112.2(cssnano@7.1.9(postcss@8.5.33))(csso@5.0.5)(esbuild@0.28.2)(postcss@8.5.33)(svgo@4.1.0))
       '@openuidev/lang-core':
         specifier: ^0.4.1
         version: 0.4.1(zod@4.6.7)
@@ -936,8 +936,8 @@ packages:
     resolution: {integrity: sha512-U4+70Pc5ZS9osnCBCE5Jha/ciHM+Yp+CNMNC/7HvYbNRk1Ldd+f7qO65W5qfhu/TCv+/ozljlXXe9Nj8419DMA==}
     engines: {node: '>=10'}
 
-  '@angular-devkit/core@21.2.30':
-    resolution: {integrity: sha512-vr74ouL0RPIhQmT4ATLq0OmPpYHPezKb+ZZJ7kpw03hBOI/k1+yxvLr7GaKwSFZPqRsi51zk/4yN7E3m3QukCA==}
+  '@angular-devkit/core@21.2.31':
+    resolution: {integrity: sha512-EDv/jLcvMZKI8ds7dZ2DKJck7oShIlK9pYndUtBVf5cYS+fOyGcv0X5VBLx1l9JW4732P1RCAP/7Lv0ZOyrvLQ==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0, npm: ^6.11.0 || ^7.5.6 || >=8.0.0, yarn: '>= 1.13.0'}
     peerDependencies:
       chokidar: ^5.0.0
@@ -945,8 +945,8 @@ packages:
       chokidar:
         optional: true
 
-  '@angular-devkit/schematics@21.2.30':
-    resolution: {integrity: sha512-VYsgyYLR2NZ6SZME48u5I08EXvobw2CZtDnqpbbelPRS/bRbnWQHx0ZnsC+4IbQP8/+gCYK9m42jL7jgUU0OcQ==}
+  '@angular-devkit/schematics@21.2.31':
+    resolution: {integrity: sha512-TD0VtSiz2ko/ShTgfLoZquxydTctgvfM7mCv0NykLR8r7tjmi8gU2Y9aVe3ZRMD2+GX1alIqth/1dy9IxoBh/Q==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0, npm: ^6.11.0 || ^7.5.6 || >=8.0.0, yarn: '>= 1.13.0'}
 
   '@angular/common@21.2.26':
@@ -1678,8 +1678,8 @@ packages:
       '@emnapi/core': ^1.7.1 || 2.0.0-beta.2 || 2.0.0-beta.3
       '@emnapi/runtime': ^1.7.1 || 2.0.0-beta.2 || 2.0.0-beta.3
 
-  '@ngtools/webpack@21.2.30':
-    resolution: {integrity: sha512-W3IG38ihoJb0PpMCFAsCVYDDh+OIvR0k09pzPs3fpaHvebKzo53kpJEPJ2jWkyNcW5m2f2tBi4C8q0Qr1XMXCQ==}
+  '@ngtools/webpack@21.2.31':
+    resolution: {integrity: sha512-4bQRlQCvexL9p7ao2WjDcOsgPYtsnaApA64NILBwZAcL994Q9deRvdH+LeHz5Ax3al2MNFS31ZmdH+ZSrMCatQ==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0, npm: ^6.11.0 || ^7.5.6 || >=8.0.0, yarn: '>= 1.13.0'}
     peerDependencies:
       '@angular/compiler-cli': ^21.0.0
@@ -4413,7 +4413,7 @@ snapshots:
 
   '@alloc/quick-lru@5.3.0': {}
 
-  '@angular-devkit/core@21.2.30(chokidar@5.0.0)':
+  '@angular-devkit/core@21.2.31(chokidar@5.0.0)':
     dependencies:
       ajv: 8.18.0
       ajv-formats: 3.0.1
@@ -4424,9 +4424,9 @@ snapshots:
     optionalDependencies:
       chokidar: 5.0.0
 
-  '@angular-devkit/schematics@21.2.30(chokidar@5.0.0)':
+  '@angular-devkit/schematics@21.2.31(chokidar@5.0.0)':
     dependencies:
-      '@angular-devkit/core': 21.2.30(chokidar@5.0.0)
+      '@angular-devkit/core': 21.2.31(chokidar@5.0.0)
       jsonc-parser: 3.3.1
       magic-string: 0.30.21
       ora: 9.3.0
@@ -5450,7 +5450,7 @@ snapshots:
       '@tybys/wasm-util': 0.10.4
     optional: true
 
-  '@ngtools/webpack@21.2.30(@angular/compiler-cli@21.2.26(@angular/compiler@21.2.26)(supports-color@8.1.1)(typescript@5.9.3))(typescript@5.9.3)(webpack@5.112.2(cssnano@7.1.9(postcss@8.5.33))(csso@5.0.5)(esbuild@0.28.2)(postcss@8.5.33)(svgo@4.1.0))':
+  '@ngtools/webpack@21.2.31(@angular/compiler-cli@21.2.26(@angular/compiler@21.2.26)(supports-color@8.1.1)(typescript@5.9.3))(typescript@5.9.3)(webpack@5.112.2(cssnano@7.1.9(postcss@8.5.33))(csso@5.0.5)(esbuild@0.28.2)(postcss@8.5.33)(svgo@4.1.0))':
     dependencies:
       '@angular/compiler-cli': 21.2.26(@angular/compiler@21.2.26)(supports-color@8.1.1)(typescript@5.9.3)
       typescript: 5.9.3
