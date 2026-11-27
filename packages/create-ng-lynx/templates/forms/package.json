@@ -16,8 +16,8 @@
   },
   "devDependencies": {
     "@angular/compiler-cli": "^22.2.6",
-    "@lynx-js/qrcode-rsbuild-plugin": "^0.7.3",
-    "@lynx-js/rspeedy": "^0.18.4",
+    "@lynx-js/qrcode-rsbuild-plugin": "^0.7.4",
+    "@lynx-js/rspeedy": "^0.19.0",
     "@ngtools/webpack": "^22.2.7",
     "typescript": "~6.0.0"
   },

@@ -134,7 +134,7 @@ tree](https://github.com/shabeliuk/ng-lynx/tree/main/docs) — start with
 
 - Angular 21 or 22: `@angular/core`, `@angular/compiler`,
   `@angular/compiler-cli`, and `@ngtools/webpack` for the default AOT build.
-- `@lynx-js/rspeedy` 0.18 and TypeScript 5.9 (Angular 21) or 6.0 (Angular 22).
+- `@lynx-js/rspeedy` 0.18 or 0.19, and TypeScript 5.9 (Angular 21) or 6.0 (Angular 22).
 - Node 22.12 or later.
 - To run: a Lynx engine. Lynx Explorer 4.1 or 4.2 for development.
 

@@ -28,8 +28,8 @@ fails inside Rspack (`WebAssembly.instantiate(): Unknown heap type -14`). The
   "devDependencies": {
     "@angular/compiler-cli": "^21.0.0",
     "@ngtools/webpack": "^21.0.0",
-    "@lynx-js/rspeedy": "^0.18.4",
-    "@lynx-js/qrcode-rsbuild-plugin": "^0.7.3",
+    "@lynx-js/rspeedy": "^0.19.0",
+    "@lynx-js/qrcode-rsbuild-plugin": "^0.7.4",
     "typescript": "~5.9.0"
   }
 }
